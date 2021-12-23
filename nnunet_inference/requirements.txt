@@ -1,0 +1,8 @@
+monai-deploy-app-sdk
+nnunet
+simpleitk==2.0.2
+typeguard
+fastapi
+uvicorn[standard]
+python-multipart
+
