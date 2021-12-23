@@ -9,7 +9,7 @@ services:
       - --api.insecure=true
       - --providers.docker
       - --entrypoints.web.address=:80
-      - --entrypoints.web-secure.address=:443 #Declares the web-secure entrypoint in Traefik
+        #- --entrypoints.web-secure.address=:443 #Declares the web-secure entrypoint in Traefik
     
     ports:
       # The HTTP port
@@ -22,10 +22,21 @@ services:
         
   inference:
     image: mathiser/inference_server:nnunet_inference
+    command: uvicorn api:app --host 0.0.0.0 --port 7000
+    expose:
+      - 7000
     labels:
-      - traefik.enable=true
+      - "traefik.enable=true"
       - "traefik.http.routers.inference.rule=Host(`inference.localhost`)"
-      - traefik.port=8000
+      - "traefik.http.services.inference.loadbalancer.server.port=7000"
+    ipc: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - capabilities: [gpu]
+    volumes:
+      - Task5003_WholeHeart_CT:/opt/app/data
   whoami:
     # A container that exposes an API to show its IP address
     image: traefik/whoami
@@ -33,3 +44,5 @@ services:
       - traefik.enable=true
       - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)"
 
+volumes:
+  Task5003_WholeHeart_CT:

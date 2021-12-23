@@ -4,10 +4,11 @@ RUN apt-get update
 ADD requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 
-RUN mkdir -p /opt/app/api /opt/app/data /opt/app/models
-WORKDIR /opt/app/api
-COPY . /opt/app/api
-
-EXPOSE 8000
-
-ENTRYPOINT ["bash", "-c",  "uvicorn api:app", "--reload"]
+ENV CODE="/opt/app/api"
+ENV DATA="/opt/app/data" 
+ENV MODEL="/opt/app/models"
+ENV HOST="0.0.0.0"
+ENV PORT="8000"
+RUN mkdir -p $CODE $DATA $MODELS
+WORKDIR $CODE
+COPY . $CODE
