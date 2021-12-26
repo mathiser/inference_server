@@ -81,7 +81,7 @@ def get_tasks(id: int):
         return t
 
 
-@app.post("/outputs/")
+@app.post("/outputs/{id}")
 def upload_output(id: int, file: UploadFile = File(...)):
     with Session() as s:
         # Get the task

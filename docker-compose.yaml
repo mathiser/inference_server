@@ -23,7 +23,7 @@ services:
   rabbit:
     image: rabbitmq:latest
     ports:
-     - "5672:5672"
+     - "5672"
     hostname: message_broker
 
   rabbit_management:
@@ -43,11 +43,14 @@ services:
     volumes:
       - inference_database:/opt/app/data
 
-  inference:
-    hostname: inference
+  job_consumer:
+    hostname: job_consumer
     build:
       context: ./job_consumer
       dockerfile: Dockerfile
+    environment:
+      - RABBIT_URL=http://rabbit:5672
+      - DB_URL=http://database:6000
     ipc: host
     #deploy:
     #  resources:
@@ -55,8 +58,7 @@ services:
     #      devices:
     #        - capabilities: [ gpu ]
     volumes:
-      - Task5003_WholeHeart_CT:/opt/app/data
-
+      ## needed to run docker in docker with GPU-support
+      - /var/run/docker.sock:/var/run/docker.sock
 volumes:
-  Task5003_WholeHeart_CT:
   inference_database:
