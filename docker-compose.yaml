@@ -5,12 +5,12 @@ services:
     # The official v2 Traefik docker image
     image: traefik:v2.6
     # Enables the web UI and tells Traefik to listen to docker
+    hostname: reverse-proxy
     command:
       - --api.insecure=true
       - --providers.docker
       - --entrypoints.web.address=:80
         #- --entrypoints.web-secure.address=:443 #Declares the web-secure entrypoint in Traefik
-    
     ports:
       # The HTTP port
       - "80:80"
@@ -19,30 +19,44 @@ services:
     volumes:
       # So that Traefik can listen to the Docker events
       - /var/run/docker.sock:/var/run/docker.sock
-        
-  inference:
-    image: mathiser/inference_server:nnunet_inference
-    command: uvicorn api:app --host 0.0.0.0 --port 7000
+
+  rabbit:
+    image: rabbitmq:latest
+    ports:
+     - "5672:5672"
+    hostname: message_broker
+
+  rabbit_management:
+    image: rabbitmq:3-management
     expose:
-      - 7000
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.inference.rule=Host(`inference.localhost`)"
-      - "traefik.http.services.inference.loadbalancer.server.port=7000"
+     - 15672
+    hostname: message_broker_management
+
+  database:
+    hostname: database
+    command: uvicorn --host "0.0.0.0" --port 6000 db:app
+    ports:
+      - 6000
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    volumes:
+      - inference_database:/opt/app/data
+
+  inference:
+    hostname: inference
+    build:
+      context: ./job_consumer
+      dockerfile: Dockerfile
     ipc: host
-    deploy:
-      resources:
-        reservations:
-          devices:
-          - capabilities: [gpu]
+    #deploy:
+    #  resources:
+    #    reservations:
+    #      devices:
+    #        - capabilities: [ gpu ]
     volumes:
       - Task5003_WholeHeart_CT:/opt/app/data
-  whoami:
-    # A container that exposes an API to show its IP address
-    image: traefik/whoami
-    labels:
-      - traefik.enable=true
-      - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)"
 
 volumes:
   Task5003_WholeHeart_CT:
+  inference_database:
