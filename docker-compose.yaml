@@ -2,14 +2,12 @@ version: '3'
 
 services:
   reverse-proxy:
+    restart: always
     # The official v2 Traefik docker image
     image: traefik:v2.6
     # Enables the web UI and tells Traefik to listen to docker
     hostname: reverse-proxy
-    command:
-      - --api.insecure=true
-      - --providers.docker
-      - --entrypoints.web.address=:80
+    command: --api.insecure=true --providers.docker --entrypoints.web.address=:80
         #- --entrypoints.web-secure.address=:443 #Declares the web-secure entrypoint in Traefik
     ports:
       # The HTTP port
@@ -20,38 +18,71 @@ services:
       # So that Traefik can listen to the Docker events
       - /var/run/docker.sock:/var/run/docker.sock
 
-  rabbit:
-    image: rabbitmq:latest
-    ports:
-     - "5672"
-    hostname: message_broker
+#  public-api:
+#    restart: always
+#    build:
+#      context: ./public_api/img/
+#      dockerfile: Dockerfile
+#    hostname: ${PUBLIC_API_HOST}
+#    command: uvicorn --host "0.0.0.0" --port ${PUBLIC_API_PORT} api:app
+#    env_file:
+#      - .env
+#    ports:
+#      - ${PUBLIC_API_PORT}:${PUBLIC_API_PORT}
+#    labels:
+#      - "traefik.http.routers.${PUBLIC_API_HOST}.rule=Host(`localhost`)"
+#      - "traefik.http.services.${PUBLIC_API_HOST}.loadbalancer.server.port=${PUBLIC_API_PORT}"
+#    volumes:
+#      - ${DATA_VOLUME}:/data
 
-  rabbit_management:
-    image: rabbitmq:3-management
-    expose:
-     - 15672
-    hostname: message_broker_management
 
   database:
-    hostname: database
-    command: uvicorn --host "0.0.0.0" --port 6000 db:app
+    image: postgres:latest
+    restart: always
+    hostname: ${DB_HOST}
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    #volumes:
+    #  - ${DB_VOLUME}:/var/lib/postgresql/data
+
+  api:
+    hostname: ${API_HOST}
+    command: uvicorn --host "0.0.0.0" --port ${API_PORT} api:app
+    depends_on:
+      - rabbit
     ports:
-      - 6000
+      - ${API_PORT}:${API_PORT}
+    labels:
+      - "traefik.http.routers.${API_HOST}.rule=Host(`localhost`)"
+      - "traefik.http.services.${API_HOST}.loadbalancer.server.port=${API_PORT}"
+    env_file:
+      - .env
     build:
-      context: ./db
+      context: private_api/img/
       dockerfile: Dockerfile
     volumes:
-      - inference_database:/opt/app/data
+      - ${DATA_VOLUME}:/data
 
-  job_consumer:
+  rabbit:
+    restart: always
+    image: rabbitmq:latest
+    ports:
+      - 5672:5672
+    hostname: rabbit
+
+  job-consumer:
     hostname: job_consumer
+    depends_on:
+      - rabbit
+      - api
+    env_file:
+      - .env
     build:
-      context: ./job_consumer
+      context: ./job_consumer/img
       dockerfile: Dockerfile
-    environment:
-      - RABBIT_URL=http://rabbit:5672
-      - DB_URL=http://database:6000
-    ipc: host
+    #ipc: host
     #deploy:
     #  resources:
     #    reservations:
@@ -61,4 +92,6 @@ services:
       ## needed to run docker in docker with GPU-support
       - /var/run/docker.sock:/var/run/docker.sock
 volumes:
-  inference_database:
+  db_storage:
+  data_storage:
+
