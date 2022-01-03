@@ -8,10 +8,19 @@ from sqlalchemy.orm import sessionmaker
 
 from models import Base
 
+LOG_FORMAT = ('%(levelname) -5s %(asctime)s %(name) -5s %(funcName) '
+              '-5 %(lineno) -5s: %(message)s')
+LOGGER = logging.getLogger(__name__)
+
+logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
+
+# data volume mount point
 data_dir = os.environ["DATA_DIR"]
 input_base_folder = os.path.join(data_dir, "input")
 output_base_folder = os.path.join(data_dir, "output")
 
+# model volume mount point
+model_base_folder = os.environ["MODEL_DIR"]
 for p in [input_base_folder, output_base_folder, data_dir]:
     if not os.path.exists(p):
         os.makedirs(p)

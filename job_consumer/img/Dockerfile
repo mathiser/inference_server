@@ -7,4 +7,4 @@ RUN mkdir -p /opt/app/
 WORKDIR /opt/app/
 COPY . /opt/app/
 
-CMD ["bash", "-c", "python main.py"]
+CMD python -u main.py

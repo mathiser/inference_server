@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, status
 from starlette.responses import FileResponse
 
 import logging
@@ -6,26 +6,32 @@ import os
 import secrets
 from datetime import datetime
 from init_db import Session, input_base_folder, output_base_folder, database
-from init_rabbit import rabbit_channel
+from disposable_rabbit_connection import DisposablePikaConnection
 from models import Task
 
-logging.basicConfig(filename='api.log', encoding='utf-8', level=logging.INFO)
+LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
+              '-35s %(lineno) -5d: %(message)s')
+LOGGER = logging.getLogger(__name__)
 
+logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 app = FastAPI()
 
 @app.on_event("startup")
 async def startup():
+    logging.info("Connecting to DB")
     await database.connect()
+    logging.info("Connecting to DB successful")
 
 
 @app.on_event("shutdown")
 async def shutdown():
+    logging.info("Disonnecting from DB")
     await database.disconnect()
-
+    logging.info("Disconnecting from DB sucessful")
 
 @app.get("/")
 def hello_world():
-    print("Hello world - Welcome to the private database API")
+    logging.info("Hello world - Welcome to the private database API")
     return {"message": "Hello world - Welcome to the private database API"}
 
 ######## TASKS #########
@@ -55,44 +61,47 @@ async def upload_input(container_tag: str, model: str, file: UploadFile = File(.
     # Give this request a unique identifier
     uid = secrets.token_urlsafe(32)
 
-    print(f"Received a task to run on {container_tag}")
+    logging.info(f"{uid}: Received a task to run on {container_tag} with model: {model}")
 
-    # Define input folder and output folder
+    logging.info("{uid}: Define input folder and output folders")
     input_folder = os.path.abspath(os.path.join(input_base_folder, uid))
     input_zip = os.path.join(input_folder, "input.zip")
     output_folder = os.path.abspath(os.path.join(output_base_folder, uid))
     output_zip = os.path.join(output_folder, "output.zip")
 
-    print(f"Input_zip: {input_zip}")
-    print(f"Output_zip: {output_zip}")
-    print(f"uid: {uid}")
+    logging.info(f"{uid}: Input_zip: {input_zip}")
+    logging.info(f"{uid}: Output_zip: {output_zip}")
 
     # Create input and output folders
     for p in [input_folder, output_folder]:
         if not os.path.exists(p):
             os.makedirs(p)
         else:
-            raise Exception("Two tasks with same UID!?")
+            logging.error(f"{uid}: Error when creating {input_folder} and {output_folder}."
+                          f" They appear to exist for a two different tasks")
+            raise Exception(f"{uid}: Two tasks with same UID!?")
 
-    # Extract uploaded zipfile to input_folder
+    logging.info(f"{uid}: Extract uploaded zipfile to input_folder")
     with open(input_zip, 'wb') as out_file:
         out_file.write(file.file.read())
 
-    # Define the DB-entry for the task
+    logging.info(f"{uid}: Define the DB-entry for the task")
     t = Task(uid=uid,
              container_tag=container_tag,
              model=model,
              input_zip=input_zip,
              output_zip=output_zip)
+    logging.info(f"{uid}: Task: {t.__dict__}")
 
-    # Open db session and add task
+    logging.info(f"{uid}: Open db session and add task")
     with Session() as s:
         s.add(t)
         s.commit()
         s.refresh(t)
 
-    # Publish the task in os.environ["UNFINISHED_JOB_QUEUE"]
-    rabbit_channel.basic_publish(exchange="", routing_key=os.environ["UNFINISHED_JOB_QUEUE"], body=t.uid)
+    logging.info(f'{uid}: Publish the task in os.environ["UNFINISHED_JOB_QUEUE"]')
+    DisposablePikaConnection(exchange="", queue=os.environ["UNFINISHED_JOB_QUEUE"], body=t.uid, uid=t.uid,
+                             host=os.environ["RABBIT_HOST"])
 
     return t
 
@@ -101,8 +110,6 @@ async def upload_input(container_tag: str, model: str, file: UploadFile = File(.
 async def get_image_zip(id: int):
     with Session() as s:
         t = s.query(Task).filter_by(id=id).first()
-    print(t.__dict__)
-    print(os.path.exists(t.input_zip))
     if os.path.exists(t.input_zip):
         return FileResponse(t.input_zip)
     else:
@@ -121,10 +128,10 @@ async def upload_output(id: int, file: UploadFile = File(...)):
             out_file.write(file.file.read())
 
         # Publish the finished job to "finished_jobs"
-        rabbit_channel.basic_publish(exchange="", routing_key=os.environ["FINISHED_JOB_QUEUE"], body=t.uid)
+        DisposablePikaConnection(exchange="", queue=os.environ["FINISHED_JOB_QUEUE"], body=t.uid, uid=t.uid, host=os.environ["RABBIT_HOST"])
 
         # Set task as finished and finished_datetime
-        t.is_fininished = True
+        t.is_finished = True
         t.datetime_finished = datetime.utcnow()
 
         # Save changes
@@ -137,14 +144,12 @@ async def upload_output(id: int, file: UploadFile = File(...)):
 async def get_output_zip(id: int):
     # Zip the output for return
     with Session() as s:
-        task = s.query(Task).filter_by(id=id).first
+        task = s.query(Task).filter_by(id=id).first()
 
-        if not task:
-            raise HTTPException(status_code=404, detail="Invalid UID")
-        try:
-            if task.is_finished:  ## Not doing this with os.path.exists(task.output.zip) to avoid that some of the file is sent before all written
-                return FileResponse(task.output_zip)
-            else:
-                raise HTTPException(status_code=404, detail="Output zip not found")
-        except Exception as e:
-            raise HTTPException(status_code=404, detail=e)
+        if task.is_finished:  ## Not doing this with os.path.exists(task.output.zip) to avoid that some of the file is sent before all written
+            return FileResponse(task.output_zip)
+        else:
+            raise HTTPException(status_code=404, detail="Output zip not found - this is normal behavior if you are polling for an output")
+
+
+ t
