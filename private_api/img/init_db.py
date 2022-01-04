@@ -21,6 +21,7 @@ output_base_folder = os.path.join(data_dir, "output")
 
 # model volume mount point
 model_base_folder = os.environ["MODEL_DIR"]
+
 for p in [input_base_folder, output_base_folder, data_dir]:
     if not os.path.exists(p):
         os.makedirs(p)

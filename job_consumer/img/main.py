@@ -1,6 +1,8 @@
 import atexit
 import functools
-import json
+import tempfile
+
+import api_calls
 import logging
 import os
 import shutil
@@ -47,49 +49,40 @@ def do_work(connection, channel, delivery_tag, body):
 
     # Get task context from DB
     logging.info(f"[ ]{uid}: Requesting task context from DB")
-    with httpx.Client() as client:
-        res = client.get(urljoin(os.environ["API_URL"], f"tasks/uid/{uid}"))
+    task = api_calls.get_task_by_uid(uid)
     logging.info(f"[X]{uid}: Requesting task context from DB")
 
-    task = dict(json.loads(res.content))
     logging.info(f"[ ]{uid}: Task: {task}")
     logging.info(f"[ ]{uid}: ")
 
     # Set an input and output folder in /tmp/ for container
     input_folder = os.path.join("/tmp/", task["uid"], "input")
     output_folder = os.path.join("/tmp/", task["uid"], "output")
-    zip_folder = os.path.join("/tmp/", task["uid"], "zip")
-    input_zip = os.path.join(zip_folder, "input.zip")
-    output_zip = os.path.join(zip_folder, "output.zip")
 
-    for p in [input_folder, output_folder, zip_folder]:
+    for p in [input_folder, output_folder]:
         if not os.path.exists(p):
             os.makedirs(p)
 
     # Request get image_zip from DB
-    with httpx.Client() as client:
-        logging.info(f"[ ]{uid}: Requesting input_zip from DB")
-        res = client.get(urljoin(os.environ["API_URL"], f"/inputs/{task['id']}"))
+    logging.info(f"[ ]{uid}: Requesting input_zip from DB")
+    res = api_calls.get_input_by_id(task["id"])
+    with tempfile.TemporaryFile() as tmp_input_zip:
+        tmp_input_zip.write(res.content)
         logging.info(f"[X]{uid}: Requesting input_zip from DB")
 
-        logging.info(f"[ ]{uid}: Wrinting input_zip to {input_zip}")
-        # Write res.content to input_zip in tmp
-        with open(input_zip, "wb") as f:
-            f.write(res.content)
-        logging.info(f"[X]{uid}: Wrinting input_zip to {input_zip}")
+        logging.info(f"[ ]{uid}: Extracting input_zip to {input_folder}")
+        # Extract input zipfile to input_folder
+        with zipfile.ZipFile(tmp_input_zip, "r") as zip:
+            zip.extractall(path=input_folder)
+        logging.info(f"[X]{uid}: Extracting input_zip to {input_folder}")
 
-    logging.info(f"[ ]{uid}: Extracting {input_zip} to {input_folder}")
-    # Extract input zipfile to input_folder
-    with zipfile.ZipFile(input_zip, "r") as zip:
-        zip.extractall(path=input_folder)
-    logging.info(f"[X]{uid}: Extracting {input_zip} to {input_folder}")
 
+    ############ LONG RUNNING JOB ###############
     logging.info(f"[ ]{uid}: Running container job")
     # Simulate time consuming job
     logging.info(f"Very time consuming task: copy all input files to output_folder and wait 30 sec")
     for f in os.listdir(input_folder):
         shutil.copy(os.path.join(input_folder, f), output_folder)
-
     toggle = False
     for t in range(30):
         if toggle:
@@ -98,22 +91,27 @@ def do_work(connection, channel, delivery_tag, body):
             logging.info(f"[ ]{uid}: {t}: Tok")
         toggle = not toggle
         time.sleep(1)
+    ############ END OF LONG RUNNING JOB ###############
 
-    # Zip the output_folder into payload_zip and save in /tmp/id.zip
-    logging.info(f"[ ]{uid}: Zipping {output_folder} into {output_zip}")
-    with zipfile.ZipFile(output_zip, "w") as zip:
-        for file in os.listdir(output_folder):
-            zip.write(os.path.join(output_folder, file), arcname=file)
-    logging.info(f"[X]{uid}: Zipping {output_folder} into {output_zip}")
 
-    # Post output_zip to DB/output
-    logging.info(f"[ ]{uid}: Posting {output_zip} to DB")
-    with open(output_zip, "rb") as r:
-        requests.post(urljoin(os.environ["API_URL"], f"/outputs/{task['id']}"), files={"file": r})
-    logging.info(f"[X]{uid}: Posting {output_zip} to DB")
+    # Zip the output_folder into payload_zip and save in /tmp/{uid}.zip
+    logging.info(f"[ ]{uid}: Zipping {output_folder}")
+    with tempfile.TemporaryFile() as tmp_output_zip:
+        with zipfile.ZipFile(tmp_output_zip, "w") as zip:
+            for file in os.listdir(output_folder):
+                zip.write(os.path.join(output_folder, file), arcname=file)
+        logging.info(f"[X]{uid}: Zipping {output_folder}")
 
-    cb = functools.partial(ack_message, channel, delivery_tag, uid)
-    connection.add_callback_threadsafe(cb)
+        # Post output_zip to DB/output
+        logging.info(f"[ ]{uid}: Posting output to DB")
+        res = api_calls.post_output_by_uid(uid, tmp_output_zip)
+
+    if res.ok:
+        logging.info(f"[X]{uid}: Posting {tmp_output_zip} to DB")
+        cb = functools.partial(ack_message, channel, delivery_tag, uid)
+        connection.add_callback_threadsafe(cb)
+    else:
+        logging.error("Error in posting output zip to DB")
 
 def on_message(channel, method_frame, header_frame, body, args):
     (connection, threads) = args
@@ -125,9 +123,7 @@ def on_message(channel, method_frame, header_frame, body, args):
 def on_exit(threads, connection):
     for thread in threads:
         thread.join()
-
     connection.close()
-
 
 if __name__ == '__main__':
     threads = []
@@ -136,7 +132,7 @@ if __name__ == '__main__':
             logging.info(f"[ ]: Connecting to rabbit host: {os.environ['RABBIT_HOST']}")
             # Note: sending a short heartbeat to prove that heartbeats are still
             # sent even though the worker simulates long-running work
-            rabbit_connection = pika.BlockingConnection(pika.ConnectionParameters(host=os.environ["RABBIT_HOST"], heartbeat=5))
+            rabbit_connection = pika.BlockingConnection(pika.ConnectionParameters(host=os.environ["RABBIT_HOST"]))
             rabbit_channel = rabbit_connection.channel()
             logging.info(f"[X]: Connecting to rabbit host: {os.environ['RABBIT_HOST']}")
 

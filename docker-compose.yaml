@@ -45,8 +45,8 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
-    volumes:
-      - log_storage:/logs
+    #volumes:
+    #  - ${LOGS_VOLUME}:${LOGGING_DIR}
     #  - ${DB_VOLUME}:/var/lib/postgresql/data
 
   api:
@@ -65,13 +65,14 @@ services:
       - PYTHONUNBUFFERED=1
     env_file:
       - .env
+      - .api
     build:
       context: private_api/img/
       dockerfile: Dockerfile
-    volumes:
-      - ${DATA_VOLUME}:/data
-      - log_storage:/logs
-      - ${MODEL_VOLUME}
+    #volumes:
+    #  - ${DATA_VOLUME}:${DATA_DIR}
+    #  - ${LOGS_VOLUME}:${LOGGING_DIR}
+    #  - ${MODELS_VOLUME}:${MODELS_DIR}
 
   rabbit:
     restart: on-failure
@@ -93,6 +94,7 @@ services:
       - api
     env_file:
       - .env
+      - .api
     build:
       context: ./job_consumer/img
       dockerfile: Dockerfile
@@ -107,8 +109,11 @@ services:
     volumes:
       ## needed to run docker in docker with GPU-support
       - /var/run/docker.sock:/var/run/docker.sock
-      - log_storage:/logs
+     # - ${LOGS_VOLUME}:${LOGGING_DIR}
+
+## Volumes must match names in .env!
 volumes:
   db_storage:
   data_storage:
-  log_storage:
+  models_storage:
+  logs_storage:
