@@ -18,7 +18,7 @@ class Model(Base):
     container_tag = Column(String)
 
     model_path = Column(String, nullable=True)
-
+    tasks = relationship("Task", back_populates="model")
     input_mountpoint = Column(String, nullable=False)
     output_mountpoint = Column(String, nullable=False)
     model_mountpoint = Column(String, nullable=True)
@@ -31,7 +31,7 @@ class Task(Base):
     uid = Column(String, default=secrets.token_urlsafe(32))
 
     model_id = Column(Integer, ForeignKey("models.id"), nullable=False)
-    model = relationship("Model", back_populates="models")
+    model = relationship("Model", back_populates="tasks")
 
     datetime_created = Column(DateTime, default=datetime.utcnow)
 

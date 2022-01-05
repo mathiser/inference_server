@@ -1,9 +1,9 @@
 FROM python:3.10-buster
-
 RUN apt-get update
+
 ADD requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 
-RUN mkdir -p /opt/app/ /opt/app/data/
-COPY . /opt/app/
-WORKDIR /opt/app/
+COPY ./tests /opt/tests
+WORKDIR /opt/tests
+CMD ["/usr/local/bin/python", "-m", "unittest",  "test_private_api.py"]

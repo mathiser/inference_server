@@ -3,18 +3,17 @@ from urllib.parse import urljoin
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, status
 from starlette.responses import FileResponse
+import uvicorn
 import tempfile
 import logging
 import os
 import secrets
 from datetime import datetime
-from init_db import Session, input_base_folder, output_base_folder, database
+from init_db import Session, input_base_folder, output_base_folder, model_base_folder, database
 from disposable_rabbit_connection import DisposablePikaConnection
 from models import Task, Model
 import zipfile
-LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
-              '-35s %(lineno) -5d: %(message)s')
-LOGGER = logging.getLogger(__name__)
+LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
 
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 app = FastAPI()
@@ -44,12 +43,12 @@ async def get_tasks():
         tasks = s.query(Task)
         return list(tasks)
 
-@app.get(urljoin(os.environ['GET_TASKS_BY_ID'], "{id}"))
+@app.get(urljoin(os.environ['GET_TASK_BY_ID'], "{id}"))
 async def get_task_by_id(id: int):
     with Session() as s:
         return s.query(Task).filter_by(id=id).first()
 
-@app.get(urljoin(os.environ['GET_TASKS_BY_UID'], "{uid}"))
+@app.get(urljoin(os.environ['GET_TASK_BY_UID'], "{uid}"))
 async def get_task_by_uid(uid: str):
     with Session() as s:
         return s.query(Task).filter_by(uid=uid).first()
@@ -58,7 +57,7 @@ async def get_task_by_uid(uid: str):
 
 ######## INPUTS ########
 ######## PUBLIC ########
-@app.post(os.environ['POST_TASK_BY_MODEL_ID'])
+@app.post(urljoin(os.environ['POST_TASK_BY_MODEL_ID'], "{model_id}"))
 async def post_task_by_model_id(model_id: int, file: UploadFile = File(...)):
     # Give this request a unique identifier
     uid = secrets.token_urlsafe(32)
@@ -153,12 +152,12 @@ async def get_output_by_id(id: int):
             raise HTTPException(status_code=404, detail="Output zip not found - this is normal behavior if you are polling for an output")
 
 
-@app.get(urljoin(os.environ['GET_TASKS_BY_ID'], "{id}"))
+@app.get(urljoin(os.environ['GET_TASK_BY_ID'], "{id}"))
 async def get_task_by_id(id: int):
     with Session() as s:
         return s.query(Task).filter_by(id=id).first()
 
-@app.get(urljoin(os.environ['GET_TASKS_BY_UID'], "{uid}"))
+@app.get(urljoin(os.environ['GET_TASK_BY_UID'], "{uid}"))
 async def get_task_by_uid(uid: str):
     with Session() as s:
         return s.query(Task).filter_by(uid=uid).first()
@@ -167,11 +166,11 @@ async def get_task_by_uid(uid: str):
 
 ######## MODELS ########
 @app.post(os.environ['POST_MODEL'])
-async def post_model(description: Optional[str],
-                     container_tag: str,
+async def post_model(container_tag: str,
                      input_mountpoint: str,
                      output_mountpoint: str,
-                     model_mountpoint: Optional[str],
+                     model_mountpoint: Optional[str] = None,
+                     description: Optional[str] = None,
                      file: UploadFile = File(...)):
 
     """
@@ -185,7 +184,7 @@ async def post_model(description: Optional[str],
     """
 
     uid = secrets.token_urlsafe(32)
-    model_path = os.path.join(os.environ["MODELS_DIR"], uid)
+    model_path = os.path.join(model_base_folder, uid)
 
     # Create model_path
     if not os.path.exists(model_path):
@@ -219,3 +218,16 @@ async def post_model(description: Optional[str],
             zip.extractall(path=model_path)
 
     return m
+
+@app.get(urljoin(os.environ['GET_MODEL_BY_ID'], "{id}"))
+async def get_model_by_id(id: int):
+    with Session() as s:
+        return s.query(Model).filter_by(id=id).first()
+
+@app.get(urljoin(os.environ['GET_MODEL_BY_UID'], "{uid}"))
+async def get_model_by_id(uid: str):
+    with Session() as s:
+        return s.query(Model).filter_by(uid=uid).first()
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=os.environ.get("API_PORT"))

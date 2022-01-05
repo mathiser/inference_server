@@ -45,13 +45,16 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
-    #volumes:
+    env_file:
+      - .env
+      #volumes:
     #  - ${LOGS_VOLUME}:${LOGGING_DIR}
     #  - ${DB_VOLUME}:/var/lib/postgresql/data
 
   api:
     hostname: ${API_HOST}
     command: uvicorn --host "0.0.0.0" --port ${API_PORT} api:app
+    #command: bash -c python3 -u api.py
     restart: on-failure
     depends_on:
       - rabbit
@@ -65,7 +68,6 @@ services:
       - PYTHONUNBUFFERED=1
     env_file:
       - .env
-      - .api
     build:
       context: private_api/img/
       dockerfile: Dockerfile
@@ -94,7 +96,6 @@ services:
       - api
     env_file:
       - .env
-      - .api
     build:
       context: ./job_consumer/img
       dockerfile: Dockerfile
