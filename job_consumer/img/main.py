@@ -1,19 +1,15 @@
+import docker
 import atexit
 import functools
-import tempfile
-
-import api_calls
 import logging
-import os
 import shutil
+import tempfile
 import threading
 import time
 import zipfile
-from urllib.parse import urljoin
-
-import httpx
-import pika
-import requests
+from file_handling import *
+from api_calls import *
+from init_rabbit import rabbit_channel
 
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -5s %(funcName) '
               '-5s %(lineno) -d: %(message)s')
@@ -45,66 +41,63 @@ def do_work(connection, channel, delivery_tag, body):
     ###################
     # Parse body, which contains the DB id to the task, which shall be run
     uid = body.decode()
-    logging.info(" [x] Received %r" % uid)
 
     # Get task context from DB
     logging.info(f"[ ]{uid}: Requesting task context from DB")
-    task = api_calls.get_task_by_uid(uid)
+    task = get_task_by_uid(uid)
     logging.info(f"[X]{uid}: Requesting task context from DB")
 
     logging.info(f"[ ]{uid}: Task: {task}")
     logging.info(f"[ ]{uid}: ")
 
+    # Get model_context
+    logging.info(f"[ ]{uid}: Requesting model context from DB")
+    model = get_model_by_id(task['model_id'])
+    logging.info(f"[X]{uid}: Requesting model context from DB")
+
     # Set an input and output folder in /tmp/ for container
     input_folder = os.path.join("/tmp/", task["uid"], "input")
     output_folder = os.path.join("/tmp/", task["uid"], "output")
 
-    for p in [input_folder, output_folder]:
-        if not os.path.exists(p):
-            os.makedirs(p)
-
     # Request get image_zip from DB
     logging.info(f"[ ]{uid}: Requesting input_zip from DB")
-    res = api_calls.get_input_by_id(task["id"])
-    with tempfile.TemporaryFile() as tmp_input_zip:
-        tmp_input_zip.write(res.content)
-        logging.info(f"[X]{uid}: Requesting input_zip from DB")
+    res = get_input_by_id(task["id"])
+    logging.info(f"[X]{uid}: Requesting input_zip from DB")
 
-        logging.info(f"[ ]{uid}: Extracting input_zip to {input_folder}")
-        # Extract input zipfile to input_folder
-        with zipfile.ZipFile(tmp_input_zip, "r") as zip:
-            zip.extractall(path=input_folder)
-        logging.info(f"[X]{uid}: Extracting input_zip to {input_folder}")
-
+    logging.info(f"[ ]{uid}: Unzipping input_zip to {input_folder}")
+    unzip_response_to_location(res, input_folder)
+    logging.info(f"[X]{uid}: Unzipping input_zip to {input_folder}")
 
     ############ LONG RUNNING JOB ###############
+    kw = {}
+    kw["image"] = model["container_tag"]
+    kw["command"] = None ## Already default, but for explicity
+    kw["ipc_mode"] = "host" ## Full access to ram
+
+    # Set input, output and model volumes // see https://docker-py.readthedocs.io/en/stable/containers.html
+    kw["volumes"] = {}
+    kw["volumes"][input_folder] = {"bind": model["input_mountpoint"], "mode": "ro"}
+    kw["volumes"][output_folder] = {"bind": model["output_mountpoint"], "mode": "rw"}
+
+    if model["model_available"]:
+        kw["volumes"][model["model_volume"]] = {"bind": model["model_mountpoint"], "mode": "ro"}
+
+    if model["use_gpu"]:
+        kw["device_requests"] = [docker.types.DeviceRequest(count=-1, capabilities=[['gpu']])]
+
     logging.info(f"[ ]{uid}: Running container job")
-    # Simulate time consuming job
-    logging.info(f"Very time consuming task: copy all input files to output_folder and wait 30 sec")
-    for f in os.listdir(input_folder):
-        shutil.copy(os.path.join(input_folder, f), output_folder)
-    toggle = False
-    for t in range(30):
-        if toggle:
-            logging.info(f"[ ]{uid}: {t}: Tik")
-        else:
-            logging.info(f"[ ]{uid}: {t}: Tok")
-        toggle = not toggle
-        time.sleep(1)
+    cli = docker.from_env()
+    cli.containers.run(**kw)
     ############ END OF LONG RUNNING JOB ###############
 
 
     # Zip the output_folder into payload_zip and save in /tmp/{uid}.zip
-    logging.info(f"[ ]{uid}: Zipping {output_folder}")
-    with tempfile.TemporaryFile() as tmp_output_zip:
-        with zipfile.ZipFile(tmp_output_zip, "w") as zip:
-            for file in os.listdir(output_folder):
-                zip.write(os.path.join(output_folder, file), arcname=file)
-        logging.info(f"[X]{uid}: Zipping {output_folder}")
+    tmp_output_zip = zip_folder_to_tmpfile(output_folder)
+    logging.info(f"[X]{uid}: Zipping {output_folder}")
 
-        # Post output_zip to DB/output
-        logging.info(f"[ ]{uid}: Posting output to DB")
-        res = api_calls.post_output_by_uid(uid, tmp_output_zip)
+    # Post output_zip to DB/output
+    logging.info(f"[ ]{uid}: Posting output to DB")
+    res = post_output_by_uid(uid, tmp_output_zip)
 
     if res.ok:
         logging.info(f"[X]{uid}: Posting {tmp_output_zip} to DB")
@@ -127,31 +120,9 @@ def on_exit(threads, connection):
 
 if __name__ == '__main__':
     threads = []
-    while True:
-        try:
-            logging.info(f"[ ]: Connecting to rabbit host: {os.environ['RABBIT_HOST']}")
-            # Note: sending a short heartbeat to prove that heartbeats are still
-            # sent even though the worker simulates long-running work
-            rabbit_connection = pika.BlockingConnection(pika.ConnectionParameters(host=os.environ["RABBIT_HOST"]))
-            rabbit_channel = rabbit_connection.channel()
-            logging.info(f"[X]: Connecting to rabbit host: {os.environ['RABBIT_HOST']}")
 
-            logging.info(f"[ ]: Declaring queue: {os.environ['UNFINISHED_JOB_QUEUE']} on {os.environ['RABBIT_HOST']}")
-            rabbit_channel.queue_declare(queue=os.environ["UNFINISHED_JOB_QUEUE"], durable=True)
-            logging.info(f"[ ]: Declaring queue: {os.environ['UNFINISHED_JOB_QUEUE']} on {os.environ['RABBIT_HOST']}")
-
-            prefetch_val = 1
-            rabbit_channel.basic_qos(prefetch_count=prefetch_val)
-            logging.info(f"[X]: RabbitMQ prefetch_count set to {prefetch_val}")
-
-
-            on_message_callback = functools.partial(on_message, args=(rabbit_connection, threads))
-            rabbit_channel.basic_consume(queue=os.environ["UNFINISHED_JOB_QUEUE"], on_message_callback=on_message_callback)
-            break
-        except Exception as e:
-            logging.error(e)
-            logging.error("Failed to connect to RabbitMQ. Timeout 1 sec and try again")
-            time.sleep(1)
+    on_message_callback = functools.partial(on_message, args=(rabbit_connection, threads))
+    rabbit_channel.basic_consume(queue=os.environ["UNFINISHED_JOB_QUEUE"], on_message_callback=on_message_callback)
 
     logging.info(' [*] Waiting for messages')
     exit_func = functools.partial(on_exit, threads, rabbit_connection)

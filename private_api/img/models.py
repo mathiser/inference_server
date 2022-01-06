@@ -1,4 +1,5 @@
 import secrets
+import uuid
 from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
@@ -17,7 +18,11 @@ class Model(Base):
 
     container_tag = Column(String)
 
-    model_path = Column(String, nullable=True)
+    use_gpu = Column(Boolean, default=True)
+
+    model_available = Column(Boolean, default=True)
+    model_volume = Column(String, default=uid)
+
     tasks = relationship("Task", back_populates="model")
     input_mountpoint = Column(String, nullable=False)
     output_mountpoint = Column(String, nullable=False)

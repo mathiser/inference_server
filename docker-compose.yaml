@@ -101,14 +101,8 @@ services:
       dockerfile: Dockerfile
     environment:
       - PYTHONUNBUFFERED=1
-    ipc: host
-    #deploy:
-    #  resources:
-    #    reservations:
-    #      devices:
-    #        - capabilities: [ gpu ]
     volumes:
-      ## needed to run docker in docker with GPU-support
+      # needed to dispatch docker containers from inside a docker container
       - /var/run/docker.sock:/var/run/docker.sock
      # - ${LOGS_VOLUME}:${LOGGING_DIR}
 
