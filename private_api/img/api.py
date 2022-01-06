@@ -1,17 +1,19 @@
+from typing import Optional
+from urllib.parse import urljoin
+
 from fastapi import FastAPI, File, UploadFile, HTTPException, status
 from starlette.responses import FileResponse
-
+import uvicorn
+import tempfile
 import logging
 import os
 import secrets
 from datetime import datetime
-from init_db import Session, input_base_folder, output_base_folder, database
+from init_db import Session, input_base_folder, output_base_folder, model_base_folder, database
 from disposable_rabbit_connection import DisposablePikaConnection
-from models import Task
-
-LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
-              '-35s %(lineno) -5d: %(message)s')
-LOGGER = logging.getLogger(__name__)
+from models import Task, Model
+import zipfile
+LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
 
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 app = FastAPI()
@@ -35,19 +37,18 @@ def hello_world():
     return {"message": "Hello world - Welcome to the private database API"}
 
 ######## TASKS #########
-
-@app.get("/tasks/")
+@app.get(os.environ["GET_TASKS"])
 async def get_tasks():
     with Session() as s:
         tasks = s.query(Task)
         return list(tasks)
 
-@app.get("/tasks/{id}")
+@app.get(urljoin(os.environ['GET_TASK_BY_ID'], "{id}"))
 async def get_task_by_id(id: int):
     with Session() as s:
         return s.query(Task).filter_by(id=id).first()
 
-@app.get("/tasks/uid/{uid}")
+@app.get(urljoin(os.environ['GET_TASK_BY_UID'], "{uid}"))
 async def get_task_by_uid(uid: str):
     with Session() as s:
         return s.query(Task).filter_by(uid=uid).first()
@@ -56,12 +57,12 @@ async def get_task_by_uid(uid: str):
 
 ######## INPUTS ########
 ######## PUBLIC ########
-@app.post("/inputs/")
-async def upload_input(container_tag: str, model: str, file: UploadFile = File(...)):
+@app.post(urljoin(os.environ['POST_TASK_BY_MODEL_ID'], "{model_id}"))
+async def post_task_by_model_id(model_id: int, file: UploadFile = File(...)):
     # Give this request a unique identifier
     uid = secrets.token_urlsafe(32)
 
-    logging.info(f"{uid}: Received a task to run on {container_tag} with model: {model}")
+    logging.info(f"{uid}: Received a task with model_id: {model_id}")
 
     logging.info("{uid}: Define input folder and output folders")
     input_folder = os.path.abspath(os.path.join(input_base_folder, uid))
@@ -87,8 +88,7 @@ async def upload_input(container_tag: str, model: str, file: UploadFile = File(.
 
     logging.info(f"{uid}: Define the DB-entry for the task")
     t = Task(uid=uid,
-             container_tag=container_tag,
-             model=model,
+             model_id=model_id,
              input_zip=input_zip,
              output_zip=output_zip)
     logging.info(f"{uid}: Task: {t.__dict__}")
@@ -106,8 +106,8 @@ async def upload_input(container_tag: str, model: str, file: UploadFile = File(.
     return t
 
 
-@app.get("/inputs/{id}")
-async def get_image_zip(id: int):
+@app.get(urljoin(os.environ['GET_INPUT_BY_ID'], "{id}"))
+async def get_input_by_id(id: int):
     with Session() as s:
         t = s.query(Task).filter_by(id=id).first()
     if os.path.exists(t.input_zip):
@@ -117,11 +117,11 @@ async def get_image_zip(id: int):
 
 
 ######## OUTPUTS ########
-@app.post("/outputs/{id}")
-async def upload_output(id: int, file: UploadFile = File(...)):
+@app.post(urljoin(os.environ['POST_OUTPUT_BY_UID'], "{uid}"))
+async def post_output_by_uid(uid: str, file: UploadFile = File(...)):
     with Session() as s:
         # Get the task
-        t = s.query(Task).filter_by(id=id).first()
+        t = s.query(Task).filter_by(uid=uid).first()
 
         # Extract uploaded zipfile to output_zip_path
         with open(t.output_zip, 'wb') as out_file:
@@ -140,8 +140,8 @@ async def upload_output(id: int, file: UploadFile = File(...)):
         return t
 
 ######## PUBLIC ########
-@app.get("/outputs/{id}")
-async def get_output_zip(id: int):
+@app.get(urljoin(os.environ['GET_OUTPUT_BY_ID'], "{id}"))
+async def get_output_by_id(id: int):
     # Zip the output for return
     with Session() as s:
         task = s.query(Task).filter_by(id=id).first()
@@ -152,4 +152,82 @@ async def get_output_zip(id: int):
             raise HTTPException(status_code=404, detail="Output zip not found - this is normal behavior if you are polling for an output")
 
 
- t
+@app.get(urljoin(os.environ['GET_TASK_BY_ID'], "{id}"))
+async def get_task_by_id(id: int):
+    with Session() as s:
+        return s.query(Task).filter_by(id=id).first()
+
+@app.get(urljoin(os.environ['GET_TASK_BY_UID'], "{uid}"))
+async def get_task_by_uid(uid: str):
+    with Session() as s:
+        return s.query(Task).filter_by(uid=uid).first()
+
+
+
+######## MODELS ########
+@app.post(os.environ['POST_MODEL'])
+async def post_model(container_tag: str,
+                     input_mountpoint: str,
+                     output_mountpoint: str,
+                     model_mountpoint: Optional[str] = None,
+                     description: Optional[str] = None,
+                     file: UploadFile = File(...)):
+
+    """
+    :param description: description of model
+    :param container_tag: docker tag to use
+    :param input_mountpoint: path to where the docker container expects the input folder to be mounted
+    :param output_mountpoint: path to where the docker container dumps output
+    :param model_mountpoint: path to where the docker container expects the a model to be located. optional
+    :param file:
+    :return:
+    """
+
+    uid = secrets.token_urlsafe(32)
+    model_path = os.path.join(model_base_folder, uid)
+
+    # Create model_path
+    if not os.path.exists(model_path):
+        os.makedirs(model_path)
+    else:
+        raise Exception(f"{uid}: Two models with same UID!?")
+
+    m = Model(
+        uid=uid,
+        description=description,
+        container_tag=container_tag,
+        model_path=model_path,
+        input_mountpoint=input_mountpoint,
+        output_mountpoint=output_mountpoint,
+        model_mountpoint=model_mountpoint
+    )
+
+    ## Add model to DB
+    with Session() as s:
+        s.add(m)
+        s.commit()
+        s.refresh(m)
+
+    # Extract model_zip to model_path. This path serves as the source for model_mountpoint in the container
+    with tempfile.TemporaryFile() as tmp_model_file:
+        # Write UploadFile to tmp_model_file
+        tmp_model_file.write(file.file.read())
+
+        # Extract tmp_model_file to model_path
+        with zipfile.ZipFile(tmp_model_file, "r") as zip:
+            zip.extractall(path=model_path)
+
+    return m
+
+@app.get(urljoin(os.environ['GET_MODEL_BY_ID'], "{id}"))
+async def get_model_by_id(id: int):
+    with Session() as s:
+        return s.query(Model).filter_by(id=id).first()
+
+@app.get(urljoin(os.environ['GET_MODEL_BY_UID'], "{uid}"))
+async def get_model_by_id(uid: str):
+    with Session() as s:
+        return s.query(Model).filter_by(uid=uid).first()
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=os.environ.get("API_PORT"))
