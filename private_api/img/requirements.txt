@@ -4,7 +4,6 @@ uvicorn[standard]
 sqlalchemy>=1.4
 pika
 databases
-aiosqlite
 pydantic
 httpx
 psycopg2
