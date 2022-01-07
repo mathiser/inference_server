@@ -13,4 +13,4 @@ RUN mkdir -p /opt/app/
 WORKDIR /opt/app/
 COPY . /opt/app/
 
-CMD python -u main.py
+CMD /usr/bin/python3 -u main.py

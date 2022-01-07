@@ -13,20 +13,21 @@ class Model(Base):
 
     id = Column(Integer, primary_key=True)
     uid = Column(String, default=secrets.token_urlsafe(32))
+    tasks = relationship("Task", back_populates="model")
 
     description = Column(String, nullable=True)
-
     container_tag = Column(String)
 
     use_gpu = Column(Boolean, default=True)
 
     model_available = Column(Boolean, default=True)
-    model_volume = Column(String, default=uid)
+    model_zip = Column(String, nullable=True)
+    model_volume = Column(String, default=str(uuid.uuid4()))
+    model_mountpoint = Column(String, nullable=True)
 
-    tasks = relationship("Task", back_populates="model")
     input_mountpoint = Column(String, nullable=False)
     output_mountpoint = Column(String, nullable=False)
-    model_mountpoint = Column(String, nullable=True)
+
 
 
 class Task(Base):

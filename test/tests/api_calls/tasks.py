@@ -4,10 +4,6 @@ import requests
 import os
 import json
 
-def get_private_hello_world():
-    res = requests.get(os.environ["API_URL"])
-    return dict(json.loads(res.content))
-
 def get_task_by_uid(uid):
     res = requests.get(os.environ["API_URL"] + urljoin(os.environ["GET_TASK_BY_UID"], uid))
     return dict(json.loads(res.content))

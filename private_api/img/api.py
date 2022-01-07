@@ -58,7 +58,7 @@ async def get_task_by_uid(uid: str):
 ######## INPUTS ########
 ######## PUBLIC ########
 @app.post(urljoin(os.environ['POST_TASK_BY_MODEL_ID'], "{model_id}"))
-async def post_task_by_model_id(model_id: int, file: UploadFile = File(...)):
+async def post_task_by_model_id(model_id: int, zip_file: UploadFile = File(...)):
     # Give this request a unique identifier
     uid = secrets.token_urlsafe(32)
 
@@ -84,7 +84,7 @@ async def post_task_by_model_id(model_id: int, file: UploadFile = File(...)):
 
     logging.info(f"{uid}: Extract uploaded zipfile to input_folder")
     with open(input_zip, 'wb') as out_file:
-        out_file.write(file.file.read())
+        out_file.write(zip_file.file.read())
 
     logging.info(f"{uid}: Define the DB-entry for the task")
     t = Task(uid=uid,
@@ -106,29 +106,28 @@ async def post_task_by_model_id(model_id: int, file: UploadFile = File(...)):
     return t
 
 
-@app.get(urljoin(os.environ['GET_INPUT_BY_ID'], "{id}"))
-async def get_input_by_id(id: int):
+@app.get(urljoin(os.environ['GET_INPUT_ZIP_BY_ID'], "{id}"))
+async def get_input_zip_by_id(id: int):
     with Session() as s:
         t = s.query(Task).filter_by(id=id).first()
+
+
     if os.path.exists(t.input_zip):
         return FileResponse(t.input_zip)
     else:
-        raise HTTPException(status_code=404, detail="Input zip not found")
+        raise HTTPException(status_code=404, detail="Input zip not found - try posting task again")
 
 
 ######## OUTPUTS ########
-@app.post(urljoin(os.environ['POST_OUTPUT_BY_UID'], "{uid}"))
-async def post_output_by_uid(uid: str, file: UploadFile = File(...)):
+@app.post(urljoin(os.environ['POST_OUTPUT_ZIP_BY_UID'], "{uid}"))
+async def post_output_by_uid(uid: str, zip_file: UploadFile = File(...)):
     with Session() as s:
         # Get the task
         t = s.query(Task).filter_by(uid=uid).first()
 
-        # Extract uploaded zipfile to output_zip_path
+        # Write zip_file to task.output_zip
         with open(t.output_zip, 'wb') as out_file:
-            out_file.write(file.file.read())
-
-        # Publish the finished job to "finished_jobs"
-        DisposablePikaConnection(exchange="", queue=os.environ["FINISHED_JOB_QUEUE"], body=t.uid, uid=t.uid, host=os.environ["RABBIT_HOST"])
+            out_file.write(zip_file.file.read())
 
         # Set task as finished and finished_datetime
         t.is_finished = True
@@ -137,10 +136,14 @@ async def post_output_by_uid(uid: str, file: UploadFile = File(...)):
         # Save changes
         s.commit()
         s.refresh(t)
+
+        # Publish the finished job to "finished_jobs"
+        DisposablePikaConnection(exchange="", queue=os.environ["FINISHED_JOB_QUEUE"], body=t.uid, uid=t.uid, host=os.environ["RABBIT_HOST"])
+
         return t
 
 ######## PUBLIC ########
-@app.get(urljoin(os.environ['GET_OUTPUT_BY_ID'], "{id}"))
+@app.get(urljoin(os.environ['GET_OUTPUT_ZIP_BY_ID'], "{id}"))
 async def get_output_by_id(id: int):
     # Zip the output for return
     with Session() as s:
@@ -171,7 +174,10 @@ async def post_model(container_tag: str,
                      output_mountpoint: str,
                      model_mountpoint: Optional[str] = None,
                      description: Optional[str] = None,
-                     file: UploadFile = File(...)):
+                     zip_file: UploadFile = File(...),
+                     model_available: Optional[bool] = True,
+                     use_gpu: Optional[bool] = True,
+                     ):
 
     """
     :param description: description of model
@@ -180,26 +186,34 @@ async def post_model(container_tag: str,
     :param output_mountpoint: path to where the docker container dumps output
     :param model_mountpoint: path to where the docker container expects the a model to be located. optional
     :param file:
-    :return:
+    :param model_available: set to False if model volume is not used
+    :param use_gpu: Set True if model requires GPU and to False if CPU only. Will eventually become two queues
+    :return: Returns the dict of the model updated from DB
     """
 
     uid = secrets.token_urlsafe(32)
-    model_path = os.path.join(model_base_folder, uid)
+    model_zip = os.path.join(model_base_folder, uid, "model.zip")
 
     # Create model_path
-    if not os.path.exists(model_path):
-        os.makedirs(model_path)
+    if not os.path.exists(os.path.dirname(model_zip)):
+        os.makedirs(os.path.dirname(model_zip))
     else:
         raise Exception(f"{uid}: Two models with same UID!?")
+
+    # write model_zip to model_zip
+    with open(model_zip, 'wb') as f:
+        f.write(zip_file.file.read())
 
     m = Model(
         uid=uid,
         description=description,
         container_tag=container_tag,
-        model_path=model_path,
+        model_zip=model_zip,
         input_mountpoint=input_mountpoint,
         output_mountpoint=output_mountpoint,
-        model_mountpoint=model_mountpoint
+        model_mountpoint=model_mountpoint,
+        model_available=model_available,
+        use_gpu=use_gpu
     )
 
     ## Add model to DB
@@ -207,15 +221,6 @@ async def post_model(container_tag: str,
         s.add(m)
         s.commit()
         s.refresh(m)
-
-    # Extract model_zip to model_path. This path serves as the source for model_mountpoint in the container
-    with tempfile.TemporaryFile() as tmp_model_file:
-        # Write UploadFile to tmp_model_file
-        tmp_model_file.write(file.file.read())
-
-        # Extract tmp_model_file to model_path
-        with zipfile.ZipFile(tmp_model_file, "r") as zip:
-            zip.extractall(path=model_path)
 
     return m
 
@@ -229,5 +234,22 @@ async def get_model_by_id(uid: str):
     with Session() as s:
         return s.query(Model).filter_by(uid=uid).first()
 
+@app.get(os.environ['GET_MODELS'])
+async def get_models():
+    with Session() as s:
+        return list(s.query(Model))
+
+@app.get(urljoin(os.environ['GET_MODEL_ZIP_BY_ID'], "{id}"))
+async def get_model_zip_by_id(id: int):
+    with Session() as s:
+        m = s.query(Model).filter_by(id=id).first()
+
+    if os.path.exists(m.model_zip):
+        return FileResponse(m.model_zip)
+    else:
+        raise HTTPException(status_code=404, detail="Model zip not found - try posting task again")
+
+
+######## OUTP
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=os.environ.get("API_PORT"))

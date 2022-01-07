@@ -11,22 +11,24 @@ class TestModelAndInputsAPI(unittest.TestCase):
     def setUp(self):
         self.api_url = os.environ.get("API_URL")
         self.model_context = {
-            "container_tag": "mathiser/nnunet:nnunet_base",
+            "container_tag": "mathiser/nnunet:5003_wholeheart",
             "input_mountpoint": "/input",
             "output_mountpoint": "/output",
             "model_mountpoint": "/model",
-            "model_zip": "/data/model.zip"
+            "file_zip": "/data/model.zip"
         }
 
     def test_private_api(self):
         # Post a model
-        with open(self.model_context["model_zip"], "rb") as r:
+        with open(self.model_context["file_zip"], "rb") as r:
             res = post_model(
                 container_tag=self.model_context["container_tag"],
                 input_mountpoint=self.model_context["input_mountpoint"],
                 output_mountpoint=self.model_context["output_mountpoint"],
                 model_mountpoint=self.model_context["model_mountpoint"],
-                model_zip=r
+                zip_file=r,
+                model_available=True,
+                use_gpu=True
                )
         print(res)
         print(res.content)
@@ -67,7 +69,7 @@ class TestModelAndInputsAPI(unittest.TestCase):
     # test_post_task
         input_file = "/data/input.zip"
         with open(input_file, "rb") as r:
-            res = post_task_by_model_id(model_id=self.post_model_res["id"], file=r)
+            res = post_task_by_model_id(model_id=self.post_model_res["id"], zip_file=r)
         print(res)
         print(res.content)
         task = dict(json.loads(res.content))
