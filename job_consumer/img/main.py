@@ -3,9 +3,10 @@ import functools
 import logging
 import os
 import threading
+import uuid
 
 import docker
-from docker_utils import DockerHandler
+from docker_utils import DockerHandler, DockerVolumeHandler
 from api_calls import *
 from file_handling import *
 from init_rabbit import rabbit_channel, rabbit_connection
@@ -52,35 +53,39 @@ def do_work(connection, channel, delivery_tag, body):
         for p in [input_folder, output_folder]:
             os.makedirs(p)
 
+        if not DockerVolumeHandler.volume_exists(model["model_volume"]):
+            DockerVolumeHandler.create_volume_from_response(get_model_zip_by_id(model["id"]), model["model_volume"])
 
-        unzip_response_to_location(get_input_zip_by_id(task["id"]), input_folder)
+        if not DockerVolumeHandler.volume_exists(input_folder):
+            input_volume_uuid = DockerVolumeHandler.create_volume_from_response(get_input_zip_by_id(task["id"]))
 
-        # Unzip input to input_folder
-        logging.info(f"{uid}: Unzipping input_zip to {input_folder}")
+        output_volume_uuid = str(uuid.uuid4()) ## Just assigning a uuid -> on mount do docker container it will be created.
 
-        dh = DockerHandler(input_folder=input_folder,
-                           output_folder=output_folder,
-                           task=task,
-                           model=model
-                           )
+        logging.info(f"input_volume_uuid: {input_volume_uuid}")
+        logging.info(f"output_volume_uuid: {output_volume_uuid}")
 
-        dh.run()
+    # Unzip input to input_folder
+    logging.info(f"{uid}: Unzipping input_zip to {input_folder}")
+    unzip_response_to_location(get_input_zip_by_id(task["id"]), input_folder)
+    logging.info(f"{uid}: Input files: {os.listdir(input_folder)}")
 
-        # Zip the output_folder tmp_output_zip
-        logging.info(f"{uid}: Zipping {output_folder}")
-        tmp_output_zip = zip_folder_to_tmpfile(output_folder)
+    dh = DockerHandler(input_volume_uuid=input_volume_uuid,
+                       output_volume_uuid=output_volume_uuid,
+                       task=task,
+                       model=model
+                       )
+    dh.run()
 
-        # Post tmp_output_zip to DB/output
-        logging.info(f"{uid}: Posting output to DB")
-        res = post_output_by_uid(uid, tmp_output_zip)
+    # Use a helper container to zip output volume and ship to DB
+    url = os.environ.get('API_URL') + urljoin(os.environ.get('POST_OUTPUT_ZIP_BY_UID'), task['uid'])
+    DockerVolumeHandler.send_volume(volume_uuid=output_volume_uuid, url=url)
 
-        if res.ok:
-            tmp_output_zip.close()
-            logging.info(f"{uid}: Success posting {tmp_output_zip}!")
-            cb = functools.partial(ack_message, channel, delivery_tag, uid) ## Acknowledgement callback
-            connection.add_callback_threadsafe(cb)
-        else:
-            logging.error("Error in posting output zip to DB")
+    # Delete docker volumes as they are not needed anymore
+    DockerVolumeHandler.delete_volume(input_volume_uuid)
+    DockerVolumeHandler.delete_volume(output_volume_uuid)
+
+    cb = functools.partial(ack_message, channel, delivery_tag, uid) ## Acknowledgement callback
+    connection.add_callback_threadsafe(cb)
 
 def on_message(channel, method_frame, header_frame, body, args):
     (connection, threads) = args

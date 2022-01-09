@@ -1,5 +1,6 @@
 import logging
 import os
+import uuid
 
 import docker
 
@@ -9,11 +10,13 @@ from file_handling import *
 LOG_FORMAT = ('%(levelname)s:%(asctime)s:%(message)s')
 logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT)
 
+
 class DockerHandler:
-    def __init__(self, input_folder, output_folder, model, task):
-        self.input_folder = input_folder
-        self.output_folder = output_folder
+    def __init__(self, input_volume_uuid, output_volume_uuid, model, task):
+        self.input_volume_uuid = input_volume_uuid
+        self.output_volume_uuid = output_volume_uuid
         self.model = model
+        self.model_volume_uuid = self.model["model_volume"]
         self.task = task
         self.cli = docker.from_env()
         self.kw = {}
@@ -22,67 +25,44 @@ class DockerHandler:
         self.set_keywords()
 
         ## Check if model exists, else pull and create volume:
-        if not self.volume_exists():
+
+        if not DockerVolumeHandler().volume_exists(self.input_volume_uuid):
             logging.info("Model volume does not exit. Pulling from db and creating")
-            self.create_volume()
+            raise Exception("Input volume does not exist while it should")
 
-    def volume_exists(self):
-        return self.model["model_volume"] in [v.name for v in self.cli.volumes.list()]
-
-    def create_volume(self):
-        # Pull_model_zip_and_extract_to_tmp
-        # Set a tmp path and create
-        self.tmp_model_folder = os.path.join("/tmp", self.model["model_volume"])
-        if not os.path.exists(self.tmp_model_folder):
-            os.makedirs(self.tmp_model_folder)
-
-        # Stream content to temp file and unzip to tmp_model_folder
-        # Returns the model folder path
-        unzip_response_to_location(get_model_zip_by_id(self.model["id"]), self.tmp_model_folder)
-
-        # Create docker volume named self.model["model_volume"] --> This is the uid of the model.
-        self.cli.volumes.create(name=self.model["model_volume"])
-
-        # Create a helper container and mount
-        tmp_container = self.cli.containers.create(image="busybox",
-                                                   command="true",
-                                                   volumes={self.model["model_volume"]: {"bind": "/data", "mode": "rw"}}
-                                                   )
-        # Tar and untar the tmp_model_folder to /data
-        tmp_tar = tar_folder_to_tmpfile(self.tmp_model_folder)
-        tmp_container.put_archive("/data", tmp_tar)
-        tmp_tar.close()
-
-        # Remove the container - We have sucessfully made a volume with the model folder on.
-        return tmp_container.remove()
+        if self.model["model_available"]:
+            if not DockerVolumeHandler().volume_exists(self.model_volume_uuid):
+                raise Exception("Model volume does not exist while it should")
 
     def set_keywords(self):
         ## Prepare docker keywords ###
-        kw = {}
+        self.kw = {}
 
         ## Full access to ram
-        kw["ipc_mode"] = "host"
+        self.kw["ipc_mode"] = "host"
 
         # Set input, output and model volumes // see https://docker-py.readthedocs.io/en/stable/containers.html
-        kw["volumes"] = {}
+        self.kw["volumes"] = {}
 
         # Mount point of input to container
-        kw["volumes"][self.input_folder] = {"bind": self.model["input_mountpoint"],
-                                            "mode": "ro"}
+        self.kw["volumes"][self.input_volume_uuid] = {"bind": self.model["input_mountpoint"],
+                                                      "mode": "ro"}
 
         # Mount point of output to container
-        kw["volumes"][self.output_folder] = {"bind": self.model["output_mountpoint"],
-                                             "mode": "rw"}
+        self.kw["volumes"][self.output_volume_uuid] = {"bind": self.model["output_mountpoint"],
+                                                       "mode": "rw"}
 
         # Mount point of model volume to container if exists
         if self.model["model_available"]:
-            kw["volumes"][self.model["model_volume"]] = {"bind": self.model["model_mountpoint"],
-                                                         "mode": "ro"}
+            self.kw["volumes"][self.model_volume_uuid] = {"bind": self.model["model_mountpoint"],
+                                                          "mode": "ro"}
 
         # Allow GPU usage if "use_gpu" is True
         if self.model["use_gpu"]:
-            kw["device_requests"] = [
+            self.kw["device_requests"] = [
                 docker.types.DeviceRequest(count=-1, capabilities=[['gpu']])]
+
+        self.kw["remove"] = True
 
     def run(self):
         logging.info(f"{self.task['uid']} Running job!")
@@ -90,13 +70,82 @@ class DockerHandler:
         logging.info(f"{self.task['uid']} {self.task}")
         logging.info(f"{self.task['uid']} Model:")
         logging.info(f"{self.task['uid']} {self.model}")
+        logging.info(f"{self.task['uid']} Keywords:")
+        logging.info(f"{self.task['uid']} {self.kw}")
 
         try:
-            if len(self.kw.keys()) != 0:
-                self.cli.containers.run(image=self.model["container_tag"],
-                                        command=None,# Already defaults to None, but for explicity
-                                        **self.kw)
-            else:
-                logging.warning("Set keywords with set_keywords() before run()")
+            tmp_container = self.cli.containers.run(image=self.model["container_tag"],
+                                    command=None,  # Already defaults to None, but for explicity
+                                    **self.kw)
+            logging.info(tmp_container)
         except Exception as e:
             logging.error(e)
+
+    def close(self):
+        self.cli.close()
+
+class DockerVolumeHandler:
+    @staticmethod
+    def volume_exists(uuid):
+        cli = docker.from_env()
+        b = uuid in [v.name for v in cli.volumes.list()]
+        cli.close()
+
+        return b
+    @staticmethod
+    def create_volume_from_response(res, volume_uuid=str(uuid.uuid4())):
+        cli = docker.from_env()
+
+        # Pull_model_zip_and_extract_to_tmp
+        # Set a tmp path and create
+        with tempfile.TemporaryDirectory() as tmp_vol_folder:
+            vol_dir = os.path.join(tmp_vol_folder, "vol")
+
+            # Stream content to temp file and unzip to tmp_vol_folder
+            # Returns the model folder path
+            unzip_response_to_location(res, vol_dir)
+
+            # Create docker volume named with uid.
+            cli.volumes.create(name=volume_uuid)
+
+            # Create a helper container and mount
+            tmp_container = cli.containers.create(image="busybox",
+                                                  command=None,
+                                                  volumes={volume_uuid: {"bind": "/data", "mode": "rw"}},
+                                                  )
+            # Tar and untar the tmp_vol_folder to /data
+            with tempfile.TemporaryDirectory() as tar_folder:
+                tar_file = os.path.join(tar_folder, "tarfile")
+                with tarfile.TarFile(tar_file, mode="w") as tar:
+                    for file in os.listdir(vol_dir):
+                        tar.add(os.path.join(vol_dir, file), arcname=file)
+
+                with open(tar_file, "rb") as r:
+                    tmp_container.put_archive("/data", r.read())
+
+        # Remove the container - We have sucessfully made a volume with the model folder on.
+        tmp_container.remove()
+        cli.close()
+        return volume_uuid
+
+    @staticmethod
+    def delete_volume(uuid):
+        cli = docker.from_env()
+        res = cli.volumes.get(uuid).remove()
+        cli.close()
+        return res
+    @staticmethod
+    def send_volume(volume_uuid, url):
+        cli = docker.from_env()
+        logging.info("URL to post on: {}".format(url))
+        tmp_container = cli.containers.run("mathiser/inference_server:volume_sender",
+                                       None,
+                                       volumes={volume_uuid: {"bind": '/data', 'mode': 'ro'}},
+                                       environment={
+                                           "URL": url,
+                                           "VOLUME_MOUNTPOINT": "/data"
+                                       },
+                                       remove=True,
+                                       network=os.environ.get("NETWORK_NAME"))
+        logging.info(tmp_container)
+        cli.close()

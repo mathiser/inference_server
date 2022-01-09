@@ -10,4 +10,7 @@ def post_output_by_uid(uid: str, file_like_obj):
     return res
 
 def get_output_zip_by_id(id: int):
-    yield requests.get(os.environ["API_URL"] + urljoin(os.environ["GET_OUTPUT_ZIP_BY_ID"], str(id)), stream=True)
+    return requests.get(os.environ["API_URL"] + urljoin(os.environ["GET_OUTPUT_ZIP_BY_ID"], str(id)), stream=True)
+
+def get_output_zip_by_uid(uid: str):
+    return requests.get(os.environ["API_URL"] + urljoin(os.environ["GET_OUTPUT_ZIP_BY_UID"], uid), stream=True)

@@ -143,11 +143,11 @@ async def post_output_by_uid(uid: str, zip_file: UploadFile = File(...)):
         return t
 
 ######## PUBLIC ########
-@app.get(urljoin(os.environ['GET_OUTPUT_ZIP_BY_ID'], "{id}"))
-async def get_output_by_id(id: int):
+@app.get(urljoin(os.environ['GET_OUTPUT_ZIP_BY_UID'], "{uid}"))
+async def get_output_by_uid(uid: str):
     # Zip the output for return
     with Session() as s:
-        task = s.query(Task).filter_by(id=id).first()
+        task = s.query(Task).filter_by(uid=uid).first()
 
         if task.is_finished:  ## Not doing this with os.path.exists(task.output.zip) to avoid that some of the file is sent before all written
             return FileResponse(task.output_zip)
