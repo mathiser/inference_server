@@ -16,7 +16,7 @@ services:
       - "8080:8080"
     volumes:
       # So that Traefik can listen to the Docker events
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
 
 #  public-api:
 #    restart: always
@@ -47,9 +47,9 @@ services:
       POSTGRES_DB: ${DB_NAME}
     env_file:
       - .env
-      #volumes:
-    #  - ${LOGS_VOLUME}:${LOGGING_DIR}
-    #  - ${DB_VOLUME}:/var/lib/postgresql/data
+    volumes:
+      - ${LOGS_VOLUME}:${LOGGING_DIR}
+      - ${DB_VOLUME}:/var/lib/postgresql/data
 
   api:
     hostname: ${API_HOST}
@@ -71,10 +71,10 @@ services:
     build:
       context: private_api/img/
       dockerfile: Dockerfile
-    #volumes:
-    #  - ${DATA_VOLUME}:${DATA_DIR}
-    #  - ${LOGS_VOLUME}:${LOGGING_DIR}
-    #  - ${MODELS_VOLUME}:${MODELS_DIR}
+    volumes:
+     - ${DATA_VOLUME}:${DATA_DIR}
+     - ${LOGS_VOLUME}:${LOGGING_DIR}
+     - ${MODELS_VOLUME}:${MODELS_DIR}
 
   rabbit:
     restart: on-failure
@@ -101,15 +101,9 @@ services:
       dockerfile: Dockerfile
     environment:
       - PYTHONUNBUFFERED=1
-    ipc: host
-    #deploy:
-    #  resources:
-    #    reservations:
-    #      devices:
-    #        - capabilities: [ gpu ]
     volumes:
-      ## needed to run docker in docker with GPU-support
-      - /var/run/docker.sock:/var/run/docker.sock
+      # needed to dispatch docker containers from inside a docker container
+      - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
      # - ${LOGS_VOLUME}:${LOGGING_DIR}
 
 ## Volumes must match names in .env!
