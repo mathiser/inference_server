@@ -96,9 +96,9 @@ class TestModelAndInputsAPI(unittest.TestCase):
                         f.write(chunk)
                 break
             else:
-                time.sleep(5)
-                counter += 5
-                print("sleeeeping ... slep for {} seconde".format(counter))
+                time.sleep(1)
+                counter += 1
+                print("sleeeeping ... slept for {} seconds".format(counter))
 
 if __name__ == '__main__':
     unittest.main()
