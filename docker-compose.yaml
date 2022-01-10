@@ -18,23 +18,22 @@ services:
       # So that Traefik can listen to the Docker events
       - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
 
-#  public-api:
-#    restart: always
-#    build:
-#      context: ./public_api/img/
-#      dockerfile: Dockerfile
-#    hostname: ${PUBLIC_API_HOST}
-#    command: uvicorn --host "0.0.0.0" --port ${PUBLIC_API_PORT} api:app
-#    env_file:
-#      - .env
-#    ports:
-#      - ${PUBLIC_API_PORT}:${PUBLIC_API_PORT}
-#    labels:
-#      - "traefik.http.routers.${PUBLIC_API_HOST}.rule=Host(`localhost`)"
-#      - "traefik.http.services.${PUBLIC_API_HOST}.loadbalancer.server.port=${PUBLIC_API_PORT}"
-#    volumes:
-#      - log_storage:/logs
-#      - ${DATA_VOLUME}:/data
+  public-api:
+    restart: always
+    build:
+      context: ./public_api/img/
+      dockerfile: Dockerfile
+    hostname: ${PUBLIC_API_HOST}
+    command: uvicorn --host "0.0.0.0" --port ${PUBLIC_API_PORT} api:app
+    env_file:
+      - .env
+    ports:
+      - ${PUBLIC_API_PORT}:${PUBLIC_API_PORT}
+    labels:
+      - "traefik.http.routers.${PUBLIC_API_HOST}.rule=Host(`localhost`)"
+      - "traefik.http.services.${PUBLIC_API_HOST}.loadbalancer.server.port=${PUBLIC_API_PORT}"
+    volumes:
+      - log_storage:/logs
 
 
   database:
@@ -61,9 +60,9 @@ services:
       - database
     ports:
       - ${API_PORT}:${API_PORT}
-    labels:
-      - "traefik.http.routers.${API_HOST}.rule=Host(`localhost`)"
-      - "traefik.http.services.${API_HOST}.loadbalancer.server.port=${API_PORT}"
+#    labels:
+#      - "traefik.http.routers.${API_HOST}.rule=Host(`localhost`)"
+#      - "traefik.http.services.${API_HOST}.loadbalancer.server.port=${API_PORT}"
     environment:
       - PYTHONUNBUFFERED=1
     env_file:

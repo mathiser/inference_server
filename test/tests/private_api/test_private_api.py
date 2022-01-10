@@ -4,7 +4,7 @@ import unittest
 import dotenv
 from api_calls import *
 
-dotenv.load_dotenv("/opt/tests/.env")
+dotenv.load_dotenv("/opt/tests/private_api_paths")
 
 unittest.TestLoader.sortTestMethodsUsing = lambda *args: -1
 global task_context, post_model_res, task

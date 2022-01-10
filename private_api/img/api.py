@@ -57,11 +57,8 @@ async def get_task_by_uid(uid: str):
 
 ######## INPUTS ########
 ######## PUBLIC ########
-@app.post(urljoin(os.environ['POST_TASK_BY_MODEL_ID'], "{model_id}"))
-async def post_task_by_model_id(model_id: int, zip_file: UploadFile = File(...)):
-    # Give this request a unique identifier
-    uid = secrets.token_urlsafe(32)
-
+@app.post(os.environ['POST_TASK_BY_MODEL_ID'])
+async def post_task_by_model_id(model_id: int, zip_file: UploadFile = File(...), uid=secrets.token_urlsafe(32)):
     logging.info(f"{uid}: Received a task with model_id: {model_id}")
 
     logging.info("{uid}: Define input folder and output folders")
@@ -190,7 +187,6 @@ async def post_model(container_tag: str,
     :param use_gpu: Set True if model requires GPU and to False if CPU only. Will eventually become two queues
     :return: Returns the dict of the model updated from DB
     """
-
     uid = secrets.token_urlsafe(32)
     model_zip = os.path.join(model_base_folder, uid, "model.zip")
 

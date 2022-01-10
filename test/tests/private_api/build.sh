@@ -1,0 +1,1 @@
+docker build . -t inference_server_test_private_api

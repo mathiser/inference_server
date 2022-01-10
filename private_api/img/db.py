@@ -33,12 +33,7 @@ while True:
         Base.metadata.create_all(engine)
         Session = sessionmaker(bind=engine)
         database = databases.Database(DATABASE_URL)
-
-
-
-
         break
     except Exception as e:
         logging.error(e)
         sleep(1)
-
