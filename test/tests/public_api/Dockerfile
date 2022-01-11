@@ -4,6 +4,6 @@ RUN apt-get update
 ADD requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 
-COPY ./tests /opt/tests
+COPY . /opt/tests
 WORKDIR /opt/tests
-CMD ["/usr/local/bin/python", "-m", "unittest",  "test_private_api.py"]
+CMD ["/usr/local/bin/python", "-m", "unittest",  "test_public_api.py"]

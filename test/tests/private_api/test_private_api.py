@@ -3,8 +3,8 @@ import time
 import unittest
 import dotenv
 from api_calls import *
-
-dotenv.load_dotenv("/opt/tests/.env")
+import requests
+dotenv.load_dotenv("/opt/tests/private_api_paths")
 
 unittest.TestLoader.sortTestMethodsUsing = lambda *args: -1
 global task_context, post_model_res, task
@@ -22,6 +22,7 @@ class TestModelAndInputsAPI(unittest.TestCase):
         }
 
     def test_private_api(self):
+        print("def test_private_api(self):")
         # Post a model
         with open(self.model_context["file_zip"], "rb") as r:
             res = post_model(
@@ -50,6 +51,7 @@ class TestModelAndInputsAPI(unittest.TestCase):
 
 
     def test_get_model_by_id(self):
+        print("def test_get_model_by_id(self):")
         global post_model_res
         model = get_model_by_id(post_model_res["id"])
 
@@ -61,6 +63,7 @@ class TestModelAndInputsAPI(unittest.TestCase):
         self.assertEqual(model["model_mountpoint"], self.model_context["model_mountpoint"])
 
     def test_get_model_by_uid(self):
+        print("def test_get_model_by_uid(self):")
         global post_model_res
         model = get_model_by_uid(post_model_res["uid"])
 
@@ -71,11 +74,17 @@ class TestModelAndInputsAPI(unittest.TestCase):
         self.assertEqual(model["output_mountpoint"], self.model_context["output_mountpoint"])
         self.assertEqual(model["model_mountpoint"], self.model_context["model_mountpoint"])
 
+
     def test_post_task(self):
+        print("def test_post_task(self):")
         global post_model_res, task
         input_file = "/data/input.zip"
+        params = {
+            "model_id": post_model_res["id"],
+        }
         with open(input_file, "rb") as r:
-            res = post_task_by_model_id(model_id=post_model_res["id"], zip_file=r)
+            res = requests.post(os.environ["API_URL"] + os.environ["POST_TASK_BY_MODEL_ID"],
+                                files={"zip_file": r}, params=params)
         print(res)
         print(res.content)
 
@@ -85,6 +94,7 @@ class TestModelAndInputsAPI(unittest.TestCase):
         print(task)
 
     def test_get_output(self):
+        print("def test_get_output(self):")
         global task
         os.makedirs(f"/data/{task['uid']}")
         counter = 0
