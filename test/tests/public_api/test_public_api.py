@@ -40,7 +40,8 @@ class TestPublicAPIModelAndInputs(unittest.TestCase):
                 "use_gpu": True
             }
             res = requests.post(os.environ.get("PROXY_URL") + os.environ["PUBLIC_POST_MODEL"], params=params,
-                                files={"zip_file": r})
+                                files={"zip_file": r},
+                                )
 
         print(f"res: {res}")
         print(res.content)
@@ -63,7 +64,7 @@ class TestPublicAPIModelAndInputs(unittest.TestCase):
         with open(input_file, "rb") as r:
             url = os.environ.get("PROXY_URL") + urljoin(os.environ["PUBLIC_POST_TASK_BY_MODEL_ID"], str(holder.post_model_res["id"]))
             print(f"Posting on {url}")
-            res = requests.post(url, files={"zip_file": r})
+            res = requests.post(url, files={"zip_file": r}, )
         self.assertTrue(res.ok)
 
         print(res)
@@ -79,7 +80,8 @@ class TestPublicAPIModelAndInputs(unittest.TestCase):
         while True:
             res = requests.get(os.environ.get("PROXY_URL") + urljoin(os.environ["PUBLIC_GET_OUTPUT_ZIP_BY_UID"],
                                holder.task["uid"]),
-                               stream=True)
+                               stream=True,
+                               )
 
             if res.ok:
                 with open(f"/data/{holder.task['uid']}/output.zip", "wb") as f:
