@@ -9,7 +9,7 @@ import logging
 import os
 import secrets
 from datetime import datetime
-from init_db import Session, input_base_folder, output_base_folder, model_base_folder, database
+from db import Session, input_base_folder, output_base_folder, model_base_folder, database
 from disposable_rabbit_connection import DisposablePikaConnection
 from models import Task, Model
 import zipfile
@@ -58,7 +58,10 @@ async def get_task_by_uid(uid: str):
 ######## INPUTS ########
 ######## PUBLIC ########
 @app.post(os.environ['POST_TASK_BY_MODEL_ID'])
-async def post_task_by_model_id(model_id: int, zip_file: UploadFile = File(...), uid=secrets.token_urlsafe(32)):
+async def post_task_by_model_id(model_id: int, zip_file: UploadFile = File(...), uid=None):
+    if not uid:
+        uid = secrets.token_urlsafe(32)
+
     logging.info(f"{uid}: Received a task with model_id: {model_id}")
 
     logging.info("{uid}: Define input folder and output folders")
@@ -141,10 +144,13 @@ async def post_output_by_uid(uid: str, zip_file: UploadFile = File(...)):
 
 ######## PUBLIC ########
 @app.get(urljoin(os.environ['GET_OUTPUT_ZIP_BY_UID'], "{uid}"))
-async def get_output_by_uid(uid: str):
+async def get_output_zip_by_uid(uid: str):
     # Zip the output for return
     with Session() as s:
         task = s.query(Task).filter_by(uid=uid).first()
+        if task is None:
+            raise HTTPException(status_code=404,
+                                detail="Task not in DB yet. If you very recently uploaded it - or uploaded a very large file - try again in a moment")
 
         if task.is_finished:  ## Not doing this with os.path.exists(task.output.zip) to avoid that some of the file is sent before all written
             return FileResponse(task.output_zip)

@@ -33,7 +33,7 @@ services:
       - "traefik.http.routers.${PUBLIC_API_HOST}.rule=Host(`localhost`)"
       - "traefik.http.services.${PUBLIC_API_HOST}.loadbalancer.server.port=${PUBLIC_API_PORT}"
     volumes:
-      - log_storage:/logs
+     - ${LOGS_VOLUME}:${LOGGING_DIR}
 
 
   database:
@@ -59,7 +59,7 @@ services:
       - rabbit
       - database
     ports:
-      - ${API_PORT}:${API_PORT}
+      - ${API_PORT}
 #    labels:
 #      - "traefik.http.routers.${API_HOST}.rule=Host(`localhost`)"
 #      - "traefik.http.services.${API_HOST}.loadbalancer.server.port=${API_PORT}"
@@ -79,7 +79,7 @@ services:
     restart: on-failure
     image: rabbitmq:latest
     ports:
-      - 5672:5672
+      - 5672
     hostname: rabbit
     healthcheck:
       test: [ "CMD", "nc", "-z", "${RABBIT_HOST}", "5672" ]
