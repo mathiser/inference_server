@@ -188,7 +188,7 @@ async def post_model(container_tag: str,
     :param input_mountpoint: path to where the docker container expects the input folder to be mounted
     :param output_mountpoint: path to where the docker container dumps output
     :param model_mountpoint: path to where the docker container expects the a model to be located. optional
-    :param file:
+    :param zip_file: zip file with model content inside.
     :param model_available: set to False if model volume is not used
     :param use_gpu: Set True if model requires GPU and to False if CPU only. Will eventually become two queues
     :return: Returns the dict of the model updated from DB

@@ -5,7 +5,7 @@ import time
 import pika
 
 LOG_FORMAT = ('%(levelname)s:%(asctime)s:%(message)s')
-logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT)
+logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 counter = 0
 while counter < 120:

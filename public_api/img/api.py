@@ -15,6 +15,8 @@ app = FastAPI()
 
 threads = []
 
+LOG_FORMAT = ('%(levelname)s:%(asctime)s:%(message)s')
+logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 @app.get("/")
 def hello_world():

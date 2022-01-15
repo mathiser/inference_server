@@ -2,9 +2,11 @@ import os
 import tempfile
 import zipfile
 from urllib.parse import urljoin
-
+import logging
 import requests
 
+LOG_FORMAT = ('%(levelname)s:%(asctime)s:%(message)s')
+logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 def zip_folder_to_tmpfile(src) -> zipfile.ZipFile:
     tmp_zip = tempfile.TemporaryFile(suffix=".zip")

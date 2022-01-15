@@ -7,15 +7,22 @@ services:
     image: traefik:v2.6
     # Enables the web UI and tells Traefik to listen to docker
     hostname: reverse-proxy
-    command: --api.insecure=true --providers.docker --entrypoints.web.address=:80
-        #- --entrypoints.web-secure.address=:443 #Declares the web-secure entrypoint in Traefik
+    command:
+      #- --api.insecure=true
+      - --providers.docker=true
+      #- --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --providers.file.directory=/configuration/
+      - --providers.file.watch=true
     ports:
-      # The HTTP port
-      - "80:80"
+      - 80:80
+      - 443:443
       # The Web UI (enabled by --api.insecure=true)
-      - "8080:8080"
+      #- 8080:8080
     volumes:
       # So that Traefik can listen to the Docker events
+      - ./traefik/certs:/tools/certs
+      - ./traefik/configuration:/configuration/
       - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
 
   public-api:
@@ -28,10 +35,11 @@ services:
     env_file:
       - .env
     ports:
-      - ${PUBLIC_API_PORT}:${PUBLIC_API_PORT}
+      - ${PUBLIC_API_PORT}
     labels:
-      - "traefik.http.routers.${PUBLIC_API_HOST}.rule=Host(`localhost`)"
-      - "traefik.http.services.${PUBLIC_API_HOST}.loadbalancer.server.port=${PUBLIC_API_PORT}"
+      - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOST}.rule=Host(`omen.onerm.dk`)"
+      - "traefik.http.services.${PROJECT_NAME}_${PUBLIC_API_HOST}.loadbalancer.server.port=${PUBLIC_API_PORT}"
+      - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOST}.tls=${HTTPS_ON}"
     volumes:
      - ${LOGS_VOLUME}:${LOGGING_DIR}
 
