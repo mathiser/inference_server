@@ -1,6 +1,0 @@
-providers:
-  docker:
-    tls:
-    certificates:
-        certFile: /tools/certs/cert.crt
-        keyFile: /tools/certs/cert.key

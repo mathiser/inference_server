@@ -7,7 +7,10 @@ import dotenv
 import requests
 dotenv.load_dotenv("/opt/tests/pub_api_paths")
 import json
+import certifi
 
+verify = os.environ.get("CERT_FILE")
+print(verify)
 
 class Holder:
     def __init__(self):
@@ -26,6 +29,11 @@ holder.model_context = {
 
 unittest.TestLoader.sortTestMethodsUsing = None
 class TestPublicAPIModelAndInputs(unittest.TestCase):
+    def test_hello_world(self):
+        res = requests.get(os.environ.get("PROXY_URL"), verify=verify)
+        self.assertTrue(res)
+        print(res.content)
+
     def test0_pub_post_model_api(self):
         global holder
         print("def test_pub_post_model_api(self):")
@@ -41,7 +49,7 @@ class TestPublicAPIModelAndInputs(unittest.TestCase):
             }
             res = requests.post(os.environ.get("PROXY_URL") + os.environ["PUBLIC_POST_MODEL"], params=params,
                                 files={"zip_file": r},
-                                )
+                                verify=verify)
 
         print(f"res: {res}")
         print(res.content)
@@ -64,7 +72,9 @@ class TestPublicAPIModelAndInputs(unittest.TestCase):
         with open(input_file, "rb") as r:
             url = os.environ.get("PROXY_URL") + urljoin(os.environ["PUBLIC_POST_TASK_BY_MODEL_ID"], str(holder.post_model_res["id"]))
             print(f"Posting on {url}")
-            res = requests.post(url, files={"zip_file": r}, )
+            res = requests.post(url,
+                                files={"zip_file": r},
+                                verify=verify)
         self.assertTrue(res.ok)
 
         print(res)
@@ -81,7 +91,7 @@ class TestPublicAPIModelAndInputs(unittest.TestCase):
             res = requests.get(os.environ.get("PROXY_URL") + urljoin(os.environ["PUBLIC_GET_OUTPUT_ZIP_BY_UID"],
                                holder.task["uid"]),
                                stream=True,
-                               )
+                               verify=verify)
 
             if res.ok:
                 with open(f"/data/{holder.task['uid']}/output.zip", "wb") as f:

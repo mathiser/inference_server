@@ -22,7 +22,7 @@ class Model(Base):
 
     model_available = Column(Boolean, default=True)
     model_zip = Column(String, nullable=True)
-    model_volume = Column(String, default=str(uuid.uuid4()))
+    model_volume = Column(String, default=uuid.uuid4)
     model_mountpoint = Column(String, nullable=True)
 
     input_mountpoint = Column(String, nullable=False)

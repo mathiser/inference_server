@@ -1,20 +1,16 @@
 import atexit
 import functools
-import logging
-import os
 import threading
 import uuid
 
-import docker
-from docker_utils import DockerHandler, DockerVolumeHandler
 from api_calls import *
+from docker_utils import DockerHandler, DockerVolumeHandler
 from file_handling import *
 from init_rabbit import rabbit_channel, rabbit_connection
+import logging
 
-#LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -5s %(funcName) '
-#              '-5s %(lineno) -d: %(message)s')
 LOG_FORMAT = ('%(levelname)s:%(asctime)s:%(message)s')
-logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT)
+logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 def ack_message(channel, delivery_tag, uid):
     """Note that `channel` must be the same pika channel instance via which

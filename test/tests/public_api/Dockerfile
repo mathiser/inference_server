@@ -7,6 +7,8 @@ RUN pip install -r /requirements.txt
 COPY . /opt/tests
 WORKDIR /opt/tests
 
-RUN cat cert.crt >> /usr/local/lib/python3.10/site-packages/certifi/cacert.pem
-RUN cat /usr/local/lib/python3.10/site-packages/certifi/cacert.pem
+ENV CERT_FILE=/opt/tests/certs.pem
+ENV REQUESTS_CA_BUNDLE=""
+
+
 CMD ["/usr/local/bin/python", "-m", "unittest",  "test_public_api.py"]

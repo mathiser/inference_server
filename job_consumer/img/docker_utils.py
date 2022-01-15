@@ -8,7 +8,7 @@ from api_calls import *
 from file_handling import *
 
 LOG_FORMAT = ('%(levelname)s:%(asctime)s:%(message)s')
-logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT)
+logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 
 class DockerHandler:
@@ -66,12 +66,9 @@ class DockerHandler:
 
     def run(self):
         logging.info(f"{self.task['uid']} Running job!")
-        logging.info(f"{self.task['uid']} Task:")
-        logging.info(f"{self.task['uid']} {self.task}")
-        logging.info(f"{self.task['uid']} Model:")
-        logging.info(f"{self.task['uid']} {self.model}")
-        logging.info(f"{self.task['uid']} Keywords:")
-        logging.info(f"{self.task['uid']} {self.kw}")
+        logging.info(f"{self.task['uid']} Task: {self.task}")
+        logging.info(f"{self.task['uid']} Model: {self.model}")
+        logging.info(f"{self.task['uid']} Keywords: {self.kw}")
 
         try:
             tmp_container = self.cli.containers.run(image=self.model["container_tag"],
@@ -93,8 +90,11 @@ class DockerVolumeHandler:
 
         return b
     @staticmethod
-    def create_volume_from_response(res, volume_uuid=str(uuid.uuid4())):
+    def create_volume_from_response(res, volume_uuid=None):
         cli = docker.from_env()
+
+        if not volume_uuid:
+            volume_uuid = str(uuid.uuid4())
 
         # Pull_model_zip_and_extract_to_tmp
         # Set a tmp path and create
