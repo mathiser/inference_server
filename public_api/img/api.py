@@ -64,7 +64,8 @@ def get_output_zip_by_uid(uid: str):
 
 
 ######## MODELS ########
-@app.post(os.environ['PUBLIC_POST_MODEL'])
+#@app.post(os.environ['PUBLIC_POST_MODEL']) This is deprecated already.
+# It should not be possible to upload models from public api. At least for now.
 def post_model(container_tag: str,
                      input_mountpoint: str,
                      output_mountpoint: str,

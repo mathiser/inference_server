@@ -1,10 +1,5 @@
 ## URLS AND HOSTS
-PUBLIC_API_HOST=public-api
-PUBLIC_API_PORT=7000
-
-########## API ############
-
-API_URL=http://${PUBLIC_API_HOST}:${PUBLIC_API_PORT}
+URL=https://omen.onerm.dk
 
 ## TASK API
 ## A "task" is the context with which to run a container on an "input"
@@ -17,3 +12,5 @@ POST_TASK_BY_MODEL_ID="${TASK_PREFIX}/"
 MODEL_PREFIX="/api/models"
 GET_MODEL_BY_UID="${MODEL_PREFIX}/"
 POST_MODEL="${MODEL_PREFIX}/"
+
+CERT_FILE=certs/omen.onerm.dk.pem
