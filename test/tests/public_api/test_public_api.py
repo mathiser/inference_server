@@ -29,28 +29,29 @@ holder.model_context = {
 
 unittest.TestLoader.sortTestMethodsUsing = None
 class TestPublicAPIModelAndInputs(unittest.TestCase):
+
+    unittest.TestLoader.sortTestMethodsUsing = None
+
     def test_hello_world(self):
-        res = requests.get(os.environ.get("PROXY_URL"), verify=verify)
+        res = requests.get(os.environ.get("URL"), verify=verify)
         self.assertTrue(res)
         print(res.content)
 
-    def test0_pub_get_model_api(self):
-        global holder
-
-        res = requests.post(os.environ.get("PROXY_URL") + os.environ["PUBLIC_GET_MODELS"])
+    def test_hello_pub_get_model_api(self):
+        res = requests.get(os.environ.get("URL") + os.environ["PUBLIC_GET_MODELS"], verify=verify)
         print(f"res: {res}")
         print(res.content)
         self.assertTrue(res.ok)
 
-        holder.post_model_res = json.loads(res.content)
+        holder.post_model_res = (json.loads(res.content))[0]
         print(holder.post_model_res)
 
-    def test1_public_post_task(self):
-        global holder
+    def test_public_post_task(self):
+        
         print("def test_public_post_task(self):")
         input_file = "/data/input.zip"
         with open(input_file, "rb") as r:
-            url = os.environ.get("PROXY_URL") + urljoin(os.environ["PUBLIC_POST_TASK_BY_MODEL_ID"], str(holder.post_model_res["id"]))
+            url = os.environ.get("URL") + urljoin(os.environ["PUBLIC_POST_TASK_BY_MODEL_ID"], str(holder.post_model_res["id"]))
             print(f"Posting on {url}")
             res = requests.post(url,
                                 files={"zip_file": r},
@@ -62,13 +63,13 @@ class TestPublicAPIModelAndInputs(unittest.TestCase):
         holder.task = dict(json.loads(res.content))
         print(f"Task: {holder.task}")
 
-    def test2_get_output(self):
-        global holder
+   # def test_public_get_output(self):
+        print(holder.task)
         print("def test_get_output(self):")
         os.makedirs(f"/data/{holder.task['uid']}")
         counter = 0
         while True:
-            res = requests.get(os.environ.get("PROXY_URL") + urljoin(os.environ["PUBLIC_GET_OUTPUT_ZIP_BY_UID"],
+            res = requests.get(os.environ.get("URL") + urljoin(os.environ["PUBLIC_GET_OUTPUT_ZIP_BY_UID"],
                                holder.task["uid"]),
                                stream=True,
                                verify=verify)

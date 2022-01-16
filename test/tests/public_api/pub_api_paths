@@ -1,7 +1,7 @@
 ######### PUBLIC API #########
 ## URLS AND HOSTS
 PUBLIC_HOST=omen.onerm.dk
-PROXY_URL=https://${PUBLIC_HOST}
+URL=https://${PUBLIC_HOST}
 
 ## TASK API
 ## A "task" is the context with which to run a container on an "input"
