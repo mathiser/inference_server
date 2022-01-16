@@ -1,3 +1,4 @@
+import uuid
 from typing import Optional
 from urllib.parse import urljoin
 
@@ -211,6 +212,7 @@ async def post_model(container_tag: str,
         description=description,
         container_tag=container_tag,
         model_zip=model_zip,
+        model_volume=str(uuid.uuid4()),
         input_mountpoint=input_mountpoint,
         output_mountpoint=output_mountpoint,
         model_mountpoint=model_mountpoint,

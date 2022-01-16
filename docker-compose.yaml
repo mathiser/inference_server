@@ -61,16 +61,12 @@ services:
   api:
     hostname: ${API_HOST}
     command: uvicorn --host "0.0.0.0" --port ${API_PORT} api:app
-    #command: bash -c python3 -u api.py
     restart: on-failure
     depends_on:
       - rabbit
       - database
     ports:
       - ${API_PORT}
-#    labels:
-#      - "traefik.http.routers.${API_HOST}.rule=Host(`localhost`)"
-#      - "traefik.http.services.${API_HOST}.loadbalancer.server.port=${API_PORT}"
     environment:
       - PYTHONUNBUFFERED=1
     env_file:

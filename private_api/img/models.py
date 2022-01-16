@@ -12,7 +12,7 @@ class Model(Base):
     __tablename__ = "models"
 
     id = Column(Integer, primary_key=True)
-    uid = Column(String, default=secrets.token_urlsafe(32))
+
     tasks = relationship("Task", back_populates="model")
 
     description = Column(String, nullable=True)
@@ -34,7 +34,7 @@ class Task(Base):
     __tablename__ = "tasks"
 
     id = Column(Integer, primary_key=True)
-    uid = Column(String, default=secrets.token_urlsafe(32))
+    uid = Column(String)
 
     model_id = Column(Integer, ForeignKey("models.id"), nullable=False)
     model = relationship("Model", back_populates="tasks")
