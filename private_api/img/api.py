@@ -208,7 +208,6 @@ async def post_model(container_tag: str,
         f.write(zip_file.file.read())
 
     m = Model(
-        uid=uid,
         description=description,
         container_tag=container_tag,
         model_zip=model_zip,
@@ -233,11 +232,6 @@ async def get_model_by_id(id: int):
     with Session() as s:
         return s.query(Model).filter_by(id=id).first()
 
-@app.get(urljoin(os.environ['GET_MODEL_BY_UID'], "{uid}"))
-async def get_model_by_id(uid: str):
-    with Session() as s:
-        return s.query(Model).filter_by(uid=uid).first()
-
 @app.get(os.environ['GET_MODELS'])
 async def get_models():
     with Session() as s:
@@ -254,6 +248,5 @@ async def get_model_zip_by_id(id: int):
         raise HTTPException(status_code=404, detail="Model zip not found - try posting task again")
 
 
-######## OUTP
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=os.environ.get("API_PORT"))

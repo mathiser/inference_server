@@ -4,32 +4,38 @@ import unittest
 import dotenv
 from api_calls import *
 import requests
+
 dotenv.load_dotenv("/opt/tests/private_api_paths")
 
-unittest.TestLoader.sortTestMethodsUsing = lambda *args: -1
-global task_context, post_model_res, task
+class Holder:
+    def __init__(self):
+        self.model_context = None
+        self.post_model_res = None
+        self.task = None
 
+holder = Holder()
+holder.model_context = {
+    "container_tag": "mathiser/nnunet:5003_wholeheart",
+    "input_mountpoint": "/input",
+    "output_mountpoint": "/output",
+    "model_mountpoint": "/model",
+    "file_zip": "/data/model.zip"
+}
+
+unittest.TestLoader.sortTestMethodsUsing = None
 
 class TestModelAndInputsAPI(unittest.TestCase):
-    def setUp(self):
-        self.api_url = os.environ.get("API_URL")
-        self.model_context = {
-            "container_tag": "mathiser/nnunet:5003_wholeheart",
-            "input_mountpoint": "/input",
-            "output_mountpoint": "/output",
-            "model_mountpoint": "/model",
-            "file_zip": "/data/model.zip"
-        }
+    def test0_private_api(self):
+        global holder
 
-    def test_private_api(self):
         print("def test_private_api(self):")
         # Post a model
-        with open(self.model_context["file_zip"], "rb") as r:
+        with open(holder.model_context["file_zip"], "rb") as r:
             res = post_model(
-                container_tag=self.model_context["container_tag"],
-                input_mountpoint=self.model_context["input_mountpoint"],
-                output_mountpoint=self.model_context["output_mountpoint"],
-                model_mountpoint=self.model_context["model_mountpoint"],
+                container_tag=holder.model_context["container_tag"],
+                input_mountpoint=holder.model_context["input_mountpoint"],
+                output_mountpoint=holder.model_context["output_mountpoint"],
+                model_mountpoint=holder.model_context["model_mountpoint"],
                 zip_file=r,
                 model_available=True,
                 use_gpu=True
@@ -38,49 +44,33 @@ class TestModelAndInputsAPI(unittest.TestCase):
         print(res.content)
         self.assertTrue(res.ok)
 
-        global post_model_res
-        post_model_res = dict(json.loads(res.content))
-        print(post_model_res)
+        holder.post_model_res = dict(json.loads(res.content))
+        print(holder.post_model_res)
 
-        self.assertIn("uid", post_model_res.keys())
-        self.assertIn("id", post_model_res.keys())
-        self.assertEqual(post_model_res["container_tag"], self.model_context["container_tag"])
-        self.assertEqual(post_model_res["input_mountpoint"], self.model_context["input_mountpoint"])
-        self.assertEqual(post_model_res["output_mountpoint"], self.model_context["output_mountpoint"])
-        self.assertEqual(post_model_res["model_mountpoint"], self.model_context["model_mountpoint"])
+        self.assertIn("id", holder.post_model_res.keys())
+        self.assertEqual(holder.post_model_res["container_tag"], holder.model_context["container_tag"])
+        self.assertEqual(holder.post_model_res["input_mountpoint"], holder.model_context["input_mountpoint"])
+        self.assertEqual(holder.post_model_res["output_mountpoint"], holder.model_context["output_mountpoint"])
+        self.assertEqual(holder.post_model_res["model_mountpoint"], holder.model_context["model_mountpoint"])
 
 
-    def test_get_model_by_id(self):
+    def test1_get_model_by_id(self):
         print("def test_get_model_by_id(self):")
-        global post_model_res
-        model = get_model_by_id(post_model_res["id"])
+        global holder
+        model = get_model_by_id(holder.post_model_res["id"])
 
-        self.assertEqual(model["id"], post_model_res["id"])
-        self.assertEqual(model["uid"], post_model_res["uid"])
-        self.assertEqual(model["container_tag"], self.model_context["container_tag"])
-        self.assertEqual(model["input_mountpoint"], self.model_context["input_mountpoint"])
-        self.assertEqual(model["output_mountpoint"], self.model_context["output_mountpoint"])
-        self.assertEqual(model["model_mountpoint"], self.model_context["model_mountpoint"])
+        self.assertEqual(model["id"], holder.post_model_res["id"])
+        self.assertEqual(model["container_tag"], holder.model_context["container_tag"])
+        self.assertEqual(model["input_mountpoint"], holder.model_context["input_mountpoint"])
+        self.assertEqual(model["output_mountpoint"], holder.model_context["output_mountpoint"])
+        self.assertEqual(model["model_mountpoint"], holder.model_context["model_mountpoint"])
 
-    def test_get_model_by_uid(self):
-        print("def test_get_model_by_uid(self):")
-        global post_model_res
-        model = get_model_by_uid(post_model_res["uid"])
-
-        self.assertEqual(model["id"], post_model_res["id"])
-        self.assertEqual(model["uid"], post_model_res["uid"])
-        self.assertEqual(model["container_tag"], self.model_context["container_tag"])
-        self.assertEqual(model["input_mountpoint"], self.model_context["input_mountpoint"])
-        self.assertEqual(model["output_mountpoint"], self.model_context["output_mountpoint"])
-        self.assertEqual(model["model_mountpoint"], self.model_context["model_mountpoint"])
-
-
-    def test_post_task(self):
+    def test2_post_task(self):
         print("def test_post_task(self):")
-        global post_model_res, task
+        global holder
         input_file = "/data/input.zip"
         params = {
-            "model_id": post_model_res["id"],
+            "model_id": holder.post_model_res["id"],
         }
         with open(input_file, "rb") as r:
             res = requests.post(os.environ["API_URL"] + os.environ["POST_TASK_BY_MODEL_ID"],
@@ -88,20 +78,20 @@ class TestModelAndInputsAPI(unittest.TestCase):
         print(res)
         print(res.content)
 
-        task = dict(json.loads(res.content))
+        holder.task = dict(json.loads(res.content))
         self.assertTrue(res.ok)
-        self.assertEqual(task["model_id"], post_model_res["id"])
-        print(task)
+        self.assertEqual(holder.task["model_id"], holder.post_model_res["id"])
+        print(holder.task)
 
-    def test_get_output(self):
+    def test3_get_output(self):
         print("def test_get_output(self):")
-        global task
-        os.makedirs(f"/data/{task['uid']}")
+        global holder
+        os.makedirs(f"/data/{holder.task['uid']}")
         counter = 0
         while True:
-            res = get_output_zip_by_uid(task["uid"])
+            res = get_output_zip_by_uid(holder.task["uid"])
             if res.ok:
-                with open(f"/data/{task['uid']}/output.zip", "wb") as f:
+                with open(f"/data/{holder.task['uid']}/output.zip", "wb") as f:
                     for chunk in res.iter_content(chunk_size=1000000):
                         f.write(chunk)
                 break

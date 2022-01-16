@@ -62,6 +62,11 @@ def get_output_zip_by_uid(uid: str):
         c = dict(json.loads(res.content))
         raise HTTPException(status_code=res.status_code, detail=c["detail"])
 
+@app.get(os.environ["PUBLIC_GET_MODELS"])
+def get_models():
+    url = os.environ["API_URL"] + os.environ["GET_MODELS"]
+    res = requests.get(url)
+    return json.loads(res.content)
 
 ######## MODELS ########
 #@app.post(os.environ['PUBLIC_POST_MODEL']) This is deprecated already.

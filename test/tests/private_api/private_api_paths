@@ -1,34 +1,9 @@
-## URLS AND HOSTS
-PUBLIC_API_HOST=public-api
-PUBLIC_API_PORT=7000
-RABBIT_HOST=rabbit
-REVERSE-PROXY_HOST=traefik
-JOB-CONSUMER_HOST=job-consumer
-PUBLIC-API_HOST=public-api
-
-# DATABASE
-DB_HOST=database
-DB_USER=user
-DB_PASSWORD=password
-DB_NAME=db
-
-## RABBIT QUEUES
-UNFINISHED_JOB_QUEUE=unfinished_job_queue
-FINISHED_JOB_QUEUE=finished_job_queue
-
 ## ENVS
 PYTHONUNBUFFERED=1
 
-## VOLUMES
-DB_VOLUME=db_storage
-DATA_VOLUME=data_storage
-MODELS_VOLUME=models_storage
-LOGS_VOLUME=logs_storage
 
 ## DIRS
 DATA_DIR="/data"
-MODELS_DIR="/models"
-LOGGING_DIR="/logs"
 
 
 

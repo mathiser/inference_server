@@ -14,9 +14,9 @@ print(verify)
 
 class Holder:
     def __init__(self):
-        model_context = None
-        post_model_res = None
-        task = None
+        self.model_context = None
+        self.post_model_res = None
+        self.task = None
 
 holder = Holder()
 holder.model_context = {
@@ -34,36 +34,16 @@ class TestPublicAPIModelAndInputs(unittest.TestCase):
         self.assertTrue(res)
         print(res.content)
 
-    def test0_pub_post_model_api(self):
+    def test0_pub_get_model_api(self):
         global holder
-        print("def test_pub_post_model_api(self):")
-        # Post a model
-        with open(holder.model_context["file_zip"], "rb") as r:
-            params = {
-                "container_tag": holder.model_context["container_tag"],
-                "input_mountpoint": holder.model_context["input_mountpoint"],
-                "output_mountpoint": holder.model_context["output_mountpoint"],
-                "model_mountpoint": holder.model_context["model_mountpoint"],
-                "model_available": True,
-                "use_gpu": True
-            }
-            res = requests.post(os.environ.get("PROXY_URL") + os.environ["PUBLIC_POST_MODEL"], params=params,
-                                files={"zip_file": r},
-                                verify=verify)
 
+        res = requests.post(os.environ.get("PROXY_URL") + os.environ["PUBLIC_GET_MODELS"])
         print(f"res: {res}")
         print(res.content)
         self.assertTrue(res.ok)
 
-        holder.post_model_res = dict(json.loads(res.content))
-        print(f"holder.post_model_res: {holder.post_model_res}")
-
-        self.assertNotIn("uid", holder.post_model_res.keys())
-        self.assertIn("id", holder.post_model_res.keys())
-        self.assertEqual(holder.post_model_res["container_tag"], holder.model_context["container_tag"])
-        self.assertEqual(holder.post_model_res["input_mountpoint"], holder.model_context["input_mountpoint"])
-        self.assertEqual(holder.post_model_res["output_mountpoint"], holder.model_context["output_mountpoint"])
-        self.assertEqual(holder.post_model_res["model_mountpoint"], holder.model_context["model_mountpoint"])
+        holder.post_model_res = json.loads(res.content)
+        print(holder.post_model_res)
 
     def test1_public_post_task(self):
         global holder
