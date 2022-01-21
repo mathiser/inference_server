@@ -5,7 +5,7 @@ import os
 import secrets
 import tempfile
 import threading
-from typing import Optional
+from typing import Optional, List
 from urllib.parse import urljoin
 
 import requests
@@ -23,8 +23,11 @@ def hello_world():
     logging.info("Hello world - Welcome to the public database API")
     return {"message": "Hello world - Welcome to the public database API"}
 
-@app.post(urljoin(os.environ['PUBLIC_POST_TASK_BY_MODEL_ID'], "{model_id}"))
-def public_post_task_by_model_id(model_id: int, zip_file: UploadFile = File(...)):
+@app.post(os.environ['PUBLIC_POST_TASK'])
+def public_post_task(models: List[int],
+                     zip_file: UploadFile = File(...)):
+    logging.info(f"Task with models: {models}")
+
     # Give this request a unique identifier
     def post_task_thread(url, zip_file_from_res, params):
             res = requests.post(url, files={"zip_file": zip_file_from_res}, params=params)
@@ -33,10 +36,10 @@ def public_post_task_by_model_id(model_id: int, zip_file: UploadFile = File(...)
 
     uid = secrets.token_urlsafe(32)
     params = {
-        "model_id": model_id,
+        "models": models,
         "uid": uid
     }
-    url = os.environ['API_URL'] + os.environ.get("POST_TASK_BY_MODEL_ID")
+    url = os.environ['API_URL'] + os.environ.get("POST_TASK")
     t = threading.Thread(target=post_task_thread, args=(url, zip_file.file, params))
     t.start()
     threads.append(t)

@@ -47,14 +47,14 @@ class TestPublicAPIModelAndInputs(unittest.TestCase):
         print(holder.post_model_res)
 
     def test_public_post_task(self):
-        
         print("def test_public_post_task(self):")
         input_file = "/data/input.zip"
         with open(input_file, "rb") as r:
-            url = os.environ.get("URL") + urljoin(os.environ["PUBLIC_POST_TASK_BY_MODEL_ID"], str(holder.post_model_res["id"]))
+            url = os.environ.get("URL") + urljoin(os.environ["PUBLIC_POST_TASK"])
             print(f"Posting on {url}")
             res = requests.post(url,
                                 files={"zip_file": r},
+                                params={"models": [1, 1]},
                                 verify=verify)
         self.assertTrue(res.ok)
 

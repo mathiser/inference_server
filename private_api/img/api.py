@@ -1,35 +1,35 @@
-import uuid
-from typing import Optional
-from urllib.parse import urljoin
-
-from fastapi import FastAPI, File, UploadFile, HTTPException, status
-from starlette.responses import FileResponse
-import uvicorn
-import tempfile
 import logging
 import os
 import secrets
+import uuid
 from datetime import datetime
+from typing import Optional, List
+from urllib.parse import urljoin
+
+import uvicorn
+from fastapi import FastAPI, File, UploadFile, HTTPException, Query
+from starlette.responses import FileResponse
+
 from db import Session, input_base_folder, output_base_folder, model_base_folder, database
 from disposable_rabbit_connection import DisposablePikaConnection
 from models import Task, Model
-import zipfile
+
 LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
 
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 app = FastAPI()
 
 @app.on_event("startup")
-async def startup():
+def startup():
     logging.info("Connecting to DB")
-    await database.connect()
+    database.connect()
     logging.info("Connecting to DB successful")
 
 
 @app.on_event("shutdown")
-async def shutdown():
+def shutdown():
     logging.info("Disonnecting from DB")
-    await database.disconnect()
+    database.disconnect()
     logging.info("Disconnecting from DB sucessful")
 
 @app.get("/")
@@ -39,18 +39,18 @@ def hello_world():
 
 ######## TASKS #########
 @app.get(os.environ["GET_TASKS"])
-async def get_tasks():
+def get_tasks():
     with Session() as s:
         tasks = s.query(Task)
         return list(tasks)
 
 @app.get(urljoin(os.environ['GET_TASK_BY_ID'], "{id}"))
-async def get_task_by_id(id: int):
+def get_task_by_id(id: int):
     with Session() as s:
         return s.query(Task).filter_by(id=id).first()
 
 @app.get(urljoin(os.environ['GET_TASK_BY_UID'], "{uid}"))
-async def get_task_by_uid(uid: str):
+def get_task_by_uid(uid: str):
     with Session() as s:
         return s.query(Task).filter_by(uid=uid).first()
 
@@ -58,12 +58,20 @@ async def get_task_by_uid(uid: str):
 
 ######## INPUTS ########
 ######## PUBLIC ########
-@app.post(os.environ['POST_TASK_BY_MODEL_ID'])
-async def post_task_by_model_id(model_id: int, zip_file: UploadFile = File(...), uid=None):
+@app.post(os.environ['POST_TASK'])
+def post_task(models: List[int] = Query(None),
+                    zip_file: UploadFile = File(...),
+                    uid=None):
+    if not (len(models) >= 1):
+        raise HTTPException(404, "Task must have at least ONE model - try again")
+
+    for model in models:
+        if not get_model_by_id(model):
+            raise HTTPException(404, f"Model id '{model}' does not exist")
     if not uid:
         uid = secrets.token_urlsafe(32)
 
-    logging.info(f"{uid}: Received a task with model_id: {model_id}")
+    logging.info(f"{uid}: Received a task with models: {models}")
 
     logging.info("{uid}: Define input folder and output folders")
     input_folder = os.path.abspath(os.path.join(input_base_folder, uid))
@@ -89,9 +97,10 @@ async def post_task_by_model_id(model_id: int, zip_file: UploadFile = File(...),
 
     logging.info(f"{uid}: Define the DB-entry for the task")
     t = Task(uid=uid,
-             model_id=model_id,
              input_zip=input_zip,
-             output_zip=output_zip)
+             output_zip=output_zip,
+             model_ids=models
+             )
     logging.info(f"{uid}: Task: {t.__dict__}")
 
     logging.info(f"{uid}: Open db session and add task")
@@ -108,10 +117,9 @@ async def post_task_by_model_id(model_id: int, zip_file: UploadFile = File(...),
 
 
 @app.get(urljoin(os.environ['GET_INPUT_ZIP_BY_ID'], "{id}"))
-async def get_input_zip_by_id(id: int):
+def get_input_zip_by_id(id: int):
     with Session() as s:
         t = s.query(Task).filter_by(id=id).first()
-
 
     if os.path.exists(t.input_zip):
         return FileResponse(t.input_zip)
@@ -121,7 +129,7 @@ async def get_input_zip_by_id(id: int):
 
 ######## OUTPUTS ########
 @app.post(urljoin(os.environ['POST_OUTPUT_ZIP_BY_UID'], "{uid}"))
-async def post_output_by_uid(uid: str, zip_file: UploadFile = File(...)):
+def post_output_by_uid(uid: str, zip_file: UploadFile = File(...)):
     with Session() as s:
         # Get the task
         t = s.query(Task).filter_by(uid=uid).first()
@@ -145,7 +153,7 @@ async def post_output_by_uid(uid: str, zip_file: UploadFile = File(...)):
 
 ######## PUBLIC ########
 @app.get(urljoin(os.environ['GET_OUTPUT_ZIP_BY_UID'], "{uid}"))
-async def get_output_zip_by_uid(uid: str):
+def get_output_zip_by_uid(uid: str):
     # Zip the output for return
     with Session() as s:
         task = s.query(Task).filter_by(uid=uid).first()
@@ -160,12 +168,12 @@ async def get_output_zip_by_uid(uid: str):
 
 
 @app.get(urljoin(os.environ['GET_TASK_BY_ID'], "{id}"))
-async def get_task_by_id(id: int):
+def get_task_by_id(id: int):
     with Session() as s:
         return s.query(Task).filter_by(id=id).first()
 
 @app.get(urljoin(os.environ['GET_TASK_BY_UID'], "{uid}"))
-async def get_task_by_uid(uid: str):
+def get_task_by_uid(uid: str):
     with Session() as s:
         return s.query(Task).filter_by(uid=uid).first()
 
@@ -173,7 +181,7 @@ async def get_task_by_uid(uid: str):
 
 ######## MODELS ########
 @app.post(os.environ['POST_MODEL'])
-async def post_model(container_tag: str,
+def post_model(container_tag: str,
                      input_mountpoint: str,
                      output_mountpoint: str,
                      model_mountpoint: Optional[str] = None,
@@ -228,17 +236,17 @@ async def post_model(container_tag: str,
     return m
 
 @app.get(urljoin(os.environ['GET_MODEL_BY_ID'], "{id}"))
-async def get_model_by_id(id: int):
+def get_model_by_id(id: int):
     with Session() as s:
         return s.query(Model).filter_by(id=id).first()
 
 @app.get(os.environ['GET_MODELS'])
-async def get_models():
+def get_models():
     with Session() as s:
         return list(s.query(Model))
 
 @app.get(urljoin(os.environ['GET_MODEL_ZIP_BY_ID'], "{id}"))
-async def get_model_zip_by_id(id: int):
+def get_model_zip_by_id(id: int):
     with Session() as s:
         m = s.query(Model).filter_by(id=id).first()
 
