@@ -1,6 +1,6 @@
 FROM mathiser/nnunet:nnunet_base
 
-COPY 5002_hn_ct_only /
+COPY . /
 ENV INPUT=/input
 ENV OUTPUT=/output
 ENV RESULTS_FOLDER=/model

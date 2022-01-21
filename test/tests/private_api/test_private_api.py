@@ -69,7 +69,7 @@ class TestModelAndInputsAPI(unittest.TestCase):
         print("def test_post_task(self):")
         global holder
         input_file = "/data/input.zip"
-        models_list = [int(holder.post_model_res["id"]), 1, 1]
+        models_list = [int(holder.post_model_res["id"])]
         params = {
             "models": models_list,
         }

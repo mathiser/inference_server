@@ -1,9 +1,16 @@
-FROM python:3.10-buster
-RUN apt-get update
+FROM ubuntu:20.04
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    docker.io \
+    && rm -rf /var/lib/apt/lists/*
 
 ADD requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 
-COPY main.py /main.py
+RUN mkdir -p /opt/app/
 
-CMD ["/usr/local/bin/python", "-u", "/main.py"]
+WORKDIR /opt/app/
+COPY . /opt/app/
+
+CMD /usr/bin/python3 -u main.py

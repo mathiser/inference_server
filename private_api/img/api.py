@@ -186,7 +186,7 @@ def post_model(container_tag: str,
                      output_mountpoint: str,
                      model_mountpoint: Optional[str] = None,
                      description: Optional[str] = None,
-                     zip_file: UploadFile = File(...),
+                     zip_file: Optional[UploadFile] = File(None),
                      model_available: Optional[bool] = True,
                      use_gpu: Optional[bool] = True,
                      ):
@@ -203,23 +203,26 @@ def post_model(container_tag: str,
     :return: Returns the dict of the model updated from DB
     """
     uid = secrets.token_urlsafe(32)
-    model_zip = os.path.join(model_base_folder, uid, "model.zip")
+    model_zip = None
+    model_volume = None
+    if model_available:
+        model_zip = os.path.join(model_base_folder, uid, "model.zip")
+        model_volume = str(uuid.uuid4())
+        # Create model_path
+        if not os.path.exists(os.path.dirname(model_zip)):
+            os.makedirs(os.path.dirname(model_zip))
+        else:
+            raise Exception(f"{uid}: Two models with same UID!?")
 
-    # Create model_path
-    if not os.path.exists(os.path.dirname(model_zip)):
-        os.makedirs(os.path.dirname(model_zip))
-    else:
-        raise Exception(f"{uid}: Two models with same UID!?")
-
-    # write model_zip to model_zip
-    with open(model_zip, 'wb') as f:
-        f.write(zip_file.file.read())
+        # write model_zip to model_zip
+        with open(model_zip, 'wb') as f:
+            f.write(zip_file.file.read())
 
     m = Model(
         description=description,
         container_tag=container_tag,
         model_zip=model_zip,
-        model_volume=str(uuid.uuid4()),
+        model_volume=model_volume,
         input_mountpoint=input_mountpoint,
         output_mountpoint=output_mountpoint,
         model_mountpoint=model_mountpoint,
@@ -232,7 +235,6 @@ def post_model(container_tag: str,
         s.add(m)
         s.commit()
         s.refresh(m)
-
     return m
 
 @app.get(urljoin(os.environ['GET_MODEL_BY_ID'], "{id}"))

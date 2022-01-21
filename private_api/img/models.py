@@ -26,7 +26,7 @@ class Model(Base):
     use_gpu = Column(Boolean, default=True)
     model_available = Column(Boolean, default=True)
     model_zip = Column(String, nullable=True)
-    model_volume = Column(String, default=uuid.uuid4)
+    model_volume = Column(String, nullable=True)
     model_mountpoint = Column(String, nullable=True)
     input_mountpoint = Column(String, nullable=False)
     output_mountpoint = Column(String, nullable=False)
