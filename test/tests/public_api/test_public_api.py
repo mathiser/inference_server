@@ -48,13 +48,13 @@ class TestPublicAPIModelAndInputs(unittest.TestCase):
 
     def test_public_post_task(self):
         print("def test_public_post_task(self):")
-        input_file = "/data/input.zip"
+        input_file = "/data/input_hn.zip"
         with open(input_file, "rb") as r:
-            url = os.environ.get("URL") + urljoin(os.environ["PUBLIC_POST_TASK"])
+            url = urljoin(os.environ.get("URL"), os.environ["PUBLIC_POST_TASK"])
             print(f"Posting on {url}")
             res = requests.post(url,
                                 files={"zip_file": r},
-                                params={"models": [1, 1]},
+                                params={"model_ids": [6, 4, 1, 5, 3]},
                                 verify=verify)
         self.assertTrue(res.ok)
 
@@ -66,7 +66,7 @@ class TestPublicAPIModelAndInputs(unittest.TestCase):
    # def test_public_get_output(self):
         print(holder.task)
         print("def test_get_output(self):")
-        os.makedirs(f"/data/{holder.task['uid']}")
+        os.makedirs(f"/data/outputs/{holder.task['uid']}")
         counter = 0
         while True:
             res = requests.get(os.environ.get("URL") + urljoin(os.environ["PUBLIC_GET_OUTPUT_ZIP_BY_UID"],
@@ -75,7 +75,7 @@ class TestPublicAPIModelAndInputs(unittest.TestCase):
                                verify=verify)
 
             if res.ok:
-                with open(f"/data/{holder.task['uid']}/output.zip", "wb") as f:
+                with open(f"/data/outputs/{holder.task['uid']}/output.zip", "wb") as f:
                     for chunk in res.iter_content(chunk_size=1000000):
                         f.write(chunk)
                 break

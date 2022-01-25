@@ -9,7 +9,7 @@ from typing import Optional, List
 from urllib.parse import urljoin
 
 import requests
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from fastapi.responses import StreamingResponse
 app = FastAPI()
 
@@ -24,9 +24,9 @@ def hello_world():
     return {"message": "Hello world - Welcome to the public database API"}
 
 @app.post(os.environ['PUBLIC_POST_TASK'])
-def public_post_task(models: List[int],
+def public_post_task(model_ids: List[int] = Query(None),
                      zip_file: UploadFile = File(...)):
-    logging.info(f"Task with models: {models}")
+    logging.info(f"Task with models: {model_ids}")
 
     # Give this request a unique identifier
     def post_task_thread(url, zip_file_from_res, params):
@@ -36,7 +36,7 @@ def public_post_task(models: List[int],
 
     uid = secrets.token_urlsafe(32)
     params = {
-        "models": models,
+        "model_ids": model_ids,
         "uid": uid
     }
     url = os.environ['API_URL'] + os.environ.get("POST_TASK")

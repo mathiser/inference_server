@@ -59,19 +59,19 @@ def get_task_by_uid(uid: str):
 ######## INPUTS ########
 ######## PUBLIC ########
 @app.post(os.environ['POST_TASK'])
-def post_task(models: List[int] = Query(None),
+def post_task(model_ids: List[int] = Query(None),
                     zip_file: UploadFile = File(...),
                     uid=None):
-    if not (len(models) >= 1):
+    if not (len(model_ids) >= 1):
         raise HTTPException(404, "Task must have at least ONE model - try again")
 
-    for model in models:
+    for model in model_ids:
         if not get_model_by_id(model):
             raise HTTPException(404, f"Model id '{model}' does not exist")
     if not uid:
         uid = secrets.token_urlsafe(32)
 
-    logging.info(f"{uid}: Received a task with models: {models}")
+    logging.info(f"{uid}: Received a task with model_ids: {model_ids}")
 
     logging.info("{uid}: Define input folder and output folders")
     input_folder = os.path.abspath(os.path.join(input_base_folder, uid))
@@ -99,7 +99,7 @@ def post_task(models: List[int] = Query(None),
     t = Task(uid=uid,
              input_zip=input_zip,
              output_zip=output_zip,
-             model_ids=models
+             model_ids=model_ids
              )
     logging.info(f"{uid}: Task: {t.__dict__}")
 

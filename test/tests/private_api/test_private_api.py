@@ -85,12 +85,12 @@ class TestModelAndInputsAPI(unittest.TestCase):
 
     def test3_get_output(self):
         print("def test_get_output(self):")
-        os.makedirs(f"/data/{holder.task['uid']}")
+        os.makedirs(f"/data/outputs/{holder.task['uid']}")
         counter = 0
         while True:
             res = get_output_zip_by_uid(holder.task["uid"])
             if res.ok:
-                with open(f"/data/{holder.task['uid']}/output.zip", "wb") as f:
+                with open(f"/data/outputs/{holder.task['uid']}/output.zip", "wb") as f:
                     for chunk in res.iter_content(chunk_size=1000000):
                         f.write(chunk)
                 break
