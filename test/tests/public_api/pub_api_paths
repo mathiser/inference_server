@@ -7,7 +7,7 @@ URL=https://${PUBLIC_HOST}
 ## A "task" is the context with which to run a container on an "input"
 PUBLIC_TASK_PREFIX="/api/tasks"
 PUBLIC_GET_OUTPUT_ZIP_BY_UID="${PUBLIC_TASK_PREFIX}/"
-PUBLIC_POST_TASK_BY_MODEL_ID="${PUBLIC_TASK_PREFIX}/"
+PUBLIC_POST_TASK="${PUBLIC_TASK_PREFIX}/"
 
 ## MODEL API
 ## A "task" is the context with which to run a container on an "input"

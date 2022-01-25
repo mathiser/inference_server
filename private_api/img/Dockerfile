@@ -1,4 +1,4 @@
-FROM python:3.10-buster
+FROM python:3.9-buster
 
 RUN apt-get update
 ADD requirements.txt /requirements.txt

@@ -1,3 +1,4 @@
+import json
 import os
 import time
 import unittest
@@ -26,7 +27,6 @@ unittest.TestLoader.sortTestMethodsUsing = None
 
 class TestModelAndInputsAPI(unittest.TestCase):
     def test0_private_api(self):
-        global holder
 
         print("def test_private_api(self):")
         # Post a model
@@ -69,29 +69,28 @@ class TestModelAndInputsAPI(unittest.TestCase):
         print("def test_post_task(self):")
         global holder
         input_file = "/data/input.zip"
+        models_list = [int(holder.post_model_res["id"])]
         params = {
-            "model_id": holder.post_model_res["id"],
+            "models": models_list,
         }
         with open(input_file, "rb") as r:
-            res = requests.post(os.environ["API_URL"] + os.environ["POST_TASK_BY_MODEL_ID"],
+            res = requests.post(os.environ["API_URL"] + os.environ["POST_TASK"],
                                 files={"zip_file": r}, params=params)
         print(res)
         print(res.content)
 
         holder.task = dict(json.loads(res.content))
         self.assertTrue(res.ok)
-        self.assertEqual(holder.task["model_id"], holder.post_model_res["id"])
         print(holder.task)
 
     def test3_get_output(self):
         print("def test_get_output(self):")
-        global holder
-        os.makedirs(f"/data/{holder.task['uid']}")
+        os.makedirs(f"/data/outputs/{holder.task['uid']}")
         counter = 0
         while True:
             res = get_output_zip_by_uid(holder.task["uid"])
             if res.ok:
-                with open(f"/data/{holder.task['uid']}/output.zip", "wb") as f:
+                with open(f"/data/outputs/{holder.task['uid']}/output.zip", "wb") as f:
                     for chunk in res.iter_content(chunk_size=1000000):
                         f.write(chunk)
                 break
