@@ -8,7 +8,7 @@ models = requests.get("http://api:6000/models/").json()
 model_container_tags = [d["container_tag"] for d in models]
 try:
     for fol, subs, files in os.walk("./models"):
-        for f in files:
+        for f in sorted(files):
             if f.endswith(".json"):
                 detail_file_path = os.path.join(fol, f)
 

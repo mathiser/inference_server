@@ -41,7 +41,8 @@ services:
       - "traefik.http.services.${PROJECT_NAME}_${PUBLIC_API_HOST}.loadbalancer.server.port=${PUBLIC_API_PORT}"
       - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOST}.tls=${HTTPS_ON}"
     volumes:
-     - ${LOGS_VOLUME}:${LOGGING_DIR}
+     #- ${LOGS_VOLUME}:${LOGGING_DIR}
+      - ./mounts/logs:${LOGGING_DIR}
 
   database:
     image: postgres:latest
@@ -54,8 +55,11 @@ services:
     env_file:
       - .env
     volumes:
-      - ${LOGS_VOLUME}:${LOGGING_DIR}
-      - ${DB_VOLUME}:/var/lib/postgresql/data
+      #- ${LOGS_VOLUME}:${LOGGING_DIR}
+      #- ${DB_VOLUME}:/var/lib/postgresql/data
+      - ./mounts/logs:${LOGGING_DIR}
+      - ./mounts/db:/var/lib/postgresql/data
+
 
   api:
     hostname: ${API_HOST}
@@ -74,9 +78,13 @@ services:
       context: private_api/img/
       dockerfile: Dockerfile
     volumes:
-     - ${DATA_VOLUME}:${DATA_DIR}
-     - ${LOGS_VOLUME}:${LOGGING_DIR}
-     - ${MODELS_VOLUME}:${MODELS_DIR}
+     #- ${DATA_VOLUME}:${DATA_DIR}
+     #- ${LOGS_VOLUME}:${LOGGING_DIR}
+     #- ${MODELS_VOLUME}:${MODELS_DIR}
+     - ./mounts/data:${DATA_DIR}
+     - ./mounts/logs:${LOGGING_DIR}
+     - ./mounts/models:${MODELS_DIR}
+
 
   rabbit:
     restart: on-failure
@@ -106,7 +114,7 @@ services:
     volumes:
       # needed to dispatch docker containers from inside a docker container
       - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
-     # - ${LOGS_VOLUME}:${LOGGING_DIR}
+      - ./mounts/logs:${LOGGING_DIR}
 
 #  model-repository:
 #    depends_on:
@@ -121,6 +129,7 @@ services:
 #      - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
 #      - $(realpath model_repository/models):/models
 ## Volumes must match names in .env!
+
 volumes:
   db_storage:
   data_storage:
