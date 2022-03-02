@@ -22,32 +22,40 @@ class Predict(Operator):
         super().__init__()
 
     def compute(self, op_input: InputContext, op_output: OutputContext, context: ExecutionContext):
+        """
+        This operator saves arrays to nii.gz in the appropriate format to run nnUNet inference.
+
+        :param op_input:
+        :param op_output:
+        :param context:
+        :return:
+        """
 
         timer = TimeOP(__name__)
         label_array_dict = op_input.get("label_array_dict")
         ref_image = op_input.get("ref_image")
-        tmp_in = tempfile.mkdtemp()
-        tmp_out = tempfile.mkdtemp()
-        tasks = [(label, array, ref_image, tmp_in) for label, array in label_array_dict.items()]
+        with tempfile.TemporaryDirectory() as tmp_in:
+            with tempfile.TemporaryDirectory() as tmp_out: ## Messy construction, but secures that tmp_dirs are deleted after use.
+                tasks = [(label, array, ref_image, tmp_in) for label, array in label_array_dict.items()] # Generate save tasks
 
-        tp = ThreadPool(4)
-        tp.starmap(self.save_array_as_image, tasks)
-        tp.close()
-        tp.join()
+                tp = ThreadPool(4)
+                tp.starmap(self.save_array_as_image, tasks)
+                tp.close()
+                tp.join()
 
-        os.system(f"nnUNet_predict -t 300 -tr nnUNetTrainerV2 -i {tmp_in} -o {tmp_out} -tr nnUNetTrainerV2")
+                os.system(f"nnUNet_predict -t 300 -tr nnUNetTrainerV2 -i {tmp_in} -o {tmp_out} -tr nnUNetTrainerV2")
 
-        for f in os.listdir(tmp_out):
-            if f.endswith(".nii.gz"):
-                pred_img = sitk.ReadImage(os.path.join(tmp_out, f))
-                pred_arr = sitk.GetArrayFromImage(pred_img)
-                op_output.set(pred_arr, "seg")
-                shutil.rmtree(tmp_in)
-                shutil.rmtree(tmp_out)
-                break
-        else:
-            raise Exception("No prediction found")
-        print(timer.report())
+                for f in os.listdir(tmp_out):
+                    if f.endswith(".nii.gz"):
+                        pred_img = sitk.ReadImage(os.path.join(tmp_out, f))
+                        pred_arr = sitk.GetArrayFromImage(pred_img)
+                        op_output.set(pred_arr, "seg")
+                        shutil.rmtree(tmp_in)
+                        shutil.rmtree(tmp_out)
+                        break
+                else:
+                    raise Exception("No prediction found")
+                print(timer.report())
 
     def save_array_as_image(self, label, array, ref_image, to_dir):
         tmp_img = sitk.GetImageFromArray(array)

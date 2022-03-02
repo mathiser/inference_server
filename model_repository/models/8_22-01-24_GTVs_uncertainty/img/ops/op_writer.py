@@ -6,7 +6,7 @@ import monai.deploy.core as md
 import numpy as np
 from monai.deploy.core import ExecutionContext, DataPath, InputContext, IOType, Operator, OutputContext
 from .timer import TimeOP
-from monai.data import NiftiSaver
+
 @md.input("seg", np.ndarray, IOType.IN_MEMORY)
 @md.input("ref_image", sitk.Image, IOType.IN_MEMORY)
 @md.output("", DataPath, IOType.DISK)
@@ -18,6 +18,15 @@ class DataWriter(Operator):
         super().__init__()
 
     def compute(self, op_input: InputContext, op_output: OutputContext, context: ExecutionContext):
+        """
+        This operator saves the final segmentation in segmentation.nii.gz. This is eventually zipped by the inference server
+        and sent back to MIM.
+
+        :param op_input:
+        :param op_output:
+        :param context:
+        :return:
+        """
         timer = TimeOP(__name__)
 
         arr = op_input.get("seg")

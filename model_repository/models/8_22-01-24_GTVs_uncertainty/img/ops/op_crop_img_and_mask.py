@@ -17,6 +17,13 @@ class CropAllImages(Operator):
         super().__init__()
 
     def compute(self, op_input: InputContext, op_output: OutputContext, context: ExecutionContext):
+        """
+        This operator crops all images in label_array_dict to bounding_box.
+        :param op_input:
+        :param op_output:
+        :param context:
+        :return:
+        """
         timer = TimeOP(__name__)
 
         label_array_dict = op_input.get("label_array_dict")
