@@ -1,0 +1,16 @@
+## URLS AND HOSTS
+URL=https://omen.onerm.dk
+
+## TASK API
+## A "task" is the context with which to run a container on an "input"
+TASK_PREFIX="/api/tasks"
+GET_OUTPUT_ZIP_BY_UID="${TASK_PREFIX}/"
+POST_TASK_BY_MODEL_ID="${TASK_PREFIX}/"
+
+## MODEL API
+## A "task" is the context with which to run a container on an "input"
+MODEL_PREFIX="/api/models"
+GET_MODEL_BY_UID="${MODEL_PREFIX}/"
+POST_MODEL="${MODEL_PREFIX}/"
+
+CERT_FILE=certs/omen.onerm.dk.pem

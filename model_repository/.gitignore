@@ -1,0 +1,5 @@
+models/**/*.zip
+*.zip
+**/in/*
+**/out/*
+**/model/*

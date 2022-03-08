@@ -1,0 +1,10 @@
+python-multipart
+fastapi
+uvicorn[standard]
+sqlalchemy>=1.4
+pika
+databases
+pydantic
+httpx
+psycopg2
+asyncpg
