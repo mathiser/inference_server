@@ -13,6 +13,5 @@ RUN mkdir -p /opt/app/
 WORKDIR /opt/app/
 COPY main.py /opt/app/
 
-ADD models /opt/app/
 
 CMD /usr/bin/python3 -u main.py

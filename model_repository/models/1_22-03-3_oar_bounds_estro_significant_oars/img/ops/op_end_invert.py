@@ -14,14 +14,6 @@ class EndInvertImages(Operator):
         super().__init__()
 
     def compute(self, op_input: InputContext, op_output: OutputContext, context: ExecutionContext):
-        """
-        This operate inverts seg-array along Z-direction
-        :param op_input:
-        :param op_output:
-        :param context:
-        :return:
-        """
-
         timer = TimeOP(__name__)
 
         seg = op_input.get("seg")

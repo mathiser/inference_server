@@ -9,7 +9,7 @@ model_container_tags = [d["container_tag"] for d in models]
 try:
     for fol, subs, files in os.walk("/models"):
         for f in sorted(files):
-            if f.endswith(".json"):
+            if f.endswith(".json") and "/model/" not in fol:
                 detail_file_path = os.path.join(fol, f)
 
                 with open(detail_file_path, "r") as r:

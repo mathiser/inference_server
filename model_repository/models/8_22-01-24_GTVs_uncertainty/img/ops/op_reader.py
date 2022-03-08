@@ -18,6 +18,20 @@ class DataLoader(Operator):
         super().__init__()
 
     def compute(self, op_input: InputContext, op_output: OutputContext, context: ExecutionContext):
+        """
+        This operator reads the input directory and creates label_array_dict, which contains:
+        {
+            "tmp_0000.nii.gz": CT np.ndarray,
+            "tmp_0001.nii.gz": PET np.ndarray,
+            "tmp_0002.nii.gz": T1 np.ndarray,
+            "tmp_0003.nii.gz": T2 np.ndarray,
+        }
+
+        :param op_input:
+        :param op_output:
+        :param context:
+        :return:
+        """
         timer = TimeOP(__name__)
 
         in_path = op_input.get().path

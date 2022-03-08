@@ -17,14 +17,7 @@ class InvertImages(Operator):
         super().__init__()
 
     def compute(self, op_input: InputContext, op_output: OutputContext, context: ExecutionContext):
-        """
-        This operator flipped all arrays in label_array_dict along the z-direction
 
-        :param op_input:
-        :param op_output:
-        :param context:
-        :return:
-        """
         timer = TimeOP(__name__)
         label_array_dict = op_input.get("label_array_dict")
 

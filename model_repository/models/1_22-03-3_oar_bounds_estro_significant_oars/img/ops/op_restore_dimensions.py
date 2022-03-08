@@ -20,15 +20,6 @@ class RestoreDimensions(Operator):
         super().__init__()
 
     def compute(self, op_input: InputContext, op_output: OutputContext, context: ExecutionContext):
-        """
-        This operator restores the original dimensions of the seg np.ndarray from ref_image and the bounding_box
-
-        :param op_input:
-        :param op_output:
-        :param context:
-        :return:
-        """
-
         timer = TimeOP(__name__)
 
         seg_arr = op_input.get("seg")
