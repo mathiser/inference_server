@@ -21,6 +21,7 @@ class Holder:
 holder = Holder()
 holder.model_context = {
     "container_tag": "mathiser/nnunet:5003_wholeheart",
+    "human_readable_id": "5002_hn_oar_ct_only",
     "input_mountpoint": "/input",
     "output_mountpoint": "/output",
     "model_mountpoint": "/model",
@@ -54,7 +55,7 @@ class TestPublicAPIModelAndInputs(unittest.TestCase):
             print(f"Posting on {url}")
             res = requests.post(url,
                                 files={"zip_file": r},
-                                params={"model_ids": [6, 4, 1, 5, 3]},
+                                params={"model_ids": ["5002_hn_oar_ct_only"]},
                                 verify=verify)
         self.assertTrue(res.ok)
 

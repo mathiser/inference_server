@@ -28,9 +28,9 @@ def startup():
 
 @app.on_event("shutdown")
 def shutdown():
-    logging.info("Disonnecting from DB")
+    logging.info("Disconnecting from DB")
     database.disconnect()
-    logging.info("Disconnecting from DB sucessful")
+    logging.info("Disconnecting from DB successful")
 
 @app.get("/")
 def hello_world():
@@ -59,21 +59,28 @@ def get_task_by_uid(uid: str):
 ######## INPUTS ########
 ######## PUBLIC ########
 @app.post(os.environ['POST_TASK'])
-def post_task(model_ids: List[int] = Query(None),
-                    zip_file: UploadFile = File(...),
-                    uid=None):
-    if not (len(model_ids) >= 1):
-        raise HTTPException(404, "Task must have at least ONE model - try again")
+def post_task(human_readable_ids: List[str] = Query(None),
+              zip_file: UploadFile = File(...),
+              uid=None) -> Task:
+    logging.info(f"Human readable ids: {human_readable_ids}")
+    if not (len(human_readable_ids) >= 1):
+        raise HTTPException(500, "Task must have at least ONE model - try again")
 
-    for model in model_ids:
-        if not get_model_by_id(model):
-            raise HTTPException(404, f"Model id '{model}' does not exist")
     if not uid:
         uid = secrets.token_urlsafe(32)
 
-    logging.info(f"{uid}: Received a task with model_ids: {model_ids}")
+    ## Change human_readable_ids to model_ids used in the original implementation
+    model_ids = []
+    with Session() as s:
+        for human_readable_id in human_readable_ids:
+            model = s.query(Model).filter_by(human_readable_id=human_readable_id).first()
+            if model:
+                model_ids.append(model.id)
+            else:
+                raise HTTPException(500, f"Model id '{model}' does not exist")
 
-    logging.info("{uid}: Define input folder and output folders")
+    logging.info(f"Task {uid}: Received a task with model_ids: {model_ids}")
+
     input_folder = os.path.abspath(os.path.join(input_base_folder, uid))
     input_zip = os.path.join(input_folder, "input.zip")
     output_folder = os.path.abspath(os.path.join(output_base_folder, uid))
@@ -117,7 +124,7 @@ def post_task(model_ids: List[int] = Query(None),
 
 
 @app.get(urljoin(os.environ['GET_INPUT_ZIP_BY_ID'], "{id}"))
-def get_input_zip_by_id(id: int):
+def get_input_zip_by_id(id: int) -> FileResponse:
     with Session() as s:
         t = s.query(Task).filter_by(id=id).first()
 
@@ -129,7 +136,7 @@ def get_input_zip_by_id(id: int):
 
 ######## OUTPUTS ########
 @app.post(urljoin(os.environ['POST_OUTPUT_ZIP_BY_UID'], "{uid}"))
-def post_output_by_uid(uid: str, zip_file: UploadFile = File(...)):
+def post_output_by_uid(uid: str, zip_file: UploadFile = File(...)) -> Task:
     with Session() as s:
         # Get the task
         t = s.query(Task).filter_by(uid=uid).first()
@@ -177,19 +184,18 @@ def get_task_by_uid(uid: str):
     with Session() as s:
         return s.query(Task).filter_by(uid=uid).first()
 
-
-
 ######## MODELS ########
 @app.post(os.environ['POST_MODEL'])
 def post_model(container_tag: str,
-                     input_mountpoint: str,
-                     output_mountpoint: str,
-                     model_mountpoint: Optional[str] = None,
-                     description: Optional[str] = None,
-                     zip_file: Optional[UploadFile] = File(None),
-                     model_available: Optional[bool] = True,
-                     use_gpu: Optional[bool] = True,
-                     ):
+                human_readable_id: str,
+                 input_mountpoint: str,
+                 output_mountpoint: str,
+                 model_mountpoint: Optional[str] = None,
+                 description: Optional[str] = None,
+                 zip_file: Optional[UploadFile] = File(None),
+                 model_available: Optional[bool] = True,
+                 use_gpu: Optional[bool] = True,
+                 ) -> Model:
 
     """
     :param description: description of model
@@ -202,17 +208,18 @@ def post_model(container_tag: str,
     :param use_gpu: Set True if model requires GPU and to False if CPU only. Will eventually become two queues
     :return: Returns the dict of the model updated from DB
     """
-    uid = secrets.token_urlsafe(32)
+
+    uid = str(uuid.uuid4())
     model_zip = None
-    model_volume = None
+    model_volume = uid
     if model_available:
         model_zip = os.path.join(model_base_folder, uid, "model.zip")
-        model_volume = str(uuid.uuid4())
+        model_volume = uid
         # Create model_path
         if not os.path.exists(os.path.dirname(model_zip)):
             os.makedirs(os.path.dirname(model_zip))
         else:
-            raise Exception(f"{uid}: Two models with same UID!?")
+            raise HTTPException(500, f"{uid}: Two models with same UID!?")
 
         # write model_zip to model_zip
         with open(model_zip, 'wb') as f:
@@ -220,6 +227,7 @@ def post_model(container_tag: str,
 
     m = Model(
         description=description,
+        human_readable_id=human_readable_id,
         container_tag=container_tag,
         model_zip=model_zip,
         model_volume=model_volume,
