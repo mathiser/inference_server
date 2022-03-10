@@ -17,6 +17,7 @@ class Holder:
 holder = Holder()
 holder.model_context = {
     "container_tag": "mathiser/nnunet:5003_wholeheart",
+    "human_readable_id": "whole_heart_threshold",
     "input_mountpoint": "/input",
     "output_mountpoint": "/output",
     "model_mountpoint": "/model",
@@ -33,6 +34,7 @@ class TestModelAndInputsAPI(unittest.TestCase):
         with open(holder.model_context["file_zip"], "rb") as r:
             res = post_model(
                 container_tag=holder.model_context["container_tag"],
+                human_readable_id=holder.model_context["human_readable_id"],
                 input_mountpoint=holder.model_context["input_mountpoint"],
                 output_mountpoint=holder.model_context["output_mountpoint"],
                 model_mountpoint=holder.model_context["model_mountpoint"],
@@ -69,9 +71,9 @@ class TestModelAndInputsAPI(unittest.TestCase):
         print("def test_post_task(self):")
         global holder
         input_file = "/data/input.zip"
-        models_list = [int(holder.post_model_res["id"])]
+        models_list = [holder.post_model_res["human_readable_id"]]
         params = {
-            "models": models_list,
+            "human_readable_ids": models_list,
         }
         with open(input_file, "rb") as r:
             res = requests.post(os.environ["API_URL"] + os.environ["POST_TASK"],
@@ -83,7 +85,6 @@ class TestModelAndInputsAPI(unittest.TestCase):
         self.assertTrue(res.ok)
         print(holder.task)
 
-    def test3_get_output(self):
         print("def test_get_output(self):")
         os.makedirs(f"/data/outputs/{holder.task['uid']}")
         counter = 0

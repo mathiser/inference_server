@@ -24,9 +24,9 @@ def hello_world():
     return {"message": "Hello world - Welcome to the public database API"}
 
 @app.post(os.environ['PUBLIC_POST_TASK'])
-def public_post_task(model_ids: List[int] = Query(None),
+def public_post_task(human_readable_ids: List[str] = Query(None),
                      zip_file: UploadFile = File(...)):
-    logging.info(f"Task with models: {model_ids}")
+    logging.info(f"Task with models: {human_readable_ids}")
 
     # Give this request a unique identifier
     def post_task_thread(url, zip_file_from_res, params):
@@ -36,7 +36,7 @@ def public_post_task(model_ids: List[int] = Query(None),
 
     uid = secrets.token_urlsafe(32)
     params = {
-        "model_ids": model_ids,
+        "human_readable_ids": human_readable_ids,
         "uid": uid
     }
     url = os.environ['API_URL'] + os.environ.get("POST_TASK")
@@ -44,7 +44,7 @@ def public_post_task(model_ids: List[int] = Query(None),
     t.start()
     threads.append(t)
 
-    return {"uid": uid}
+    return params
 
 @app.get(urljoin(os.environ['PUBLIC_GET_OUTPUT_ZIP_BY_UID'], "{uid}"))
 def get_output_zip_by_uid(uid: str):
@@ -70,43 +70,6 @@ def get_models():
     url = os.environ["API_URL"] + os.environ["GET_MODELS"]
     res = requests.get(url)
     return json.loads(res.content)
-
-######## MODELS ########
-#@app.post(os.environ['PUBLIC_POST_MODEL']) This is deprecated already.
-# It should not be possible to upload models from public api. At least for now.
-def post_model(container_tag: str,
-                     input_mountpoint: str,
-                     output_mountpoint: str,
-                     model_mountpoint: Optional[str] = None,
-                     description: Optional[str] = None,
-                     zip_file: UploadFile = File(...),
-                     model_available: Optional[bool] = True,
-                     use_gpu: Optional[bool] = True,
-                     ):
-    params = {
-        "description": description,
-        "container_tag": container_tag,
-        "input_mountpoint": input_mountpoint,
-        "output_mountpoint": output_mountpoint,
-        "model_mountpoint": model_mountpoint,
-        "use_gpu": use_gpu,
-        "model_available": model_available,
-    }
-
-    url = os.environ["API_URL"] + os.environ["POST_MODEL"]
-    res = requests.post(url, files={"zip_file": zip_file.file}, params=params)
-    model = dict(json.loads(res.content))
-
-    return {
-        "id": model["id"],
-        "container_tag": model["container_tag"],
-        "input_mountpoint": model["input_mountpoint"],
-        "output_mountpoint": model["output_mountpoint"],
-        "model_mountpoint": model["model_mountpoint"],
-        "description": model["description"],
-        "model_available": model["model_available"],
-        "use_gpu": model["use_gpu"]
-    }
 
 def on_exit():
     for t in threads:

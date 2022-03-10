@@ -21,6 +21,7 @@ class Task(Base):
 class Model(Base):
     __tablename__ = "models"
     id = Column(Integer, primary_key=True)
+    human_readable_id = Column(String, unique=True, nullable=False)
     description = Column(String, nullable=True)
     container_tag = Column(String, nullable=False)
     use_gpu = Column(Boolean, default=True)

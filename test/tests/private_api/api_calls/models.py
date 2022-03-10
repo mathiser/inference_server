@@ -1,10 +1,12 @@
 import os
+from typing import List
 from urllib.parse import urljoin
 import json
 import requests
 
 
 def post_model(container_tag: str,
+               human_readable_id: List[str],
                input_mountpoint: str,
                output_mountpoint: str,
                description: str = None,
@@ -16,6 +18,7 @@ def post_model(container_tag: str,
     params = {
         "description": description,
         "container_tag": container_tag,
+        "human_readable_id": human_readable_id,
         "input_mountpoint": input_mountpoint,
         "output_mountpoint": output_mountpoint,
         "model_mountpoint": model_mountpoint,
