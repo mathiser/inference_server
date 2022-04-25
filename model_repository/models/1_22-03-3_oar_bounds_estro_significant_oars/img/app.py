@@ -36,6 +36,7 @@ class ESTROInteractive(Application):
         self.add_flow(dataloader_op, restore_dim_op, {"ref_image": "ref_image"})
         self.add_flow(crop_op, restore_dim_op, {"bounding_box": "bounding_box"})
         self.add_flow(restore_dim_op, scale_up_op, {"seg": "seg"})
+        self.add_flow(downscale_op, scale_up_op, {"scale_factor": "scale_factor"})
         self.add_flow(scale_up_op, end_invert_op,  {"seg": "seg"})
         self.add_flow(dataloader_op, writer_op, {"ref_image": "ref_image"})
         self.add_flow(end_invert_op, writer_op, {"seg": "seg"})
