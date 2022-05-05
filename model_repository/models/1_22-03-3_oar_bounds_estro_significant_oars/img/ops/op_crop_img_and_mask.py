@@ -32,9 +32,9 @@ class CropAllImages(Operator):
 
         op_output.set({t[0]: t[1] for t in results}, "label_array_dict")
         op_output.set(bounding_box, "bounding_box")
-        for label, array in op_output.get("label_array_dict").items():
-            img = sitk.GetImageFromArray(array)
-            sitk.WriteImage(img, f"/home/mathis/Desktop/cropped_{label}")
+        #for label, array in op_output.get("label_array_dict").items():
+        #    img = sitk.GetImageFromArray(array)
+        #    sitk.WriteImage(img, f"/home/mathis/Desktop/cropped_{label}")
         print(timer.report())
 
     def crop_array(self, label, array, bounding_box):
