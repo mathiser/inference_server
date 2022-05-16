@@ -1,6 +1,5 @@
 import logging
 import os
-import shutil
 import tarfile
 import tempfile
 import zipfile
@@ -15,9 +14,12 @@ def unzip_response_to_location(res, dst) -> str:
         return res
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_zip = os.path.join(tmp_dir, "tmp.zip")
+        # with open(tmp_zip, "wb") as f:
+        #     for chunk in res.iter_content(chunk_size=1024 * 1024 * 10):
+        #         f.write(chunk)
+
         with open(tmp_zip, "wb") as f:
-            for chunk in res.iter_content(chunk_size=1024 * 1024 * 10):
-                f.write(chunk)
+            f.write(res.content)
 
         with zipfile.ZipFile(file=tmp_zip, mode="r") as zip:
             zip.extractall(path=dst)
