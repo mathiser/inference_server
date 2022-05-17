@@ -17,29 +17,29 @@ logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 
 class MQRabbitImpl(MQInterface):
-    def __init__(self, host: str, db: DBInterface):
+    def __init__(self, host: str, port: int):
         self.host = host
-        self.db = db
+        self.port = port
         self.unfinished_queue_name = os.environ["UNFINISHED_JOB_QUEUE"]
         self.finished_queue_name = os.environ["FINISHED_JOB_QUEUE"]
         self.connection = None
         self.channel = None
         while True:
             try:
-                self.connection = pika.BlockingConnection(pika.ConnectionParameters(self.host))
+                self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host, port=self.port))
                 if self.connection.is_open:
                     self.channel = self.connection.channel()
                     self.unfinished_queue = self.declare_queue(self.unfinished_queue_name)
                     self.finished_queue = self.declare_queue(self.finished_queue_name)
                     break
             except Exception as e:
-                logging.error(f"Could not connect to RabbitMQ - is it running? Expecting it on {os.environ.get('RABBIT_HOST')}:{os.environ.get('RABBIT_PORT')}")
+                logging.error(f"Could not connect to RabbitMQ - is it running? Expecting it on {self.host}:{self.port}")
                 time.sleep(10)
 
-    def __del__(self):
-        if self.channel:
+    def close(self):
+        if self.channel.is_open:
             self.channel.close()
-        if self.connection:
+        if self.connection.is_open:
             self.connection.close()
 
     def declare_queue(self, queue: str):

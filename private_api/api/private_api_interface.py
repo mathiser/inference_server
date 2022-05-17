@@ -29,7 +29,7 @@ class PrivateAPIInterface(ABC):
 
     @abstractmethod
     def post_task(cls,
-                  human_readable_ids: List[str],
+                  human_readable_id: str,
                   zip_file: BinaryIO,
                   uid) -> Task:
         pass

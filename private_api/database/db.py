@@ -16,10 +16,10 @@ class DBImpl(DBInterface):
 
     def add_task(self,
                  zip_file: BinaryIO,
-                 human_readable_ids: List[str],
+                 human_readable_id: str,
                  uid: str) -> Task:
         return self.sqlite_db.add_task(zip_file=zip_file,
-                                       human_readable_ids=human_readable_ids,
+                                       human_readable_id=human_readable_id,
                                        uid=uid)
 
     def get_task_by_id(self, id: int) -> Task:

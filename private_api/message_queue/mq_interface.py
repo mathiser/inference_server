@@ -4,7 +4,6 @@ from database import Task
 
 
 class MQInterface(ABC):
-
     @abstractmethod
     def publish_unfinished_task(cls, task: Task):
         pass

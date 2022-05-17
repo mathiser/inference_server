@@ -36,15 +36,12 @@ class FastAPIImpl(FastAPI):
             return self.api.get_task_by_uid(uid=uid)
 
         @self.post(os.environ['POST_TASK'])
-        def post_task(human_readable_ids: List[str] = Query(None),
+        def post_task(model_human_readable_id: str,
                       zip_file: UploadFile = File(...),
                       uid=None) -> Task:
-            logging.info(f"Human readable ids: {human_readable_ids}")
-            if not (len(human_readable_ids) >= 1):
-                raise HTTPException(500, "Task must have at least ONE model - try again")
 
             t = self.api.post_task(zip_file=zip_file.file,
-                                   human_readable_ids=human_readable_ids,
+                                   model_human_readable_id=model_human_readable_id,
                                    uid=uid)
             return t
 

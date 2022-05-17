@@ -40,59 +40,13 @@ class MockDB(DBInterface):
         with open(self.model_zip, 'w') as myzip:
             myzip.write("Important zip")
 
-        self.id_lookup = {}
-        self.id_lookup["one"] = 1
-        self.id_lookup["two"] = 2
-        self.id_lookup["three"] = 3
-        self.model1 = Model(container_tag="hello-world",
-                            id=1,
-                            human_readable_id="one",
-                            input_mountpoint="/input",
-                            output_mountpoint="/output",
-                            model_mountpoint="/model",
-                            description="This is a tests of a very important database",
-                            model_available=True,
-                            use_gpu=True
-                            )
-        self.model2 = Model(container_tag="hello-world",
-                            id=2,
-                            human_readable_id="two",
-                            input_mountpoint="/input1",
-                            output_mountpoint="/output2",
-                            model_mountpoint=None,
-                            description="This is a tests of a very important database",
-                            model_available=False,
-                            use_gpu=False
-                            )
-        self.model3 = Model(container_tag="hello-world",
-                            id=3,
-                            human_readable_id="three",
-                            input_mountpoint="/input11",
-                            output_mountpoint="/outputff2",
-                            model_mountpoint=None,
-                            description="This is a tesdfsdfsts of a very important database",
-                            model_available=True,
-                            use_gpu=False
-                            )
-        self.task1 = Task(
-            id=1,
-            uid=secrets.token_urlsafe(32),
-            model_ids=[self.model1.id, self.model2.id, self.model3.id],
-            human_readable_ids=["one", "two", "three"],
-            input_zip=self.input_zip,
-            output_zip=self.output_zip,
-            input_volume_uuid=str(uuid.uuid4()),
-            output_volume_uuid=str(uuid.uuid4())
-        )
-
     def purge(self):
         shutil.rmtree(self.base_dir)
 
-    def add_task(self, zip_file: BinaryIO, human_readable_ids: List[str], uid: str) -> Task:
+    def add_task(self, zip_file: BinaryIO, model_human_readable_id: str, uid: str) -> Task:
         t = Task(id=self.task_id,
                  uid=uid,
-                 human_readable_ids=human_readable_ids,
-                 model_ids=[self.id_lookup[hid] for hid in human_readable_ids],
+                 model_human_readable_id=model_human_readable_id,
                  input_zip=os.path.abspath(os.path.join(self.input_base_folder, uid, "input.zip")),
                  input_volume_uuid=str(uuid.uuid4()),
                  output_zip=os.path.abspath(os.path.join(self.output_base_folder, uid, "output.zip")),
@@ -148,6 +102,11 @@ class MockDB(DBInterface):
     def get_model_by_id(self, id: int) -> Model:
         for model in self.models:
             if model.id == id:
+                return model
+
+    def get_model_by_human_readable_id(self, human_readable_id: str) -> Model:
+        for model in self.models:
+            if model.human_readable_id == human_readable_id:
                 return model
 
     def get_models(self) -> List[Model]:

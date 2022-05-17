@@ -8,7 +8,7 @@ class DBInterface(ABC):
     @abstractmethod
     def add_task(cls,
                  zip_file: BinaryIO,
-                 human_readable_ids: List[str],
+                 model_human_readable_id: str,
                  uid: str) -> Task:
         pass
 
@@ -36,6 +36,10 @@ class DBInterface(ABC):
                     model_available: Optional[bool] = True,
                     use_gpu: Optional[bool] = True,
                     ) -> Model:
+        pass
+
+    @abstractmethod
+    def get_model_by_human_readable_id(self, human_readable_id: str) -> Model:
         pass
 
     @abstractmethod

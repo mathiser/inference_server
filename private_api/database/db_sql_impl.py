@@ -52,20 +52,9 @@ class SQLiteImpl(DBInterface):
     def purge(self):
         shutil.rmtree(self.base_dir)
 
-    def human_readable_ids_to_model_ids(self, human_readable_ids):
-        model_ids = []
-        with self.Session() as s:
-            for human_readable_id in human_readable_ids:
-                model = s.query(Model).filter_by(human_readable_id=human_readable_id).first()
-                if model:
-                    model_ids.append(model.id)
-                else:
-                    raise Exception(f"Model id '{model}' does not exist")
-        return model_ids
-
     def add_task(self,
                  zip_file: BinaryIO,
-                 human_readable_ids: List[str],
+                 model_human_readable_id: str,
                  uid: str = None):
 
         if not uid:
@@ -74,8 +63,7 @@ class SQLiteImpl(DBInterface):
         with self.Session() as s:
             # Define task
             t = Task(uid=uid,
-                     human_readable_ids=human_readable_ids,
-                     model_ids=self.human_readable_ids_to_model_ids(human_readable_ids),
+                     model_human_readable_id=model_human_readable_id,
                      input_zip=os.path.abspath(os.path.join(self.input_base_folder, uid, "input.zip")),
                      input_volume_uuid=str(uuid.uuid4()),
                      output_zip=os.path.abspath(os.path.join(self.output_base_folder, uid, "output.zip")),
@@ -165,6 +153,14 @@ class SQLiteImpl(DBInterface):
     def get_model_by_id(self, id: int) -> Model:
         with self.Session() as s:
             model = s.query(Model).filter_by(id=id).first()
+            if model:
+                return model
+            else:
+                raise Exception("Model not found")
+
+    def get_model_by_human_readable_id(self, human_readable_id: str) -> Model:
+        with self.Session() as s:
+            model = s.query(Model).filter_by(human_readable_id=human_readable_id).first()
             if model:
                 return model
             else:

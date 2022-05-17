@@ -29,7 +29,7 @@ class PrivateAPIImpl(PrivateAPIInterface):
     def get_task_by_uid(self, uid: str):
         return self.db.get_task_by_uid(uid=uid)
 
-    def post_task(self, human_readable_ids: List[str],
+    def post_task(self, model_human_readable_id: str,
                   zip_file: BinaryIO,
                   uid=None) -> Task:
 
@@ -37,7 +37,7 @@ class PrivateAPIImpl(PrivateAPIInterface):
             uid = secrets.token_urlsafe(32)
 
         t = self.db.add_task(zip_file=zip_file,
-                             human_readable_ids=human_readable_ids,
+                             model_human_readable_id=model_human_readable_id,
                              uid=uid)
 
         self.mq.publish_unfinished_task(t)

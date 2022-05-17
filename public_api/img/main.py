@@ -24,9 +24,9 @@ def hello_world():
     return {"message": "Hello world - Welcome to the public database API"}
 
 @app.post(os.environ['PUBLIC_POST_TASK'])
-def public_post_task(human_readable_ids: List[str] = Query(None),
+def public_post_task(model_human_readable_id: str,
                      zip_file: UploadFile = File(...)):
-    logging.info(f"Task with models: {human_readable_ids}")
+    logging.info(f"Task with models: {model_human_readable_id}")
 
     # Give this request a unique identifier
     def post_task_thread(url, zip_file_from_res, params):
@@ -36,7 +36,7 @@ def public_post_task(human_readable_ids: List[str] = Query(None),
 
     uid = secrets.token_urlsafe(32)
     params = {
-        "human_readable_ids": human_readable_ids,
+        "model_human_readable_id": model_human_readable_id,
         "uid": uid
     }
     url = os.environ['API_URL'] + os.environ.get("POST_TASK")

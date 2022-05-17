@@ -1,40 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, PickleType
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, PickleType, ForeignKey
+from sqlalchemy.orm import declarative_base, relationship, object_session
 
 Base = declarative_base()
-
-class Task(Base):
-    __tablename__ = "tasks"
-    id = Column(Integer, primary_key=True)
-    uid = Column(String)
-    model_ids = Column(PickleType, default=[])
-    human_readable_ids = Column(PickleType, default=[])
-    datetime_created = Column(DateTime, default=datetime.utcnow)
-    input_zip = Column(String, nullable=True)
-    output_zip = Column(String, nullable=True)
-    input_volume_uuid = Column(String, nullable=False)
-    output_volume_uuid = Column(String, nullable=False)
-    datetime_dispatched = Column(DateTime, nullable=True)
-    datetime_finished = Column(DateTime, nullable=True)
-    is_finished = Column(Boolean, default=False)
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "uid": self.uid,
-            "model_ids": self.model_ids,
-            "human_readable_ids": self.human_readable_ids,
-            "datetime_created": self.datetime_created,
-            "input_zip": self.input_zip,
-            "input_volume_uuid": self.output_volume_uuid,
-            "output_zip": self.output_zip,
-            "output_volume_uuid": self.output_volume_uuid,
-            "datetime_dispatched": self.datetime_dispatched,
-            "datetime_finished": self.datetime_finished,
-            "is_finished": self.is_finished
-        }
 
 class Model(Base):
     __tablename__ = "models"
@@ -69,5 +38,34 @@ class Model(Base):
 
 
 
+
+class Task(Base):
+    __tablename__ = "tasks"
+    id = Column(Integer, primary_key=True)
+    uid = Column(String)
+    model_human_readable_id = Column(Integer, ForeignKey("models.human_readable_id"))
+    datetime_created = Column(DateTime, default=datetime.utcnow)
+    input_zip = Column(String, nullable=True)
+    output_zip = Column(String, nullable=True)
+    input_volume_uuid = Column(String, nullable=False)
+    output_volume_uuid = Column(String, nullable=False)
+    datetime_dispatched = Column(DateTime, nullable=True)
+    datetime_finished = Column(DateTime, nullable=True)
+    is_finished = Column(Boolean, default=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "uid": self.uid,
+            "model_human_readable_id": self.model_human_readable_id,
+            "datetime_created": self.datetime_created,
+            "input_zip": self.input_zip,
+            "input_volume_uuid": self.output_volume_uuid,
+            "output_zip": self.output_zip,
+            "output_volume_uuid": self.output_volume_uuid,
+            "datetime_dispatched": self.datetime_dispatched,
+            "datetime_finished": self.datetime_finished,
+            "is_finished": self.is_finished
+        }
 
 

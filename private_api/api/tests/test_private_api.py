@@ -1,46 +1,44 @@
 import unittest
 import dotenv
 from api.private_api_impl import PrivateAPIImpl
-from .mock_ups.mock_db import MockDB
-from .mock_ups.mock_mq import MockMQ
+from testing.mock_components.mock_db import MockDB
+from testing.mock_components.mock_mq import MockMQ
+from testing.mock_components.mock_models_and_tasks import MockModelsAndTasks
 
 dotenv.load_dotenv()
 
 
 class TestPrivateAPIImpl(unittest.TestCase):
     """
-    This is a tests of functions in api/img/api/private_fastapi_impl.py
+    This is a testing of functions in api/img/api/private_fastapi_impl.py
     """
 
     def setUp(self) -> None:
         self.base_dir = ".tmp"
         self.db = MockDB()
+        self.repo = MockModelsAndTasks()
         self.mq = MockMQ()
         self.api = PrivateAPIImpl(db=self.db, mq=self.mq)
 
     def tearDown(self):
         self.db.purge()
+        self.repo.purge()
 
     def test_hello_world(self):
         self.assertIn("message", self.api.hello_world().keys())
         self.assertIn("Hello world", self.api.hello_world()["message"])
 
     def test_get_tasks(self):
-        task1 = self.test_post_task()
+        task = self.test_post_task()
         tasks = self.api.get_tasks()
         self.assertEqual(len(tasks), 1)
-        self.assertEqual(tasks[0].to_dict(), task1.to_dict())
-
-        task2 = self.test_post_task()
-        tasks = self.api.get_tasks()
-        self.assertEqual(len(tasks), 2)
-        self.assertEqual(tasks[1].to_dict(), task2.to_dict())
+        self.assertEqual(tasks[0].to_dict(), task.to_dict())
 
     def test_post_task(self):
-        with open(self.db.task1.input_zip, "br") as r:
-            task = self.api.post_task(uid=self.db.task1.uid,
+        with open(self.repo.task.input_zip, "br") as r:
+            task = self.api.post_task(uid=self.repo.task.uid,
                                       zip_file=r,
-                                      human_readable_ids=self.db.task1.human_readable_ids)
+                                      model_human_readable_id=self.repo.model.human_readable_id)
         self.assertIsNotNone(task)
         return task
 
@@ -62,14 +60,14 @@ class TestPrivateAPIImpl(unittest.TestCase):
     def test_post_model(self):
         with open(self.db.model_zip, "br") as r:
             model = self.api.post_model(
-                                description=self.db.model1.description,
-                                human_readable_id=self.db.model1.human_readable_id,
-                                container_tag=self.db.model1.container_tag,
-                                input_mountpoint=self.db.model1.input_mountpoint,
-                                output_mountpoint=self.db.model1.output_mountpoint,
-                                model_mountpoint=self.db.model1.model_mountpoint,
-                                model_available=self.db.model1.model_available,
-                                use_gpu=self.db.model1.use_gpu,
+                                description=self.repo.model.description,
+                                human_readable_id=self.repo.model.human_readable_id,
+                                container_tag=self.repo.model.container_tag,
+                                input_mountpoint=self.repo.model.input_mountpoint,
+                                output_mountpoint=self.repo.model.output_mountpoint,
+                                model_mountpoint=self.repo.model.model_mountpoint,
+                                model_available=self.repo.model.model_available,
+                                use_gpu=self.repo.model.use_gpu,
                                 zip_file=r)
         self.assertIsNotNone(model)
         return model
