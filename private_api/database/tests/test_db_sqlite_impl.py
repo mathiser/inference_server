@@ -1,6 +1,6 @@
 import unittest
 
-from database.db_sql_impl import SQLiteImpl
+from database.db_sql_impl import DBSQLiteImpl
 from database.models import Base
 
 from testing.mock_components.mock_models_and_tasks import MockModelsAndTasks
@@ -14,7 +14,7 @@ class TestSQLiteImpl(unittest.TestCase):
     def setUp(self) -> None:
         self.base_dir = ".tmp"
         self.repo = MockModelsAndTasks()
-        self.db = SQLiteImpl(base_dir=self.base_dir, declarative_base=Base)
+        self.db = DBSQLiteImpl(base_dir=self.base_dir, declarative_base=Base)
 
     def tearDown(self):
         self.db.purge()

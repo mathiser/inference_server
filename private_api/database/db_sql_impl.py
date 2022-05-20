@@ -4,20 +4,21 @@ import secrets
 import shutil
 import uuid
 from datetime import datetime
-from typing import List, BinaryIO, Optional
+from typing import List, BinaryIO, Union
 
 import sqlalchemy
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 from .db_interface import DBInterface
-from .models import Model, Task
+from .models import Model, Task, Base
 
 LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 
-class SQLiteImpl(DBInterface):
-    def __init__(self, declarative_base, base_dir="./"):
+class DBSQLiteImpl(DBInterface):
+    def __init__(self, declarative_base, base_dir=os.environ.get("DATA_DIR")):
         self.declarative_base = declarative_base
 
         # data volume mount point
@@ -52,7 +53,7 @@ class SQLiteImpl(DBInterface):
     def purge(self):
         shutil.rmtree(self.base_dir)
 
-    def add_task(self,
+    def post_task(self,
                  zip_file: BinaryIO,
                  model_human_readable_id: str,
                  uid: str = None):
@@ -105,22 +106,28 @@ class SQLiteImpl(DBInterface):
             tasks = s.query(Task)
             return list(tasks)
 
-    def add_model(self,
-                  container_tag: str,
-                  human_readable_id: str,
-                  input_mountpoint: str,
-                  output_mountpoint: str,
-                  zip_file: BinaryIO,
-                  model_mountpoint: Optional[str] = None,
-                  description: Optional[str] = None,
-                  model_available: Optional[bool] = True,
-                  use_gpu: Optional[bool] = True,
-                  ):
+    def post_model(self,
+                   container_tag: str,
+                   human_readable_id: str,
+                   input_mountpoint: Union[str, None] = None,
+                   output_mountpoint: Union[str, None] = None,
+                   model_mountpoint: Union[str, None] = None,
+                   description: Union[str, None] = None,
+                   zip_file: Union[BinaryIO, None] = None,
+                   model_available: Union[bool, None] = None,
+                   use_gpu: Union[bool, None] = None
+                   ):
 
         uid = str(uuid.uuid4())
         model_zip = None
         if model_available:
+            assert zip_file
             model_zip = os.path.join(self.model_base_folder, uid, "model.zip")
+            os.makedirs(os.path.dirname(model_zip))
+            # write model_zip to model_zip
+            with open(model_zip, 'wb') as f:
+                f.write(zip_file.read())
+
 
         model = Model(
             uid=uid,
@@ -136,17 +143,14 @@ class SQLiteImpl(DBInterface):
             use_gpu=use_gpu
         )
 
-        ## Add model to DB
-        with self.Session() as s:
-            s.add(model)
-            s.commit()
-            s.refresh(model)
-
-        if model.model_available:
-            os.makedirs(os.path.dirname(model.model_zip))
-            # write model_zip to model_zip
-            with open(model.model_zip, 'wb') as f:
-                f.write(zip_file.read())
+        try:
+            ## Add model to DB
+            with self.Session() as s:
+                s.add(model)
+                s.commit()
+                s.refresh(model)
+        except IntegrityError as e:
+            raise e
 
         return model
 
@@ -170,7 +174,7 @@ class SQLiteImpl(DBInterface):
         with self.Session() as s:
             return list(s.query(Model))
 
-    def post_output_by_uid(self, uid: str, zip_file: BinaryIO) -> Task:
+    def post_output_zip_by_uid(self, uid: str, zip_file: BinaryIO) -> Task:
         with self.Session() as s:
             # Get the task
             t = s.query(Task).filter_by(uid=uid).first()
@@ -187,3 +191,5 @@ class SQLiteImpl(DBInterface):
             s.commit()
             s.refresh(t)
             return t
+
+DB = DBSQLiteImpl(declarative_base=Base, base_dir="./mounts")

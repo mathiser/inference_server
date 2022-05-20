@@ -1,6 +1,6 @@
 import logging
 import secrets
-from typing import Optional, List, BinaryIO
+from typing import Optional, BinaryIO, Union
 
 from database import DBInterface, Task, Model
 from message_queue import MQInterface
@@ -36,7 +36,7 @@ class PrivateAPIImpl(PrivateAPIInterface):
         if not uid:
             uid = secrets.token_urlsafe(32)
 
-        t = self.db.add_task(zip_file=zip_file,
+        t = self.db.post_task(zip_file=zip_file,
                              model_human_readable_id=model_human_readable_id,
                              uid=uid)
 
@@ -44,10 +44,10 @@ class PrivateAPIImpl(PrivateAPIInterface):
 
         return t
 
-    def post_output_by_uid(self, uid: str, zip_file: BinaryIO) -> Task:
+    def post_output_zip_by_uid(self, uid: str, zip_file: BinaryIO) -> Task:
 
         # Get the task
-        task = self.db.post_output_by_uid(uid=uid,
+        task = self.db.post_output_zip_by_uid(uid=uid,
                                           zip_file=zip_file)
 
         # Publish the finished job to "finished_jobs"
@@ -58,16 +58,16 @@ class PrivateAPIImpl(PrivateAPIInterface):
     def post_model(self,
                    container_tag: str,
                    human_readable_id: str,
-                   input_mountpoint: str,
-                   output_mountpoint: str,
-                   model_mountpoint: Optional[str] = None,
-                   description: Optional[str] = None,
-                   zip_file: Optional[BinaryIO] = None,
-                   model_available: Optional[bool] = True,
-                   use_gpu: Optional[bool] = True,
+                   input_mountpoint: Union[str, None] = None,
+                   output_mountpoint: Union[str, None] = None,
+                   model_mountpoint: Union[str, None] = None,
+                   description: Union[str, None] = None,
+                   zip_file: Union[BinaryIO, None] = None,
+                   model_available: Union[bool, None] = None,
+                   use_gpu: Union[bool, None] = None,
                    ) -> Model:
 
-        return self.db.add_model(
+        return self.db.post_model(
             container_tag=container_tag,
             human_readable_id=human_readable_id,
             input_mountpoint=input_mountpoint,
@@ -81,6 +81,9 @@ class PrivateAPIImpl(PrivateAPIInterface):
 
     def get_model_by_id(self, id: int):
         return self.db.get_model_by_id(id=id)
+
+    def get_model_by_human_readable_id(self, human_readable_id: str):
+        return self.db.get_model_by_human_readable_id(human_readable_id=human_readable_id)
 
     def get_models(self):
         return self.db.get_models()

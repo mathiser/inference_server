@@ -9,6 +9,11 @@ LOG_FORMAT = ('%(levelname)s:%(asctime)s:%(message)s')
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 def zip_folder_to_tmpfile(src) -> zipfile.ZipFile:
+    if not os.path.exists(src):
+        os.makedirs(src)
+        with open(os.path.join(src, "no_output_found.error"), "w") as f:
+            f.write("This is a dummyfile")
+
     tmp_zip = tempfile.TemporaryFile(suffix=".zip")
     with zipfile.ZipFile(tmp_zip, "w") as zip:
         for file in os.listdir(src):

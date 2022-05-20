@@ -4,7 +4,6 @@ import time
 
 import pika
 
-from database import DBInterface
 from message_queue import MQInterface
 
 from database import Task
@@ -22,35 +21,37 @@ class MQRabbitImpl(MQInterface):
         self.port = port
         self.unfinished_queue_name = os.environ["UNFINISHED_JOB_QUEUE"]
         self.finished_queue_name = os.environ["FINISHED_JOB_QUEUE"]
-        self.connection = None
-        self.channel = None
+
+    def get_connection_and_channel(self):
+        connection = None
+        channel = None
         while True:
-            try:
-                self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host, port=self.port))
-                if self.connection.is_open:
-                    self.channel = self.connection.channel()
-                    self.unfinished_queue = self.declare_queue(self.unfinished_queue_name)
-                    self.finished_queue = self.declare_queue(self.finished_queue_name)
-                    break
-            except Exception as e:
+            connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host, port=self.port))
+            if connection.is_open:
+                channel = connection.channel()
+                channel.queue_declare(queue=self.unfinished_queue_name, durable=True)
+                channel.queue_declare(queue=self.finished_queue_name, durable=True)
+
+                return connection, channel
+            else:
                 logging.error(f"Could not connect to RabbitMQ - is it running? Expecting it on {self.host}:{self.port}")
                 time.sleep(10)
 
-    def close(self):
-        if self.channel.is_open:
-            self.channel.close()
-        if self.connection.is_open:
-            self.connection.close()
-
-    def declare_queue(self, queue: str):
-        return self.channel.queue_declare(queue=queue, durable=True)
+    def close(self, connection, channel):
+        if channel.is_open:
+            channel.close()
+        if connection.is_open:
+            connection.close()
 
     def publish_unfinished_task(self, task: Task):
-        return self.channel.basic_publish(exchange="", routing_key=self.unfinished_queue_name, body=f"{task.uid}")
+        conn, chan = self.get_connection_and_channel()
+        chan.basic_publish(exchange="", routing_key=self.unfinished_queue_name, body=f"{task.uid}")
+        self.close(conn, chan)
 
     def publish_finished_task(self, task: Task):
-        return self.channel.basic_publish(exchange="", routing_key=self.finished_queue_name, body=f"{task.uid}")
-
+        conn, chan = self.get_connection_and_channel()
+        chan.basic_publish(exchange="", routing_key=self.finished_queue_name, body=f"{task.uid}")
+        self.close(conn, chan)
 
     def get_from_queue(self, queue_name):
         method_frame, header_frame, body = self.channel.basic_get(queue_name)

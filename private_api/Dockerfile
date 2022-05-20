@@ -5,5 +5,5 @@ ADD requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 
 RUN mkdir -p /opt/app/ /opt/app/data/
-COPY img /opt/app/
+COPY . /opt/app/
 WORKDIR /opt/app/

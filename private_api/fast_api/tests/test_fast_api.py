@@ -11,8 +11,8 @@ from testing.mock_components.mock_db import MockDB
 from testing.mock_components.mock_mq import MockMQ
 from testing.mock_components.mock_models_and_tasks import MockModelsAndTasks
 
-dotenv.load_dotenv()
 
+dotenv.load_dotenv(".env")
 
 class TestFastAPIImpl(unittest.TestCase):
     """
@@ -68,6 +68,12 @@ class TestFastAPIImpl(unittest.TestCase):
         echo = Task(**res.json())
         self.assertEqual(task.to_dict(), echo.to_dict())
 
+    def test_get_task_by_id(self):
+        task = self.test_post_task()
+        res = self.cli.get(os.environ['GET_TASK_BY_ID'] + str(task.id))
+        self.assertEqual(res.status_code, 200)
+        echo = Task(**res.json())
+        self.assertEqual(task.to_dict(), echo.to_dict())
     def test_post_model(self):
         with open(self.repo.model_zip, "rb") as r:
             res = self.cli.post(os.environ['POST_MODEL'],

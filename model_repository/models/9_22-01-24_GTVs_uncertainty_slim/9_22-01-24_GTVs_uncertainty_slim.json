@@ -1,1 +1,0 @@
-{"container_tag": "mathiser/inference_server_models:GTVs_uncertainty_task300", "human_readable_id": "gtvs_task300_mcdropout_slim", "input_mountpoint": "/input", "output_mountpoint": "/output", "model_mountpoint": "/model", "zip_file": "9_22-01-24_GTVs_uncertainty_slim.zip", "use_gpu": true, "model_available": true, "description": "GTV segmentation in HN - single fold"}

@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import List, BinaryIO, Optional
+from typing import List, BinaryIO, Optional, Union
 
 from .models import Task, Model
 
 
 class DBInterface(ABC):
     @abstractmethod
-    def add_task(cls,
+    def post_task(cls,
                  zip_file: BinaryIO,
                  model_human_readable_id: str,
                  uid: str) -> Task:
@@ -25,17 +25,18 @@ class DBInterface(ABC):
         pass
 
     @abstractmethod
-    def add_model(cls,
-                    container_tag: str,
-                    human_readable_id: str,
-                    input_mountpoint: str,
-                    output_mountpoint: str,
-                    zip_file: BinaryIO,
-                    model_mountpoint: Optional[str] = None,
-                    description: Optional[str] = None,
-                    model_available: Optional[bool] = True,
-                    use_gpu: Optional[bool] = True,
-                    ) -> Model:
+    def post_model(cls,
+                   container_tag: str,
+                   human_readable_id: str,
+                   input_mountpoint: Union[str, None] = None,
+                   output_mountpoint: Union[str, None] = None,
+                   model_mountpoint: Union[str, None] = None,
+                   description: Union[str, None] = None,
+                   zip_file: Union[BinaryIO, None] = None,
+                   model_available: Union[bool, None] = None,
+                   use_gpu: Union[bool, None] = None
+
+                   ) -> Model:
         pass
 
     @abstractmethod
@@ -51,6 +52,6 @@ class DBInterface(ABC):
         pass
 
     @abstractmethod
-    def post_output_by_uid(cls, uid: str, zip_file: BinaryIO) -> Task:
+    def post_output_zip_by_uid(cls, uid: str, zip_file: BinaryIO) -> Task:
         pass
 

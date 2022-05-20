@@ -1,0 +1,10 @@
+python-multipart
+fastapi
+uvicorn[standard]
+sqlalchemy>=1.4
+pika
+requests
+pydantic
+httpx
+PyMySQL
+python-dotenv

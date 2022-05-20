@@ -69,9 +69,15 @@ class MockDB(DBInterface):
     def get_tasks(self) -> List[Task]:
         return self.tasks
 
-    def add_model(self, container_tag: str, human_readable_id: str, input_mountpoint: str, output_mountpoint: str,
-                  zip_file: BinaryIO, model_mountpoint: Optional[str] = None, description: Optional[str] = None,
-                  model_available: Optional[bool] = True, use_gpu: Optional[bool] = True) -> Model:
+    def add_model(self, container_tag: str,
+                  human_readable_id: str,
+                  zip_file: BinaryIO,
+                  input_mountpoint: Optional[str] = None,
+                  output_mountpoint: Optional[str] = None,
+                  model_mountpoint: Optional[str] = None,
+                  description: Optional[str] = None,
+                  model_available: Optional[bool] = True,
+                  use_gpu: Optional[bool] = True) -> Model:
 
         uid = str(uuid.uuid4())
         model_zip = None

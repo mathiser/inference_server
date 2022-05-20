@@ -5,7 +5,7 @@ from urllib.parse import urljoin
 
 import dotenv
 import requests
-dotenv.load_dotenv("/opt/tests/pub_api_paths")
+dotenv.load_dotenv("/opt/testing/pub_api_paths")
 import json
 import certifi
 
@@ -77,7 +77,7 @@ class TestPublicAPIModelAndInputs(unittest.TestCase):
 
             if res.ok:
                 with open(f"/data/outputs/{holder.task['uid']}/output.zip", "wb") as f:
-                    for chunk in res.iter_content(chunk_size=1000000):
+                    for chunk in res.iter_content(chunk_size=c):
                         f.write(chunk)
                 break
             else:

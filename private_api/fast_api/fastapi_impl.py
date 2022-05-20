@@ -1,8 +1,9 @@
 import logging
 import os
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Union
 from urllib.parse import urljoin
 
+import dotenv
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from starlette.responses import FileResponse
 
@@ -13,7 +14,7 @@ LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
 
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
-
+dotenv.load_dotenv(".env")
 class FastAPIImpl(FastAPI):
     def __init__(self, api: PrivateAPIInterface, **extra: Any):
         super().__init__(**extra)
@@ -37,8 +38,8 @@ class FastAPIImpl(FastAPI):
 
         @self.post(os.environ['POST_TASK'])
         def post_task(model_human_readable_id: str,
-                      zip_file: UploadFile = File(...),
-                      uid=None) -> Task:
+                      zip_file: Union[UploadFile, None] = None,
+                      uid: Union[str, None] = None) -> Task:
 
             t = self.api.post_task(zip_file=zip_file.file,
                                    model_human_readable_id=model_human_readable_id,
@@ -55,8 +56,10 @@ class FastAPIImpl(FastAPI):
                 raise HTTPException(status_code=404, detail="Input zip not found - try posting task again")
 
         @self.post(urljoin(os.environ['POST_OUTPUT_ZIP_BY_UID'], "{uid}"))
-        def post_output_by_uid(uid: str, zip_file: UploadFile = File(...)) -> Task:
-            return self.api.post_output_by_uid(uid=uid,
+        def post_output_zip_by_uid(uid: str,
+                               zip_file: UploadFile = File(...)) -> Task:
+
+            return self.api.post_output_zip_by_uid(uid=uid,
                                                zip_file=zip_file.file)
 
         @self.get(urljoin(os.environ['GET_OUTPUT_ZIP_BY_UID'], "{uid}"))
@@ -85,21 +88,23 @@ class FastAPIImpl(FastAPI):
         @self.post(os.environ['POST_MODEL'])
         def post_model(container_tag: str,
                        human_readable_id: str,
-                       input_mountpoint: str,
-                       output_mountpoint: str,
-                       model_mountpoint: Optional[str] = None,
-                       description: Optional[str] = None,
-                       zip_file: Optional[UploadFile] = File(None),
-                       model_available: Optional[bool] = True,
-                       use_gpu: Optional[bool] = True,
+                       input_mountpoint: Union[str, None] = None,
+                       output_mountpoint: Union[str, None] = None,
+                       model_mountpoint: Union[str, None] = None,
+                       description: Union[str, None] = None,
+                       zip_file: Union[UploadFile, None] = None,
+                       model_available: Union[bool, None] = None,
+                       use_gpu: Union[bool, None] = None,
                        ) -> Model:
+            if zip_file:
+                zip_file = zip_file.file
 
             return self.api.post_model(
                 container_tag=container_tag,
                 human_readable_id=human_readable_id,
                 input_mountpoint=input_mountpoint,
                 output_mountpoint=output_mountpoint,
-                zip_file=zip_file.file,
+                zip_file=zip_file,
                 model_mountpoint=model_mountpoint,
                 description=description,
                 model_available=model_available,
@@ -109,6 +114,10 @@ class FastAPIImpl(FastAPI):
         @self.get(urljoin(os.environ['GET_MODEL_BY_ID'], "{id}"))
         def get_model_by_id(id: int):
             return self.api.get_model_by_id(id=id)
+
+        @self.get(urljoin(os.environ['GET_MODEL_BY_HUMAN_READABLE_ID'], "{human_readable_id}"))
+        def get_model_by_human_readable_id(human_readable_id: str):
+            return self.api.get_model_by_human_readable_id(human_readable_id=human_readable_id)
 
         @self.get(os.environ['GET_MODELS'])
         def get_models():

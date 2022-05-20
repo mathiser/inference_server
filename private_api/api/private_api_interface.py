@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional, List, BinaryIO
+from typing import Optional, List, BinaryIO, Union
 
 from database import DBInterface, Task, Model
 from message_queue import MQInterface
@@ -35,7 +35,7 @@ class PrivateAPIInterface(ABC):
         pass
 
     @abstractmethod
-    def post_output_by_uid(cls, uid: str, zip_file: BinaryIO) -> Task:
+    def post_output_zip_by_uid(cls, uid: str, zip_file: BinaryIO) -> Task:
         pass
 
 
@@ -43,18 +43,22 @@ class PrivateAPIInterface(ABC):
     def post_model(cls,
                    container_tag: str,
                    human_readable_id: str,
-                   input_mountpoint: str,
-                   output_mountpoint: str,
-                   model_mountpoint: Optional[str] = None,
-                   description: Optional[str] = None,
-                   zip_file: Optional[BinaryIO] = None,
-                   model_available: Optional[bool] = True,
-                   use_gpu: Optional[bool] = True,
+                   input_mountpoint: Union[str, None] = None,
+                   output_mountpoint: Union[str, None] = None,
+                   model_mountpoint: Union[str, None] = None,
+                   description: Union[str, None] = None,
+                   zip_file: Union[BinaryIO, None] = None,
+                   model_available: Union[bool, None] = None,
+                   use_gpu: Union[bool, None] = None
                    ) -> Model:
         pass
 
     @abstractmethod
     def get_model_by_id(cls, id: int) -> Model:
+        pass
+
+    @abstractmethod
+    def get_model_by_human_readable_id(cls, human_readable_id: str) -> Model:
         pass
 
     @abstractmethod

@@ -6,7 +6,7 @@ import dotenv
 from api_calls import *
 import requests
 
-dotenv.load_dotenv("/opt/tests/private_api_paths")
+dotenv.load_dotenv("/opt/testing/private_api_paths")
 
 class Holder:
     def __init__(self):

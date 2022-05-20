@@ -1,1 +1,0 @@
-{"docker_image_context": "img","container_tag": "mathiser/inference_server_models:5002_HN_OAR_CTOnly", "human_readable_id": "5002_hn_oar_ct_only", "input_mountpoint": "/input", "output_mountpoint": "/output", "model_mountpoint": "/model", "zip_file": "22-01-21_5002_hn_oar_ct_only.zip", "use_gpu": true, "model_available": true, "description": "From Estro 5.1"}
