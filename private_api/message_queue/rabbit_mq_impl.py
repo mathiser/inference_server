@@ -4,8 +4,6 @@ import time
 
 import pika
 
-from message_queue import MQInterface
-
 from database import Task
 
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '

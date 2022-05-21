@@ -24,7 +24,7 @@ class TestSQLiteImpl(unittest.TestCase):
         with open(self.repo.input_zip, "rb") as r:
             task = self.db.add_task(model_human_readable_id=self.repo.model.human_readable_id,
                                     zip_file=r)
-
+        self.assertIn(self.repo.model.human_readable_id, task.model_human_readable_id)
         return task
 
     def test_get_task_by_id(self):

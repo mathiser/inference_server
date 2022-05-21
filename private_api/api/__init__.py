@@ -1,2 +1,1 @@
-from .private_api_interface import PrivateAPIInterface
-from .private_api_impl import PrivateAPIImpl
+from .api_fastapi_impl import APIFastAPIImpl
