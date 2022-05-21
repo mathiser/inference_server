@@ -14,8 +14,7 @@ services:
       - --entrypoints.websecure.address=:443
       - --providers.file.directory=/configuration/
       - --providers.file.watch=true
-    networks:
-      - ${NETWORK_NAME}
+
     ports:
       #- 80:80
       - 443:443
@@ -38,10 +37,8 @@ services:
     command: python main.py
     env_file:
       - .env
-    networks:
-      - ${NETWORK_NAME}
     ports:
-      - ${PUBLIC_API_PORT}:${PUBLIC_API_PORT}
+      - ${PUBLIC_API_PORT}
     labels:
       - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.rule=Host(`localhost`)"
       - "traefik.http.services.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.loadbalancer.server.port=${PUBLIC_API_PORT}"
@@ -57,7 +54,7 @@ services:
     depends_on:
       - rabbit
     ports:
-      - ${API_PORT}:${API_PORT}
+      - ${API_PORT}
     environment:
       - PYTHONUNBUFFERED=1
     env_file:
@@ -65,8 +62,7 @@ services:
     build:
       context: ./private_api
       dockerfile: Dockerfile
-    networks:
-      - ${NETWORK_NAME}
+
 
     volumes:
      #- ${DATA_VOLUME}:${DATA_DIR}
@@ -81,10 +77,8 @@ services:
     restart: on-failure
     image: ${RABBIT_DOCKER_TAG}
     ports:
-      - ${RABBIT_PORT}:${RABBIT_PORT}
+      - ${RABBIT_PORT}
     hostname: ${RABBIT_HOSTNAME}
-    networks:
-      - ${NETWORK_NAME}
 
   job-consumer:
     hostname: consumer
@@ -97,8 +91,6 @@ services:
       - api
     env_file:
       - .env
-    networks:
-      - ${NETWORK_NAME}
     build:
       context: ./job_consumer/
       dockerfile: Dockerfile
@@ -115,5 +107,3 @@ volumes:
   models_storage:
   logs_storage:
 
-networks:
-  inference_server_default:

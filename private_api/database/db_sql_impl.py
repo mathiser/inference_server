@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 
 class DBSQLiteImpl(DBInterface):
-    def __init__(self, declarative_base, base_dir=os.environ.get("DATA_DIR")):
+    def __init__(self, declarative_base, base_dir):
         self.declarative_base = declarative_base
 
         # data volume mount point
@@ -192,4 +192,4 @@ class DBSQLiteImpl(DBInterface):
             s.refresh(t)
             return t
 
-DB = DBSQLiteImpl(declarative_base=Base, base_dir="./mounts")
+DB = DBSQLiteImpl(declarative_base=Base, base_dir=os.environ.get("DATA_DIR"))
