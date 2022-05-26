@@ -12,3 +12,21 @@ class TaskZipPathExistsException(Exception):
 
 class InsertTaskException(Exception):
     pass
+
+class ZipFileMissingException(Exception):
+    pass
+
+class ContradictingZipFileException(Exception):
+    pass
+
+class ModelInitializationException(Exception):
+    pass
+
+class TaskInitializationException(Exception):
+    pass
+
+class ModelInsertionException(Exception):
+    pass
+
+class ModelMountPointMissingException(Exception):
+    pass

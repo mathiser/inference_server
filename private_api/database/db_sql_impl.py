@@ -10,7 +10,8 @@ import sqlalchemy
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from .db_exceptions import TaskNotFoundException, TaskOutputZipNotFoundException, ModelNotFoundException, \
-    TaskZipPathExistsException, InsertTaskException
+    TaskZipPathExistsException, InsertTaskException, ZipFileMissingException, ContradictingZipFileException, \
+    ModelInitializationException, ModelInsertionException, TaskInitializationException, ModelMountPointMissingException
 from .db_interface import DBInterface
 from .models import Model, Task, Base
 
@@ -19,7 +20,7 @@ logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 
 class DBSQLiteImpl(DBInterface):
-    def __init__(self, declarative_base, base_dir):
+    def __init__(self, base_dir, declarative_base=Base):
         self.declarative_base = declarative_base
 
         # data volume mount point
@@ -64,19 +65,25 @@ class DBSQLiteImpl(DBInterface):
 
         with self.Session() as session:
             # Define task
-            task = Task(uid=uid,
-                     model_human_readable_id=model_human_readable_id,
-                     input_zip=os.path.abspath(os.path.join(self.input_base_folder, uid, "input.zip")),
-                     input_volume_uuid=str(uuid.uuid4()),
-                     output_zip=os.path.abspath(os.path.join(self.output_base_folder, uid, "output.zip")),
-                     output_volume_uuid=str(uuid.uuid4())
-                     )
+            try:
+                task = Task(uid=uid,
+                            model_human_readable_id=model_human_readable_id,
+                            input_zip=os.path.abspath(os.path.join(self.input_base_folder, uid, "input.zip")),
+                            input_volume_uuid=str(uuid.uuid4()),
+                            output_zip=os.path.abspath(os.path.join(self.output_base_folder, uid, "output.zip")),
+                            output_volume_uuid=str(uuid.uuid4())
+                            )
+
+            except Exception as e:
+                logging.error(e)
+                raise TaskInitializationException
 
             # Commit task and refresh
             try:
                 session.add(task)
                 session.commit()
                 session.refresh(task)
+
             except Exception as e:
                 print(e)
                 raise InsertTaskException
@@ -108,7 +115,7 @@ class DBSQLiteImpl(DBInterface):
             if t:
                 return t
             else:
-                raise TaskNotFoundE()
+                raise TaskNotFoundException
 
     def get_tasks(self) -> List[Task]:
         with self.Session() as session:
@@ -127,23 +134,11 @@ class DBSQLiteImpl(DBInterface):
                    use_gpu: Union[bool, None] = None
                    ):
 
-        uid = str(uuid.uuid4())
-        model_zip = None
-        if model_available:
-            assert zip_file
-            model_zip = os.path.join(self.model_base_folder, uid, "model.zip")
-            os.makedirs(os.path.dirname(model_zip))
-            # write model_zip to model_zip
-            with open(model_zip, 'wb') as f:
-                f.write(zip_file.read())
-
         model = Model(
-            uid=uid,
+            uid=str(uuid.uuid4()),
             description=description,
             human_readable_id=human_readable_id,
             container_tag=container_tag,
-            model_zip=model_zip,
-            model_volume_uuid=str(uuid.uuid4()),
             input_mountpoint=input_mountpoint,
             output_mountpoint=output_mountpoint,
             model_mountpoint=model_mountpoint,
@@ -151,14 +146,32 @@ class DBSQLiteImpl(DBInterface):
             use_gpu=use_gpu
         )
 
+        if model.model_available and zip_file:
+            if not model_mountpoint:
+                raise ModelMountPointMissingException
+
+            model.model_volume_uuid = str(uuid.uuid4())
+            model.model_zip = os.path.join(self.model_base_folder, model.uid, "model.zip")
+            os.makedirs(os.path.dirname(model.model_zip))
+            # write model_zip to model_zip
+            with open(model.model_zip, 'wb') as f:
+                f.write(zip_file.read())
+
+        elif model.model_available and not zip_file:
+            raise ZipFileMissingException
+
+        elif not model.model_available and zip_file:
+            raise ContradictingZipFileException
+
         try:
             ## Add model to DB
             with self.Session() as session:
                 session.add(model)
                 session.commit()
                 session.refresh(model)
-        except IntegrityError as e:
-            raise e
+        except Exception as e:
+            logging.error(e)
+            raise ModelInsertionException
 
         return model
 
@@ -168,7 +181,7 @@ class DBSQLiteImpl(DBInterface):
             if model:
                 return model
             else:
-                raise Exception("Model not found")
+                raise ModelNotFoundException
 
     def get_model_by_human_readable_id(self, human_readable_id: str) -> Model:
         with self.Session() as session:
@@ -176,7 +189,7 @@ class DBSQLiteImpl(DBInterface):
             if model:
                 return model
             else:
-                raise Exception("Model not found")
+                raise ModelNotFoundException
 
     def get_models(self) -> List[Model]:
         with self.Session() as session:
@@ -186,10 +199,16 @@ class DBSQLiteImpl(DBInterface):
         with self.Session() as session:
             # Get the task
             task = session.query(Task).filter_by(uid=uid).first()
+            if not task:
+                raise TaskNotFoundException
 
-            # Write zip_file to task.output_zip
-            with open(task.output_zip, 'wb') as out_file:
-                out_file.write(zip_file.read())
+            try:
+                # Write zip_file to task.output_zip
+                with open(task.output_zip, 'wb') as out_file:
+                    out_file.write(zip_file.read())
+            except Exception as e:
+                logging.error(e)
+                raise e
 
             # Set task as finished and finished_datetime
             task.is_finished = True
@@ -199,6 +218,3 @@ class DBSQLiteImpl(DBInterface):
             session.commit()
             session.refresh(task)
             return task
-
-
-DB = DBSQLiteImpl(declarative_base=Base, base_dir=os.environ.get("DATA_DIR"))

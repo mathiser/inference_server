@@ -43,7 +43,7 @@ class MockDB(DBInterface):
     def purge(self):
         shutil.rmtree(self.base_dir)
 
-    def add_task(self, zip_file: BinaryIO, model_human_readable_id: str, uid: str) -> Task:
+    def post_task(self, zip_file: BinaryIO, model_human_readable_id: str, uid: str) -> Task:
         t = Task(id=self.task_id,
                  uid=uid,
                  model_human_readable_id=model_human_readable_id,
@@ -69,15 +69,16 @@ class MockDB(DBInterface):
     def get_tasks(self) -> List[Task]:
         return self.tasks
 
-    def add_model(self, container_tag: str,
-                  human_readable_id: str,
-                  zip_file: BinaryIO,
-                  input_mountpoint: Optional[str] = None,
-                  output_mountpoint: Optional[str] = None,
-                  model_mountpoint: Optional[str] = None,
-                  description: Optional[str] = None,
-                  model_available: Optional[bool] = True,
-                  use_gpu: Optional[bool] = True) -> Model:
+    def post_model(self,
+                   container_tag: str,
+                   human_readable_id: str,
+                   zip_file: BinaryIO,
+                   input_mountpoint: Optional[str] = None,
+                   output_mountpoint: Optional[str] = None,
+                   model_mountpoint: Optional[str] = None,
+                   description: Optional[str] = None,
+                   model_available: Optional[bool] = True,
+                   use_gpu: Optional[bool] = True) -> Model:
 
         uid = str(uuid.uuid4())
         model_zip = None
@@ -118,7 +119,7 @@ class MockDB(DBInterface):
     def get_models(self) -> List[Model]:
         return self.models
 
-    def post_output_by_uid(self, uid: str, zip_file: BinaryIO) -> Task:
+    def post_output_zip_by_uid(self, uid: str, zip_file: BinaryIO) -> Task:
         task = self.get_task_by_uid(uid)
         # Write zip_file to task.output_zip
         os.makedirs(os.path.dirname(task.output_zip))

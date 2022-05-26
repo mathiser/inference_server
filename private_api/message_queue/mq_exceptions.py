@@ -1,0 +1,2 @@
+class PublishTaskException(Exception):
+    pass

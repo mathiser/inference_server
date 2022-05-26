@@ -6,10 +6,10 @@ from urllib.parse import urljoin
 import dotenv
 from database.models import Task, Model
 from fastapi import FastAPI, File, UploadFile, HTTPException
-from starlette.responses import FileResponse
+from fastapi.responses import FileResponse
 
-from private_api.database import DBInterface
-from private_api.message_queue import MQInterface
+from database.db_interface import DBInterface
+from message_queue.mq_interface import MQInterface
 
 LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
 

@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
 
 
-class ModelIn(BaseModel):
+class Model(BaseModel):
     human_readable_id = Column(String, unique=True, nullable=False)
     description = Column(String, nullable=True)
     container_tag = Column(String, nullable=False)
@@ -18,7 +18,7 @@ class ModelIn(BaseModel):
 
 
 
-class TaskIn(BaseModel):
+class Task(BaseModel):
     id = Column(Integer, primary_key=True)
     uid = Column(String)
     model_human_readable_id = Column(String, ForeignKey("models.human_readable_id"))

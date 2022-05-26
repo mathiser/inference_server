@@ -4,6 +4,8 @@ import time
 
 import pika
 
+from message_queue.mq_interface import MQInterface
+from message_queue.mq_exceptions import PublishTaskException
 from database import Task
 
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
@@ -14,24 +16,25 @@ logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 
 class MQRabbitImpl(MQInterface):
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int, unfinished_queue_name, finished_queue_name):
         self.host = host
         self.port = port
-        self.unfinished_queue_name = os.environ["UNFINISHED_JOB_QUEUE"]
-        self.finished_queue_name = os.environ["FINISHED_JOB_QUEUE"]
+        self.unfinished_queue_name = unfinished_queue_name
+        self.finished_queue_name = finished_queue_name
 
     def get_connection_and_channel(self):
         connection = None
         channel = None
         while True:
-            connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host, port=self.port))
-            if connection.is_open:
+            try:
+                connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host, port=self.port))
                 channel = connection.channel()
-                channel.queue_declare(queue=self.unfinished_queue_name, durable=True)
-                channel.queue_declare(queue=self.finished_queue_name, durable=True)
+                if channel.is_open:
+                    channel.queue_declare(queue=self.unfinished_queue_name, durable=True)
+                    channel.queue_declare(queue=self.finished_queue_name, durable=True)
 
-                return connection, channel
-            else:
+                    return connection, channel
+            except Exception as e:
                 logging.error(f"Could not connect to RabbitMQ - is it running? Expecting it on {self.host}:{self.port}")
                 time.sleep(10)
 
@@ -43,23 +46,22 @@ class MQRabbitImpl(MQInterface):
 
     def publish_unfinished_task(self, task: Task):
         conn, chan = self.get_connection_and_channel()
-        chan.basic_publish(exchange="", routing_key=self.unfinished_queue_name, body=f"{task.uid}")
+        try:
+            chan.basic_publish(exchange="", routing_key=self.unfinished_queue_name, body=f"{task.uid}")
+        except Exception as e:
+            logging.error(e)
+            raise PublishTaskException
+
         self.close(conn, chan)
 
     def publish_finished_task(self, task: Task):
         conn, chan = self.get_connection_and_channel()
-        chan.basic_publish(exchange="", routing_key=self.finished_queue_name, body=f"{task.uid}")
+        try:
+            chan.basic_publish(exchange="", routing_key=self.finished_queue_name, body=f"{task.uid}")
+        except Exception as e:
+            logging.error(e)
+            raise PublishTaskException
+
         self.close(conn, chan)
-
-    def get_from_queue(self, queue_name):
-        method_frame, header_frame, body = self.channel.basic_get(queue_name)
-        if method_frame:
-            return method_frame, header_frame, body
-        else:
-            return None
-
-    def ack_method_frame(self, method_frame):
-        return self.channel.basic_ack(method_frame.delivery_tag)
-
 
 
