@@ -91,6 +91,7 @@ services:
       - api
     env_file:
       - .env
+
     build:
       context: ./job_consumer/
       dockerfile: Dockerfile
@@ -98,7 +99,7 @@ services:
       - PYTHONUNBUFFERED=1
     volumes:
       # needed to dispatch docker containers from inside a docker container
-      - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
+      - ${DOCKER_SOCKET}
       #- ./mounts/logs:${LOGGING_DIR}
 
 volumes:

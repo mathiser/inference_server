@@ -1,3 +1,5 @@
+import os
+import random
 import tempfile
 import unittest
 
@@ -8,6 +10,8 @@ from testing.mock_components.mock_db import MockDB
 from testing.mock_components.mock_fast_api_testclient import MockDBClient
 from testing.mock_components.mock_models_and_tasks import MockModelsAndTasks
 from testing.mock_components.mock_private_fast_api import MockPrivateFastAPI
+
+from exceptions.db_exceptions import NoZipAttachedException
 
 dotenv.load_dotenv()
 
@@ -29,14 +33,17 @@ class TestDBImpl(unittest.TestCase):
         self.repo.purge()
         self.db_backend.purge()
 
-    def test_post_task(self):
+    def test_post_task_intended(self):
         with open(self.repo.task.input_zip, "br") as r:
-            task = self.db.post_task(zip_file=r,
+            echo = self.db.post_task(zip_file=r,
                                      model_human_readable_id=self.repo.model.human_readable_id)
-        self.assertIsNotNone(task)
-        return task
+        self.assertIsNotNone(echo)
+        self.assertEqual(echo["model_human_readable_id"], self.repo.model.human_readable_id)
+        self.assertIn("uid", echo.keys())
 
-    def test_post_model(self):
+        return echo
+
+    def test_post_model_intended(self):
         with open(self.repo.model_zip, "br") as r:
             model = self.db.post_model(container_tag=self.repo.model.container_tag,
                                        human_readable_id=self.repo.model.human_readable_id,
@@ -51,7 +58,7 @@ class TestDBImpl(unittest.TestCase):
         return model
 
     def test_get_models(self):
-        model = self.test_post_model()
+        model = self.test_post_model_intended()
         print(f"model: {model}")
         models = self.db.get_models()
         print(f"models: {models}")
@@ -60,16 +67,16 @@ class TestDBImpl(unittest.TestCase):
             self.assertIn(k, models[0].keys())
             self.assertEqual(models[0][k], v)
 
-        model = self.test_post_model()
+        model = self.test_post_model_intended()
         models = self.db.get_models()
         self.assertEqual(len(models), 2)
 
-    def test_get_output_by_uid(self):
-        task = self.test_post_task()
-        print(f"test_get_output_by_uid: {task}")
-
-        with self.db.get_output_zip_by_uid(task["uid"]) as tmp_file:
-            self.assertIn(b"Hello hello world", tmp_file.read())
+    # This test must be made at some point.
+    # def test_get_output_by_uid(self):
+    #     task = self.test_post_task_intended()
+    #
+    #     res = self.db.get_output_zip_by_uid(task["uid"])
+    #     self.assertEqual()
 
 
 if __name__ == '__main__':

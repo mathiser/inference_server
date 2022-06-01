@@ -7,6 +7,7 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import StreamingResponse, Response
 
 from database.db_interface import DBInterface
+from public_api.api_exceptions import PostTaskException, ZipFileMissingException, ZipFileShouldBeNoneException
 from public_api.public_api_interface import PublicFastAPIInterface
 
 app = FastAPI()
@@ -30,12 +31,12 @@ class PublicFastAPI(PublicFastAPIInterface):
                              zip_file: UploadFile,
                              ) -> Response:
             try:
-
                 return self.db.post_task(model_human_readable_id=model_human_readable_id,
-                                         zip_file=zip_file.file,
-                                         )
+                                         zip_file=zip_file.file)
             except Exception as e:
-                raise e
+                logging.error(e)
+                raise PostTaskException
+
         @self.get(urljoin(os.environ['PUBLIC_GET_OUTPUT_ZIP_BY_UID'], "{uid}"))
         def public_get_output_zip_by_uid(uid: str) -> StreamingResponse:
             try:
@@ -44,8 +45,11 @@ class PublicFastAPI(PublicFastAPIInterface):
                     #    yield from output_tmp_file
 
                     return StreamingResponse(output_yield_from_tmp_file)
+
             except Exception as e:
-                raise e
+                logging.error(e)
+
+
         @self.get(os.environ["PUBLIC_GET_MODELS"])
         def public_get_models():
             try:
@@ -64,6 +68,10 @@ class PublicFastAPI(PublicFastAPIInterface):
                               use_gpu: Union[bool, None] = None,
                               zip_file: Union[UploadFile, None] = None,
                               ):
+            if model_available and not zip_file:
+                raise ZipFileMissingException
+            if zip_file and not model_available:
+                raise ZipFileShouldBeNoneException
 
             if zip_file:
                 zip_file = zip_file.file
@@ -80,4 +88,5 @@ class PublicFastAPI(PublicFastAPIInterface):
                                           use_gpu=use_gpu
                                           )
             except Exception as e:
+                logging.error(e)
                 raise e

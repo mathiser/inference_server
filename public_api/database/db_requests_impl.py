@@ -4,12 +4,12 @@ import os
 import secrets
 import tempfile
 import threading
-from typing import Optional, BinaryIO, Union
+from typing import BinaryIO, Union
 from urllib.parse import urljoin
 
 from database.db_interface import DBInterface
 from database_client.db_client_interface import DBClientInterface
-from fastapi import HTTPException
+from exceptions.db_exceptions import PostTaskException, TaskOutputZipNotFound
 
 
 class DBRequestsImpl(DBInterface):
@@ -27,13 +27,16 @@ class DBRequestsImpl(DBInterface):
                   uid=None):
         if not uid:
             uid = secrets.token_urlsafe(32)
-            print("new uid for task: ", uid)
+
         # Give this request a unique identifier
         def post_task_thread(url, zip_file_from_res, params):
+            logging.info(f"[ ] Posting task: {params}")
             res = self.db_client.post(url=url, files={"zip_file": zip_file_from_res}, params=params)
-            logging.info(res.content)
-            logging.info("Finished running post_task")
-
+            if not res.ok:
+                logging.error(res.content)
+                raise PostTaskException
+            else:
+                logging.info(f"[X] Posting task: {params}")
 
         params = {
             "model_human_readable_id": model_human_readable_id,
@@ -49,13 +52,15 @@ class DBRequestsImpl(DBInterface):
 
     def get_output_zip_by_uid(self, uid: str) -> tempfile.TemporaryFile:
         # Zip the output for return
+        logging.info(f"[ ]: Get output from task: {uid}")
         url = urljoin(os.environ['GET_OUTPUT_ZIP_BY_UID'], f"{uid}")
         res = self.db_client.get(url, stream=True)
 
         if not res.ok:
-            c = json.loads(res.content)
-            raise Exception(c)
+            raise TaskOutputZipNotFound
+
         else:
+            logging.info(f"[X]: Get output from task: {uid}")
             tmp_file = tempfile.TemporaryFile()
             for chunk in res.iter_content(1000000):
                 tmp_file.write(chunk)
@@ -78,8 +83,12 @@ class DBRequestsImpl(DBInterface):
         # Give this request a unique identifier
         def post_task_thread(url, zip_file_from_res, params):
             res = self.db_client.post(url, files={"zip_file": zip_file_from_res}, params=params)
-            logging.info(res.content)
-            return res
+            if not res.ok:
+                logging.error(res.content)
+                raise PostTaskException
+            else:
+                logging.info(f"[X] Posting task: {params}")
+                return res
 
         params = {
             "container_tag": container_tag,

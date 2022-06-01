@@ -1,6 +1,7 @@
 import secrets
 import unittest
 
+from docker_helper import volume_functions
 from job.job_docker_impl import JobDockerImpl
 from testing.mock_components.mock_db import MockDB
 
@@ -15,25 +16,25 @@ class TestJob(unittest.TestCase):
 
     def tearDown(self) -> None:
         for task in self.db.get_tasks():
-            if self.job.volume_exists(task.input_volume_uuid):
-                self.job.delete_volume(task.input_volume_uuid)
+            if volume_functions.volume_exists(task.input_volume_uuid):
+                volume_functions.delete_volume(task.input_volume_uuid)
 
-            if self.job.volume_exists(task.output_volume_uuid):
-                self.job.delete_volume(task.output_volume_uuid)
+            if volume_functions.volume_exists(task.output_volume_uuid):
+                volume_functions.delete_volume(task.output_volume_uuid)
 
         for model in self.db.get_models():
-            if self.job.volume_exists(model.model_volume_uuid):
-                self.job.delete_volume(model.model_volume_uuid)
+            if volume_functions.volume_exists(model.model_volume_uuid):
+                volume_functions.delete_volume(model.model_volume_uuid)
 
         self.repo.purge()
         self.db.purge()
 
     def test_volume_methods(self):
-        volume = self.job.create_empty_volume()
+        volume = volume_functions.create_empty_volume()
         self.assertIsNotNone(volume)
-        self.assertTrue(self.job.volume_exists(volume))
-        self.job.delete_volume(volume_uuid=volume)
-        self.assertFalse(self.job.volume_exists(volume_uuid=volume))
+        self.assertTrue(volume_functions.volume_exists(volume))
+        volume_functions.delete_volume(volume_uuid=volume)
+        self.assertFalse(volume_functions.volume_exists(volume_uuid=volume))
 
     def test_add_task(self):
         with open(self.repo.input_zip, "rb") as r:

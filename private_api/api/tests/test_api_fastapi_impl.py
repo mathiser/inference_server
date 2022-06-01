@@ -5,8 +5,7 @@ import dotenv
 from fastapi.testclient import TestClient
 
 from database.models import Task, Model
-from fast_api.fastapi_impl import FastAPIImpl
-from api.private_api_impl import PrivateAPIImpl
+from api.api_fastapi_impl import APIFastAPIImpl
 from testing.mock_components.mock_db import MockDB
 from testing.mock_components.mock_mq import MockMQ
 from testing.mock_components.mock_models_and_tasks import MockModelsAndTasks
@@ -29,8 +28,7 @@ class TestFastAPIImpl(unittest.TestCase):
         self.mq = MockMQ()
         dotenv.load_dotenv()
 
-        api_backend = PrivateAPIImpl(db=self.db, mq=self.mq)
-        app = FastAPIImpl(api=api_backend)
+        app = APIFastAPIImpl(db=self.db, mq=self.mq)
         self.cli = TestClient(app)
 
     def tearDown(self) -> None:
