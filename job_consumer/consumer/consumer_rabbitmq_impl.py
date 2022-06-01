@@ -31,35 +31,22 @@ class ConsumerRabbitImpl(ConsumerInterface):
         self.channel = None
         self.cli = docker.from_env()
 
-        # Attempt connection to Rabbit
-        while True:
-            try:
-                self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host, port=self.port))
-                if self.connection.is_open:
-                    self.channel = self.connection.channel()
-                    self.unfinished_queue = self.declare_queue(self.unfinished_queue_name)
-                    self.finished_queue = self.declare_queue(self.finished_queue_name)
-                    break
-            except Exception as e:
-                logging.error(f"Could not connect to RabbitMQ - is it running? Expecting it on {self.host}:{self.port}")
-                time.sleep(10)
-
         # Close things on exit
         exit_func = functools.partial(self.on_exit, self.threads, self.connection, self.cli)
         atexit.register(exit_func)
 
-    def get_connection_and_channel(self):
+    def set_connection_and_channel(self):
         while True:
-            self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host, port=self.port))
-            if self.connection.is_open:
+            try:
+                self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host, port=self.port))
                 self.channel = self.connection.channel()
-                self.declare_queue(self.unfinished_queue_name)
-                self.declare_queue(self.finished_queue_name)
-                return
-            else:
-                logging.error(f"Could not connect to RabbitMQ - is it running? Expecting it on {self.host}:{self.port}")
+                if self.channel.is_open:
+                    self.channel.queue_declare(queue=self.unfinished_queue_name, durable=True)
+                    self.channel.queue_declare(queue=self.finished_queue_name, durable=True)
+            except Exception as e:
+                logging.error(
+                    f"Could not connect to RabbitMQ - is it running? Expecting it on {self.host}:{self.port}")
                 time.sleep(10)
-
 
     def close(self):
         if self.channel.is_open:
@@ -72,6 +59,9 @@ class ConsumerRabbitImpl(ConsumerInterface):
         return self.channel.queue_declare(queue=queue, durable=True)
 
     def consume_unfinished(self):
+        if not self.connection or not self.channel:
+            self.set_connection_and_channel()
+
         on_message_callback = functools.partial(self.on_message, args=(self.connection, self.threads))
         self.channel.basic_consume(queue=self.unfinished_queue_name, on_message_callback=on_message_callback)
 
