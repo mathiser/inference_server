@@ -63,10 +63,15 @@ services:
       context: ./private_api
       dockerfile: Dockerfile
 
+
     volumes:
+     #- ${DATA_VOLUME}:${DATA_DIR}
+     #- ${LOGS_VOLUME}:${LOGGING_DIR}
+     #- ${MODELS_VOLUME}:${MODELS_DIR}
      - ./mounts/data:${DATA_DIR}
      - ./mounts/logs:${LOGGING_DIR}
      - ./mounts/models:${MODELS_DIR}
+
 
   rabbit:
     restart: on-failure
@@ -86,6 +91,7 @@ services:
       - api
     env_file:
       - .env
+
     build:
       context: ./job_consumer/
       dockerfile: Dockerfile
@@ -93,7 +99,7 @@ services:
       - PYTHONUNBUFFERED=1
     volumes:
       # needed to dispatch docker containers from inside a docker container
-      - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
+      - ${DOCKER_SOCKET}
       #- ./mounts/logs:${LOGGING_DIR}
 
 volumes:

@@ -44,6 +44,8 @@ class MockDB(DBInterface):
         shutil.rmtree(self.base_dir)
 
     def post_task(self, zip_file: BinaryIO, model_human_readable_id: str, uid: str) -> Task:
+        if not uid:
+            uid = secrets.token_urlsafe(32)
         t = Task(id=self.task_id,
                  uid=uid,
                  model_human_readable_id=model_human_readable_id,

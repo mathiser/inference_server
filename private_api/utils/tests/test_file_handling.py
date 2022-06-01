@@ -1,4 +1,5 @@
 import _io
+import logging
 import os
 import secrets
 import tarfile
@@ -12,8 +13,6 @@ from utils.file_handling import unzip_response_to_location, zip_folder_to_tmpfil
 
 
 class TestFileHandling(unittest.TestCase):
-
-
     def test_unzip_response_to_location(self):
         res = requests.Response()
         with tempfile.TemporaryDirectory() as tmp_dir:
