@@ -1,6 +1,8 @@
 import logging
 import os
-from typing import Any, Union
+import secrets
+import threading
+from typing import Any, Union, Optional
 from urllib.parse import urljoin
 
 import dotenv
@@ -11,14 +13,19 @@ from fastapi.responses import FileResponse
 from database.db_interface import DBInterface
 from message_queue.mq_interface import MQInterface
 
+from database.db_exceptions import TaskNotFoundException, ModelNotFoundException, InsertTaskException
+
 LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
 
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 dotenv.load_dotenv(".env")
+
+
 class APIFastAPIImpl(FastAPI):
     def __init__(self, db: DBInterface, mq: MQInterface, **extra: Any):
         super().__init__(**extra)
+        self.threads = []
         self.db = db
         self.mq = mq
 
@@ -32,28 +39,47 @@ class APIFastAPIImpl(FastAPI):
 
         @self.get(urljoin(os.environ['GET_TASK_BY_ID'], "{id}"))
         def get_task_by_id(id: int):
-            return self.db.get_task_by_id(id=id)
+            try:
+                return self.db.get_task_by_id(id=id)
+            except TaskNotFoundException as e:
+                raise HTTPException(status_code=404,
+                                    detail=e.msg())
 
         @self.get(urljoin(os.environ['GET_TASK_BY_UID'], "{uid}"))
         def get_task_by_uid(uid: str):
-            return self.db.get_task_by_uid(uid=uid)
+            try:
+                return self.db.get_task_by_uid(uid=uid)
+            except TaskNotFoundException as e:
+                raise HTTPException(status_code=404,
+                                    detail=e.msg())
 
         @self.post(os.environ['POST_TASK'])
         def post_task(model_human_readable_id: str,
-                      zip_file: Union[UploadFile, None] = None,
-                      uid: Union[str, None] = None) -> Task:
+                      zip_file: UploadFile = File(...),
+                      uid: Union[str, None] = None) -> str:
+            if not uid:
+                uid = secrets.token_urlsafe(32)
 
-            task = self.db.post_task(zip_file=zip_file.file,
-                                   model_human_readable_id=model_human_readable_id,
-                                   uid=uid)
 
-            self.mq.publish_unfinished_task(task)
+            try:
+                task = self.db.post_task(zip_file=zip_file.file,
+                                     model_human_readable_id=model_human_readable_id,
+                                     uid=uid)
+                self.mq.publish_unfinished_task(task)
+
+            except InsertTaskException as e:
+                raise HTTPException(status_code=404,
+                                    detail=e.msg())
 
             return task
 
         @self.get(urljoin(os.environ['GET_INPUT_ZIP_BY_ID'], "{id}"))
         def get_input_zip_by_id(id: int) -> FileResponse:
-            task = self.db.get_task_by_id(id=id)
+            try:
+                task = self.db.get_task_by_id(id=id)
+            except TaskNotFoundException as e:
+                raise HTTPException(status_code=404,
+                                    detail=e.msg())
 
             if os.path.exists(task.input_zip):
                 return FileResponse(task.input_zip)
@@ -64,22 +90,29 @@ class APIFastAPIImpl(FastAPI):
         def post_output_zip_by_uid(uid: str,
                                    zip_file: UploadFile = File(...)) -> Task:
 
-            task = self.db.post_output_zip_by_uid(uid=uid,
-                                               zip_file=zip_file.file)
+            try:
+                task = self.db.post_output_zip_by_uid(uid=uid, zip_file=zip_file.file)
+            except Exception as e:
+                logging.error(e)
+                raise e
+            except TaskNotFoundException as e:
+                raise HTTPException(status_code=404,
+                                    detail=e.msg())
+
+            logging.info(task)
             self.mq.publish_finished_task(task)
-            return self.db.post_output_zip_by_uid(uid=uid,
-                                               zip_file=zip_file.file)
 
         @self.get(urljoin(os.environ['GET_OUTPUT_ZIP_BY_UID'], "{uid}"))
         def get_output_zip_by_uid(uid: str):
             # Zip the output for return
-            task = self.db.get_task_by_uid(uid=uid)
-            if task is None:
+            try:
+                task = self.db.get_task_by_uid(uid=uid)
+            except TaskNotFoundException as e:
                 raise HTTPException(status_code=404,
-                                    detail="Task not in DB yet. If you very recently uploaded it - or uploaded a very large file - try again in a moment")
+                                    detail=e.msg())
 
             # Not doing this with os.path.exists(task.output.zip) to avoid that some of the file is sent before all written
-            if task.is_finished:
+            if os.path.exists(task.output_zip) and task.is_finished:
                 return FileResponse(task.output_zip)
             else:
                 raise HTTPException(status_code=404,
@@ -87,11 +120,19 @@ class APIFastAPIImpl(FastAPI):
 
         @self.get(urljoin(os.environ['GET_TASK_BY_ID'], "{id}"))
         def get_task_by_id(id: int):
-            return self.db.get_task_by_id(id=id)
+            try:
+                return self.db.get_task_by_id(id=id)
+            except TaskNotFoundException as e:
+                raise HTTPException(status_code=404,
+                                    detail=e.msg())
 
         @self.get(urljoin(os.environ['GET_TASK_BY_UID'], "{uid}"))
         def get_task_by_uid(uid: str):
-            return self.db.get_task_by_uid(uid=uid)
+            try:
+                return self.db.get_task_by_uid(uid=uid)
+            except TaskNotFoundException as e:
+                raise HTTPException(status_code=404,
+                                    detail=e.msg())
 
         @self.post(os.environ['POST_MODEL'])
         def post_model(container_tag: str,
@@ -100,7 +141,7 @@ class APIFastAPIImpl(FastAPI):
                        output_mountpoint: Union[str, None] = None,
                        model_mountpoint: Union[str, None] = None,
                        description: Union[str, None] = None,
-                       zip_file: Union[UploadFile, None] = None,
+                       zip_file: Optional[Union[UploadFile, None]] = None,
                        model_available: Union[bool, None] = None,
                        use_gpu: Union[bool, None] = None,
                        ) -> Model:
@@ -121,11 +162,19 @@ class APIFastAPIImpl(FastAPI):
 
         @self.get(urljoin(os.environ['GET_MODEL_BY_ID'], "{id}"))
         def get_model_by_id(id: int):
-            return self.db.get_model_by_id(id=id)
+            try:
+                return self.db.get_model_by_id(id=id)
+            except ModelNotFoundException as e:
+                raise HTTPException(status_code=404,
+                                    detail=e.msg())
 
         @self.get(urljoin(os.environ['GET_MODEL_BY_HUMAN_READABLE_ID'], "{human_readable_id}"))
         def get_model_by_human_readable_id(human_readable_id: str):
-            return self.db.get_model_by_human_readable_id(human_readable_id=human_readable_id)
+            try:
+                return self.db.get_model_by_human_readable_id(human_readable_id=human_readable_id)
+            except ModelNotFoundException as e:
+                raise HTTPException(status_code=404,
+                                    detail=e.msg())
 
         @self.get(os.environ['GET_MODELS'])
         def get_models():
@@ -133,9 +182,17 @@ class APIFastAPIImpl(FastAPI):
 
         @self.get(urljoin(os.environ['GET_MODEL_ZIP_BY_ID'], "{id}"))
         def get_model_zip_by_id(id: int) -> FileResponse:
-            model = self.db.get_model_by_id(id=id)
+            try:
+                model = self.db.get_model_by_id(id=id)
+            except ModelNotFoundException as e:
+                raise HTTPException(status_code=404,
+                                    detail=e.msg())
 
             if os.path.exists(model.model_zip):
                 return FileResponse(model.model_zip)
             else:
                 raise HTTPException(status_code=404, detail="Model zip not found - try posting task again")
+
+    def __del__(self):
+        for t in self.threads:
+            t.join()

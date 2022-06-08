@@ -5,7 +5,7 @@ import unittest
 
 import dotenv
 
-from database.db_requests_impl import DBRequestsImpl
+from database.db_impl import DBImpl
 from testing.mock_components.mock_db import MockDB
 from testing.mock_components.mock_fast_api_testclient import MockDBClient
 from testing.mock_components.mock_models_and_tasks import MockModelsAndTasks
@@ -27,7 +27,7 @@ class TestDBImpl(unittest.TestCase):
         self.db_backend = MockDB()
         self.app = MockPrivateFastAPI(db=self.db_backend)
         self.db_client = MockDBClient(self.app)
-        self.db = DBRequestsImpl(db_client=self.db_client)
+        self.db = DBImpl(db_client=self.db_client)
 
     def tearDown(self):
         self.repo.purge()

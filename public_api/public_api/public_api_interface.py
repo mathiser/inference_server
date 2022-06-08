@@ -1,6 +1,6 @@
 import logging
 from abc import abstractmethod
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 
 from fastapi import File, UploadFile, FastAPI
 from fastapi.responses import StreamingResponse, Response
@@ -25,7 +25,7 @@ class PublicFastAPIInterface(FastAPI):
         @abstractmethod
         def public_post_task(model_human_readable_id: str,
                       zip_file: UploadFile = File(...),
-                      uid=None) -> Response:
+                      uid=None) -> str:
             pass
 
         @abstractmethod

@@ -1,11 +1,9 @@
 import unittest
 
-from database.db_exceptions import TaskInitializationException, InsertTaskException, TaskNotFoundException, \
+from database.db_exceptions import InsertTaskException, TaskNotFoundException, \
     ZipFileMissingException, ContradictingZipFileException, ModelInsertionException, ModelMountPointMissingException, \
     ModelNotFoundException
 from database.db_sql_impl import DBSQLiteImpl
-from database.models import Base
-
 from testing.mock_components.mock_models_and_tasks import MockModelsAndTasks
 
 

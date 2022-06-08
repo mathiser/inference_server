@@ -6,9 +6,9 @@ from typing import BinaryIO
 from urllib.parse import urljoin
 
 import requests
+
 from .database_interface import DBInterface
 from .models import Model, Task
-from requests import Response
 
 LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
@@ -36,7 +36,6 @@ class DBRestImpl(DBInterface):
 
     def get_model_by_human_readable_id(self, human_readable_id: str) -> Model:
         res = requests.get(self.api_url + urljoin(os.environ["GET_MODEL_BY_HUMAN_READABLE_ID"], str(human_readable_id)))
-        logging.info(res.content)
         return Model(**json.loads(res.content))
 
     def get_model_zip_by_id(self, id: int) -> tempfile.TemporaryFile:

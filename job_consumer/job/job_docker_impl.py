@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 
 import docker
 from docker import types
+from docker.errors import NotFound
 
 from database.database_interface import DBInterface
 from database.models import Task, Model
@@ -47,11 +48,14 @@ class JobDockerImpl(JobInterface):
         self.create_model_volume()
         self.create_input_volume()
         volume_functions.create_empty_volume(self.task.output_volume_uuid)
+        try:
+            volume_functions.pull_image(self.model.container_tag)
+        except NotFound:
+            pass
 
-        volume_functions.pull_image(self.model.container_tag)
         job_container = self.cli.containers.run(image=self.model.container_tag,
                                                 command=None,  # Already defaults to None, but for explicity
-                                                **self.generate_keywords()
+                                                **self.generate_keywords(),
                                                 )
         logging.info(job_container)
 

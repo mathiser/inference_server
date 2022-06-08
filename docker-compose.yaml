@@ -10,13 +10,11 @@ services:
     command:
       - --api.insecure=true
       - --providers.docker=true
-      #- --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
       - --providers.file.directory=/configuration/
       - --providers.file.watch=true
 
     ports:
-      #- 80:80
       - 443:443
       # The Web UI (enabled by --api.insecure=true)
       - 8081:8080
@@ -24,8 +22,8 @@ services:
       traefik.enable: true
     volumes:
       # So that Traefik can listen to the Docker events
-     # - ./traefik/certs:/tools/certs
-     # - ./traefik/configuration:/configuration/
+      - ./traefik/certs:/tools/certs
+      - ./traefik/configuration:/configuration/
       - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
 
   public-api:
@@ -40,7 +38,7 @@ services:
     ports:
       - ${PUBLIC_API_PORT}
     labels:
-      - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.rule=Host(`localhost`)"
+      - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.rule=Host(`${PROXY_URL}`)"
       - "traefik.http.services.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.loadbalancer.server.port=${PUBLIC_API_PORT}"
       - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.tls=${HTTPS_ON}"
     #volumes:
@@ -91,7 +89,6 @@ services:
       - api
     env_file:
       - .env
-
     build:
       context: ./job_consumer/
       dockerfile: Dockerfile
@@ -99,7 +96,7 @@ services:
       - PYTHONUNBUFFERED=1
     volumes:
       # needed to dispatch docker containers from inside a docker container
-      - ${DOCKER_SOCKET}
+      - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
       #- ./mounts/logs:${LOGGING_DIR}
 
 volumes:

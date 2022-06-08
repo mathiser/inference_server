@@ -15,8 +15,8 @@ class MockDB(DBInterface):
         self.base_dir = ".tmp"
 
         ## Folders for input and output
-        self.input_base_folder = os.path.join(self.base_dir, "input")
-        self.output_base_folder = os.path.join(self.base_dir, "output")
+        self.input_base_folder = os.path.join(self.base_dir, "inputs")
+        self.output_base_folder = os.path.join(self.base_dir, "outputs")
 
         # model volume mount point
         self.model_base_folder = os.path.join(self.base_dir, "models")

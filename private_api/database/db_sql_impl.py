@@ -4,14 +4,14 @@ import secrets
 import shutil
 import uuid
 from datetime import datetime
-from typing import List, BinaryIO, Union
+from typing import List, BinaryIO, Union, Optional
 
 import sqlalchemy
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
-from .db_exceptions import TaskNotFoundException, TaskOutputZipNotFoundException, ModelNotFoundException, \
+
+from .db_exceptions import TaskNotFoundException, ModelNotFoundException, \
     TaskZipPathExistsException, InsertTaskException, ZipFileMissingException, ContradictingZipFileException, \
-    ModelInitializationException, ModelInsertionException, TaskInitializationException, ModelMountPointMissingException
+    ModelInsertionException, TaskInitializationException, ModelMountPointMissingException
 from .db_interface import DBInterface
 from .models import Model, Task, Base
 
@@ -129,7 +129,7 @@ class DBSQLiteImpl(DBInterface):
                    output_mountpoint: Union[str, None] = None,
                    model_mountpoint: Union[str, None] = None,
                    description: Union[str, None] = None,
-                   zip_file: Union[BinaryIO, None] = None,
+                   zip_file: Optional[Union[BinaryIO, None]] = None,
                    model_available: Union[bool, None] = None,
                    use_gpu: Union[bool, None] = None
                    ):

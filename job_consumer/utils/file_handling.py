@@ -8,7 +8,7 @@ LOG_FORMAT = ('%(levelname)s:%(asctime)s:%(message)s')
 logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT)
 
 def unzip_tmp_file_to_location(tmp_file, dst) -> str:
-    with zipfile.ZipFile(file=tmp_file, mode="r") as zip:
+    with zipfile.ZipFile(file=tmp_file, compression=zipfile.ZIP_DEFLATED) as zip:
         zip.extractall(path=dst)
     return dst
 

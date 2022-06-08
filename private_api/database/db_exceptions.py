@@ -1,17 +1,23 @@
 class TaskNotFoundException(Exception):
-    pass
+    @staticmethod
+    def msg():
+        return "Task not found"
 
 class TaskOutputZipNotFoundException(Exception):
     pass
 
 class ModelNotFoundException(Exception):
-    pass
+    @staticmethod
+    def msg():
+        return "Model not found"
 
 class TaskZipPathExistsException(Exception):
     pass
 
 class InsertTaskException(Exception):
-    pass
+    @staticmethod
+    def msg():
+        return "Exception when inserting task to database"
 
 class ZipFileMissingException(Exception):
     pass

@@ -33,17 +33,17 @@ class TestPublicAPIFastAPI(unittest.TestCase):
         self.assertIn("message", res.keys())
         self.assertIn("Hello world", res["message"])
 
-    def test_post_task(self):
-        model = self.test_post_model()
+    def test_public_post_task(self):
+        model = self.test_public_post_model()
         with open(self.repo.input_zip, "rb") as r:
             res = self.db_client.post(os.environ['PUBLIC_POST_TASK'],
                                 params={"model_human_readable_id": self.repo.model.human_readable_id},
                                 files={"zip_file": r})
         print(res.content)
         self.assertEqual(res.status_code, 200)
-        return Task(**res.json())
+        return res.json()
 
-    def test_post_model(self):
+    def test_public_post_model(self):
         with open(self.repo.model_zip, "rb") as r:
             res = self.db_client.post(os.environ['PUBLIC_POST_MODEL'],
                                 params={
@@ -62,6 +62,11 @@ class TestPublicAPIFastAPI(unittest.TestCase):
         echo = Model(**res.json())
         self.assertEqual(echo.container_tag, self.repo.model.container_tag)
         return Model(**res.json())
+
+    def test_public_get_output_zip_by_uid(self):
+        model = self.test_public_post_model()
+        task = self.test_public_post_task()
+
 
 
 if __name__ == '__main__':

@@ -21,6 +21,7 @@ def create_empty_volume(volume_uuid=None) -> str:
 
     return volume_uuid
 
+
 def volume_exists(volume_uuid) -> bool:
     cli = docker.from_env()
     b = (volume_uuid in [v.name for v in cli.volumes.list()])
@@ -37,6 +38,7 @@ def delete_volume(volume_uuid):
         raise VolumeNotFoundException
     finally:
         cli.close()
+
 
 def create_volume_from_tmp_file(tmp_file: tempfile.TemporaryFile, volume_uuid=None) -> str:
     cli = docker.from_env()
@@ -58,9 +60,9 @@ def create_volume_from_tmp_file(tmp_file: tempfile.TemporaryFile, volume_uuid=No
         # Create a helper container and mount
         cli.images.pull("busybox:1.35")
         tmp_container = cli.containers.create(image="busybox:1.35",
-                                                   command=None,
-                                                   volumes={volume_uuid: {"bind": "/data", "mode": "rw"}},
-                                                   )
+                                              command=None,
+                                              volumes={volume_uuid: {"bind": "/data", "mode": "rw"}},
+                                              )
         # Tar and untar the tmp_vol_folder to /data
         with tempfile.TemporaryDirectory() as tar_folder:
             tar_file = os.path.join(tar_folder, "tarfile")
@@ -76,10 +78,12 @@ def create_volume_from_tmp_file(tmp_file: tempfile.TemporaryFile, volume_uuid=No
     cli.close()
     return volume_uuid
 
+
 def pull_image(container_tag: str):
     cli = docker.from_env()
     cli.images.pull(container_tag)
     cli.close()
+
 
 if __name__ == "__main__":
     pass

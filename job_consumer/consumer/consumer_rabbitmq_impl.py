@@ -8,6 +8,7 @@ import time
 import docker
 import pika
 from database.database_interface import DBInterface
+from docker.errors import ContainerError
 from job.job_interface import JobInterface
 
 from .consumer_interface import ConsumerInterface
@@ -43,6 +44,7 @@ class ConsumerRabbitImpl(ConsumerInterface):
                 if self.channel.is_open:
                     self.channel.queue_declare(queue=self.unfinished_queue_name, durable=True)
                     self.channel.queue_declare(queue=self.finished_queue_name, durable=True)
+                    break
             except Exception as e:
                 logging.error(
                     f"Could not connect to RabbitMQ - is it running? Expecting it on {self.host}:{self.port}")
@@ -61,6 +63,11 @@ class ConsumerRabbitImpl(ConsumerInterface):
     def consume_unfinished(self):
         if not self.connection or not self.channel:
             self.set_connection_and_channel()
+
+
+        prefetch_val = 1
+        logging.info(f": Setting RabbitMQ prefetch_count to {prefetch_val}")
+        self.channel.basic_qos(prefetch_count=prefetch_val)
 
         on_message_callback = functools.partial(self.on_message, args=(self.connection, self.threads))
         self.channel.basic_consume(queue=self.unfinished_queue_name, on_message_callback=on_message_callback)
@@ -89,10 +96,14 @@ class ConsumerRabbitImpl(ConsumerInterface):
         j = self.JobClass(db=self.db)
         j.set_task(task=task)
         j.set_model(model=model)
-        j.execute()
-        j.send_volume_output()
+        try:
+            j.execute()
+        except ContainerError as e:
+            ## Send signal to DB that job failed
+            logging.error(e)
+        else:
+            j.send_volume_output()
         del j
-
         # Acknowledgement callback
         cb = functools.partial(self.ack_message, channel, delivery_tag)
         connection.add_callback_threadsafe(cb)
@@ -106,6 +117,7 @@ class ConsumerRabbitImpl(ConsumerInterface):
     def on_exit(self, threads, conn, cli):
         for thread in threads:
             thread.join()
-
-        conn.close()
-        cli.close()
+        if conn:
+            conn.close()
+        if cli:
+            cli.close()
