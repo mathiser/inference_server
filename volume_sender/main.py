@@ -9,6 +9,11 @@ LOG_FORMAT = ('%(levelname)s:%(asctime)s:%(message)s')
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 def zip_folder_to_tmpfile(src) -> zipfile.ZipFile:
+    print(os.listdir(src))
+    if len(os.listdir(src)) == 0:
+        with open(os.path.join(src, "no_output_files_found.error"), "w") as f:
+            f.write("This is a dummyfile")
+
     tmp_zip = tempfile.TemporaryFile(suffix=".zip")
     with zipfile.ZipFile(tmp_zip, "w") as zip:
         for file in os.listdir(src):
@@ -20,6 +25,9 @@ def zip_folder_to_tmpfile(src) -> zipfile.ZipFile:
 def main():
     tmp_zip = zip_folder_to_tmpfile(os.environ.get("VOLUME_MOUNTPOINT"))
     res = requests.post(os.environ.get("URL"), files={"zip_file": tmp_zip})
+    print(res)
+    print(res.content)
+
     tmp_zip.close()
     return res
 
