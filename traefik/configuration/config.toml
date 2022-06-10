@@ -1,3 +1,3 @@
 [[tls.certificates]]
-  certFile = "/tools/certs/inference_server.crt"
-  keyFile = "/tools/certs/inference_server.key"
+  certFile = "/tools/certs/cert.crt"
+  keyFile = "/tools/certs/cert.key"
