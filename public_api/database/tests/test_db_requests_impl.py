@@ -11,7 +11,7 @@ from testing.mock_components.mock_fast_api_testclient import MockDBClient
 from testing.mock_components.mock_models_and_tasks import MockModelsAndTasks
 from testing.mock_components.mock_private_fast_api import MockPrivateFastAPI
 
-from exceptions.db_exceptions import NoZipAttachedException
+from exceptions.exceptions import NoZipAttachedException
 
 dotenv.load_dotenv()
 

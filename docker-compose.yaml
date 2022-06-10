@@ -17,7 +17,7 @@ services:
     ports:
       - 443:443
       # The Web UI (enabled by --api.insecure=true)
-      - 8081:8080
+      #- 8081:8080
     labels:
       traefik.enable: true
     volumes:
@@ -43,7 +43,6 @@ services:
       - "traefik.http.services.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.loadbalancer.server.port=${PUBLIC_API_PORT}"
       - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.tls=${HTTPS_ON}"
     #volumes:
-     #- ${LOGS_VOLUME}:${LOGGING_DIR}
      # - ./mounts/logs:${LOGGING_DIR}
 
   api:
@@ -65,9 +64,6 @@ services:
 
 
     volumes:
-     #- ${DATA_VOLUME}:${DATA_DIR}
-     #- ${LOGS_VOLUME}:${LOGGING_DIR}
-     #- ${MODELS_VOLUME}:${MODELS_DIR}
      - ./mounts/data:${DATA_DIR}
      - ./mounts/logs:${LOGGING_DIR}
      - ./mounts/models:${MODELS_DIR}
@@ -91,7 +87,6 @@ services:
       - api
     env_file:
       - .env
-      - .static_env
 
     build:
       context: ./job_consumer/
