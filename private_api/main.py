@@ -19,7 +19,7 @@ def main():
                       unfinished_queue_name=os.environ.get("UNFINISHED_JOB_QUEUE"),
                       finished_queue_name=os.environ.get("FINISHED_JOB_QUEUE"))
 
-    db = DBSQLiteImpl(base_dir=os.environ["DATA_DIR"])
+    db = DBSQLiteImpl(base_dir="/data") # HARDCODED as it is easier to maintain
     app = APIFastAPIImpl(db=db, mq=mq)
     uvicorn.run(app=app, host="0.0.0.0", port=int(os.environ.get("API_PORT")))
 

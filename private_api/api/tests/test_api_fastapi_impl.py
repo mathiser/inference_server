@@ -11,12 +11,12 @@ from testing.mock_components.mock_mq import MockMQ
 from testing.mock_components.mock_models_and_tasks import MockModelsAndTasks
 
 
-dotenv.load_dotenv(".env")
 
 class TestFastAPIImpl(unittest.TestCase):
     """
     This is a testing of functions in api/img/api/private_fastapi_impl.py
     """
+    dotenv.load_dotenv("testing/.env")
 
     def setUp(self) -> None:
         self.hostname = "localhost"
