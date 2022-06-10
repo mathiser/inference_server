@@ -2,7 +2,7 @@ version: '3'
 
 services:
   reverse-proxy:
-    restart: on-failure
+    restart: always
     # The official v2 Traefik docker image
     image: traefik:v2.6
     # Enables the web UI and tells Traefik to listen to docker
@@ -47,7 +47,7 @@ services:
   api:
     hostname: ${API_HOSTNAME}
     command: python main.py
-    restart: on-failure
+    restart: always
     depends_on:
       - rabbit
     ports:
@@ -64,7 +64,7 @@ services:
      - ./mounts/logs:/logs
 
   rabbit:
-    restart: on-failure
+    restart: always
     image: ${RABBIT_DOCKER_TAG}
     ports:
       - ${RABBIT_PORT}
@@ -72,7 +72,7 @@ services:
 
   job-consumer:
     hostname: consumer
-    restart: on-failure
+    restart: always
     ports:
       - "80" #Dummy port to make traefik quiet
     command: /usr/bin/python3 main.py

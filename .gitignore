@@ -5,5 +5,5 @@ nnunet_models
 certificate
 mounts
 *sync-conflict*
-./.env
+.env
 **/.tmp

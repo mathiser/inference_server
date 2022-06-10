@@ -56,7 +56,6 @@ class JobDockerImpl(JobInterface):
         job_container = self.cli.containers.run(image=self.model.container_tag,
                                                 command=None,  # Already defaults to None, but for explicity
                                                 **self.generate_keywords(),
-                                                stream=True,
                                                 remove=True
                                                 )
         logging.info(job_container)
