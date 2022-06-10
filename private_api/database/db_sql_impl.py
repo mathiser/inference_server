@@ -150,7 +150,7 @@ class DBSQLiteImpl(DBInterface):
             if not model_mountpoint:
                 raise ModelMountPointMissingException
 
-            model.model_volume_uuid = str(uuid.uuid4())
+            model.model_volume_uuid = model.uid
             model.model_zip = os.path.join(self.model_base_folder, model.uid, "model.zip")
             os.makedirs(os.path.dirname(model.model_zip))
             # write model_zip to model_zip
