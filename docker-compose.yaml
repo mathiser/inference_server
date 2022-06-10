@@ -35,7 +35,6 @@ services:
     command: python main.py
     env_file:
       - .env
-      - .static_env
     ports:
       - ${PUBLIC_API_PORT}
     labels:
@@ -43,7 +42,7 @@ services:
       - "traefik.http.services.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.loadbalancer.server.port=${PUBLIC_API_PORT}"
       - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.tls=${HTTPS_ON}"
     #volumes:
-     # - ./mounts/logs:${LOGGING_DIR}
+      - ./mounts/logs:/logs
 
   api:
     hostname: ${API_HOSTNAME}
@@ -57,17 +56,12 @@ services:
       - PYTHONUNBUFFERED=1
     env_file:
       - .env
-      - .static_env
     build:
       context: ./private_api
       dockerfile: Dockerfile
-
-
     volumes:
-     - ./mounts/data:${DATA_DIR}
-     - ./mounts/logs:${LOGGING_DIR}
-     - ./mounts/models:${MODELS_DIR}
-
+     - ./mounts/data:/data
+     - ./mounts/logs:/logs
 
   rabbit:
     restart: on-failure
@@ -87,7 +81,6 @@ services:
       - api
     env_file:
       - .env
-
     build:
       context: ./job_consumer/
       dockerfile: Dockerfile
@@ -96,11 +89,6 @@ services:
     volumes:
       # needed to dispatch docker containers from inside a docker container
       - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
-      #- ./mounts/logs:${LOGGING_DIR}
+      - ./mounts/logs:/logs
 
-volumes:
-  db_storage:
-  data_storage:
-  models_storage:
-  logs_storage:
 

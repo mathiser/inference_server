@@ -56,6 +56,8 @@ class JobDockerImpl(JobInterface):
         job_container = self.cli.containers.run(image=self.model.container_tag,
                                                 command=None,  # Already defaults to None, but for explicity
                                                 **self.generate_keywords(),
+                                                stream=True,
+                                                remove=True
                                                 )
         logging.info(job_container)
 
@@ -87,7 +89,6 @@ class JobDockerImpl(JobInterface):
             kw["device_requests"] = [
                 docker.types.DeviceRequest(count=-1, capabilities=[['gpu']])]
 
-        kw["remove"] = True
         return kw
 
     def create_model_volume(self):
