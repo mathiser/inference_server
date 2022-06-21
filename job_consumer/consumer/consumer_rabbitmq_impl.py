@@ -7,10 +7,10 @@ import time
 
 import docker
 import pika
-from database.database_interface import DBInterface
 from docker.errors import ContainerError
-from job.job_interface import JobInterface
 
+from database.database_interface import DBInterface
+from job.job_docker_impl import JobDockerImpl
 from .consumer_interface import ConsumerInterface
 
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
@@ -20,11 +20,10 @@ logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 
 class ConsumerRabbitImpl(ConsumerInterface):
-    def __init__(self, host: str, port: int, db: DBInterface, JobClass: JobInterface):
+    def __init__(self, host: str, port: int, db: DBInterface):
         self.host = host
         self.port = port
         self.db = db
-        self.JobClass = JobClass  # JobImplementation - to be instantiated repeatedly
         self.threads = []
         self.unfinished_queue_name = os.environ["UNFINISHED_JOB_QUEUE"]
         self.finished_queue_name = os.environ["FINISHED_JOB_QUEUE"]
@@ -93,17 +92,17 @@ class ConsumerRabbitImpl(ConsumerInterface):
         model = self.db.get_model_by_human_readable_id(task.model_human_readable_id)
 
         # Execute task - function handles dispatchment of docker jobs.
-        j = self.JobClass(db=self.db)
-        j.set_task(task=task)
-        j.set_model(model=model)
         try:
+            j = JobDockerImpl(db=self.db)
+            j.set_task(task=task)
+            j.set_model(model=model)
             j.execute()
-        except ContainerError as e:
-            ## Send signal to DB that job failed
-            logging.error(e)
-        else:
             j.send_volume_output()
-        del j
+        except ContainerError as e:
+            logging.error(e)
+            self.db.set_task_status_by_uid(uid=task.uid, status=0)
+        finally:
+            del j
         # Acknowledgement callback
         cb = functools.partial(self.ack_message, channel, delivery_tag)
         connection.add_callback_threadsafe(cb)

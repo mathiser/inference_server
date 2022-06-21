@@ -35,6 +35,10 @@ class PublicFastAPI(PublicFastAPIInterface):
                              zip_file: UploadFile,
                              ) -> str:
 
+            models = self.db.get_models()
+            if not model_human_readable_id in [model.human_readable_id for model in models]:
+                raise HTTPException(404, detail="ModelNotFound")
+
             def post_task_thread(uid, model_human_readable_id, zip_file, ):
                 logging.info(f"[ ] Posting task: {uid} on {model_human_readable_id}")
                 return self.db.post_task(model_human_readable_id=model_human_readable_id,
@@ -51,16 +55,18 @@ class PublicFastAPI(PublicFastAPIInterface):
 
         @self.get(urljoin(os.environ['PUBLIC_GET_OUTPUT_ZIP_BY_UID'], "{uid}"))
         def public_get_output_zip_by_uid(uid: str) -> StreamingResponse:
-            bytes_from_db = self.db.get_output_zip_by_uid(uid)
-
             def iterfile(bytes_from_db: bytes):
                 with tempfile.TemporaryFile() as tmp_file:
                     tmp_file.write(bytes_from_db)
                     tmp_file.seek(0)
                     yield from tmp_file
 
-            if bytes_from_db:
-                return StreamingResponse(iterfile(bytes_from_db=bytes_from_db))
+            res = self.db.get_output_zip_by_uid(uid)
+
+            if res.ok:
+                return StreamingResponse(iterfile(bytes_from_db=res.content))
+            elif res.status_code == 600:
+                raise HTTPException(status_code=600, detail="TaskFailed")
             else:
                 raise HTTPException(status_code=404, detail="TaskOutputZipNotFound")
 

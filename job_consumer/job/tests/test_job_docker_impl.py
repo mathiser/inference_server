@@ -108,11 +108,11 @@ class TestJob(unittest.TestCase):
             with open(echo_task.output_zip, "rb") as echo_zip:
                 self.assertEqual(ref_zip.read(), echo_zip.read())
 
-
     def test_dispatch_docker_job(self):
         model = self.test_add_model()
         task = self.test_add_task()
         self.job.set_task(task)
         self.job.set_model(model)
         self.job.execute()
+
 

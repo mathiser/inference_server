@@ -41,6 +41,17 @@ class TestSQLiteImpl(unittest.TestCase):
                           zip_file=r,
                           uid="asdf")
 
+    def test_set_task_status_intended(self):
+        task = self.test_post_task_intended()
+        self.assertEqual(task.status, -1)
+        self.db.set_task_status_by_uid(task.uid, 0)
+
+        new_retrieval = self.db.get_task_by_uid(task.uid)
+        self.assertEqual(new_retrieval.status, 0)
+
+        return task
+
+
     def test_get_task_by_id_intended(self):
         model = self.test_add_model_intended()
         ref_task = self.test_post_task_intended()

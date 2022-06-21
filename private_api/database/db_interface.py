@@ -21,6 +21,10 @@ class DBInterface(ABC):
         pass
 
     @abstractmethod
+    def set_task_status_by_uid(self, uid: str, status: int) -> Task:
+        pass
+
+    @abstractmethod
     def get_tasks(self) -> List[Task]:
         pass
 

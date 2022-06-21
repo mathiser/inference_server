@@ -4,6 +4,7 @@ import shutil
 import uuid
 from typing import BinaryIO, List, Optional
 
+from database.db_exceptions import TaskNotFoundException
 from database.models import Model, Task
 from database.db_interface import DBInterface
 
@@ -52,8 +53,8 @@ class MockDB(DBInterface):
                  input_zip=os.path.abspath(os.path.join(self.input_base_folder, uid, "input.zip")),
                  input_volume_uuid=str(uuid.uuid4()),
                  output_zip=os.path.abspath(os.path.join(self.output_base_folder, uid, "output.zip")),
-                 output_volume_uuid=str(uuid.uuid4())
-                 )
+                 output_volume_uuid=str(uuid.uuid4()),
+                 status=-1)
         self.tasks.append(t)
         self.task_id += 1
         return t
@@ -62,6 +63,14 @@ class MockDB(DBInterface):
         for task in self.tasks:
             if task.id == id:
                 return task
+
+    def set_task_status_by_uid(self, uid: str, status: int) -> Task:
+        t = self.get_task_by_uid(uid)
+        if t:
+            t.status = status
+            return t
+        else:
+            raise TaskNotFoundException
 
     def get_task_by_uid(self, uid: str) -> Task:
         for task in self.tasks:
