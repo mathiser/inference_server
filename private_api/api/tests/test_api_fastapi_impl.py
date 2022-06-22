@@ -88,7 +88,7 @@ class TestFastAPIImpl(unittest.TestCase):
 
         # Get to check status code
         res = self.cli.get(os.environ['GET_OUTPUT_ZIP_BY_UID'] + str(task.uid))
-        self.assertEqual(res.status_code, 602)
+        self.assertEqual(res.status_code, 553)
 
     def test_set_task_status_by_uid_pending(self):
         task = self.test_post_task()
@@ -97,7 +97,7 @@ class TestFastAPIImpl(unittest.TestCase):
 
         # Get to check status code
         res = self.cli.get(os.environ['GET_OUTPUT_ZIP_BY_UID'] + str(task.uid))
-        self.assertEqual(res.status_code, 601)
+        self.assertEqual(res.status_code, 551)
 
     def test_set_task_status_by_uid_failed(self):
         task = self.test_post_task()
@@ -112,7 +112,7 @@ class TestFastAPIImpl(unittest.TestCase):
 
         # Get to check status code
         res = self.cli.get(os.environ['GET_OUTPUT_ZIP_BY_UID'] + str(task.uid))
-        self.assertEqual(res.status_code, 600)
+        self.assertEqual(res.status_code, 552)
 
     def test_post_model(self):
         with open(self.repo.model_zip, "rb") as r:

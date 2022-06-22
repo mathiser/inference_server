@@ -57,6 +57,7 @@ class JobDockerImpl(JobInterface):
         job_container = self.cli.containers.run(image=self.model.container_tag,
                                                 command=None,  # Already defaults to None, but for explicity
                                                 remove=True,
+                                                ports={80: []},  # Dummy port to make traefik shut up
                                                 **self.generate_keywords())
         logging.info(job_container)
 
@@ -127,5 +128,6 @@ class JobDockerImpl(JobInterface):
                                                     "VOLUME_MOUNTPOINT": "/data"
                                                 },
                                                 remove=True,
+                                                ports={80: []},  ## Dummyport to make traefik shut up
                                                 network=os.environ.get("NETWORK_NAME"))
         logging.info(tmp_container)

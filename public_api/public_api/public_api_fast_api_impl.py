@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import secrets
@@ -6,6 +7,7 @@ import threading
 from typing import Any, Optional, Union, Dict
 from urllib.parse import urljoin
 
+import requests
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse, Response
 
@@ -37,7 +39,7 @@ class PublicFastAPI(PublicFastAPIInterface):
 
             models = self.db.get_models()
             if not model_human_readable_id in [model.human_readable_id for model in models]:
-                raise HTTPException(404, detail="ModelNotFound")
+                raise HTTPException(550, detail="ModelNotFound")
 
             def post_task_thread(uid, model_human_readable_id, zip_file, ):
                 logging.info(f"[ ] Posting task: {uid} on {model_human_readable_id}")
@@ -65,17 +67,18 @@ class PublicFastAPI(PublicFastAPIInterface):
 
             if res.ok:
                 return StreamingResponse(iterfile(bytes_from_db=res.content))
-            elif res.status_code == 600:
-                raise HTTPException(status_code=600, detail="TaskFailed")
             else:
-                raise HTTPException(status_code=404, detail="TaskOutputZipNotFound")
+                try:
+                    res.raise_for_status()
+                except requests.HTTPError:
+                    raise HTTPException(status_code=res.status_code, detail=json.loads(res.content))
 
         @self.get(os.environ["PUBLIC_GET_MODELS"])
         def public_get_models():
             try:
                 return self.db.get_models()
             except Exception as e:
-                raise HTTPException(status_code=404, detail=str(e))
+                raise HTTPException(status_code=550, detail=str(e))
 
         if bool(os.environ.get("ALLOW_PUBLIC_POST_MODEL")):
             @self.post(os.environ.get("PUBLIC_POST_MODEL"))
