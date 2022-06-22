@@ -9,7 +9,7 @@ InferenceServer depends on:
 - Clone repo
 - Adjust .env.example and put in .env in root. Make sure you have a vaild domain
 - Add certificates in traefik/certs and make sure the naming matches traefik/configuration/config.toml. There is a script to generate certs in traefik/certs/generate_self_signed_certs. Make sure the domain you host on is equal to the certificate.
-- run docker-compose up -d
+- run `docker-compose up -d`
 
 ### How to use
 The public api can be inspected and tested at https://<domain>/docs
