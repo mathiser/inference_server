@@ -1,4 +1,4 @@
-# inference_server
+# InferenceServer
 
 ## Installation
 InferenceServer depends on:
@@ -62,5 +62,5 @@ Status codes on task polling:
 It completely normal to receive 554 immediatly after a task is posted, but you should receive 551 soon after.
 
 A commandline client is under development [here](https://github.com/mathiser/inference_server_client)
-# Model creation
+## Model creation
 See this [repo](https://github.com/mathiser/inference_server_models) for examples and documentation
