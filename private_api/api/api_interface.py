@@ -33,6 +33,10 @@ class APIInterface():
             pass
 
         @abstractmethod
+        def set_task_status_by_id(uid: str, status: int) -> Task:
+            pass
+
+        @abstractmethod
         def post_task(model_human_readable_id: str,
                       zip_file: Union[UploadFile, None] = None,
                       uid: Union[str, None] = None) -> Task:

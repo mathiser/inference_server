@@ -64,7 +64,8 @@ class MockModelsAndTasks():
             input_zip=task_input,
             output_zip=task_output,
             input_volume_uuid=str(uuid.uuid4()),
-            output_volume_uuid=str(uuid.uuid4())
+            output_volume_uuid=str(uuid.uuid4()),
+            status=-1
         )
 
     def purge(self):

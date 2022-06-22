@@ -46,11 +46,8 @@ class DBImpl(DBInterface):
         url = urljoin(os.environ['GET_OUTPUT_ZIP_BY_UID'], f"{uid}")
         res = self.db_client.get(url)
 
-        if not res.ok:
-            return False
-
         logging.info(f"[X]: Get output from task: {uid}")
-        return res.content
+        return res
 
 
     def post_model(self,

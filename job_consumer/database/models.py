@@ -51,7 +51,7 @@ class Task(Base):
     output_volume_uuid = Column(String, nullable=False)
     datetime_dispatched = Column(DateTime, nullable=True)
     datetime_finished = Column(DateTime, nullable=True)
-    is_finished = Column(Boolean, default=False)
+    status = Column(Integer, default=-1)
 
     def to_dict(self):
         return {
@@ -65,7 +65,7 @@ class Task(Base):
             "output_volume_uuid": self.output_volume_uuid,
             "datetime_dispatched": self.datetime_dispatched,
             "datetime_finished": self.datetime_finished,
-            "is_finished": self.is_finished
+            "status": self.status
         }
 
 

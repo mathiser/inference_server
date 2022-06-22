@@ -51,6 +51,11 @@ class DBRestImpl(DBInterface):
 
         return Model(**res.json())
 
+    def set_task_status_by_uid(self, uid: str, status: int):
+        return requests.put(url=urljoin(self.api_url, os.environ["POST_TASK"]),
+                            params={"uid": uid,
+                                    "status": status})
+
     def res_to_tmp_file(self, res) -> tempfile.TemporaryFile:
         if not res.ok:
             logging.error(f"RES not ok: {res}")

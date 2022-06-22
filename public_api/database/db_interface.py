@@ -2,6 +2,8 @@ import tempfile
 from abc import abstractmethod
 from typing import Optional, BinaryIO
 
+import requests
+
 
 class DBInterface:
     @abstractmethod
@@ -11,7 +13,7 @@ class DBInterface:
         pass
 
     @abstractmethod
-    def get_output_zip_by_uid(self, uid: str) -> tempfile.TemporaryFile:
+    def get_output_zip_by_uid(self, uid: str) -> requests.Response:
         pass
 
     @abstractmethod

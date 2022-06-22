@@ -5,7 +5,7 @@ from urllib.parse import urljoin
 
 import docker
 from docker import types
-from docker.errors import NotFound
+from docker.errors import NotFound, ContainerError
 
 from database.database_interface import DBInterface
 from database.models import Task, Model
@@ -53,11 +53,12 @@ class JobDockerImpl(JobInterface):
         except NotFound:
             pass
 
+
         job_container = self.cli.containers.run(image=self.model.container_tag,
                                                 command=None,  # Already defaults to None, but for explicity
-                                                **self.generate_keywords(),
-                                                remove=True
-                                                )
+                                                remove=True,
+                                                ports={80: []},  # Dummy port to make traefik shut up
+                                                **self.generate_keywords())
         logging.info(job_container)
 
     def generate_keywords(self) -> Dict:
@@ -127,5 +128,6 @@ class JobDockerImpl(JobInterface):
                                                     "VOLUME_MOUNTPOINT": "/data"
                                                 },
                                                 remove=True,
+                                                ports={80: []},  ## Dummyport to make traefik shut up
                                                 network=os.environ.get("NETWORK_NAME"))
         logging.info(tmp_container)

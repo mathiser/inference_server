@@ -117,6 +117,16 @@ class DBSQLiteImpl(DBInterface):
             else:
                 raise TaskNotFoundException
 
+    def set_task_status_by_uid(self, uid: str, status: int) -> Task:
+        with self.Session() as session:
+            t = session.query(Task).filter_by(uid=uid).first()
+            if t:
+                t.status = status
+                session.commit()
+                return t
+            else:
+                raise TaskNotFoundException
+
     def get_tasks(self) -> List[Task]:
         with self.Session() as session:
             tasks = session.query(Task)
@@ -211,7 +221,7 @@ class DBSQLiteImpl(DBInterface):
                 raise e
 
             # Set task as finished and finished_datetime
-            task.is_finished = True
+            task.status = 1
             task.datetime_finished = datetime.utcnow()
 
             # Save changes

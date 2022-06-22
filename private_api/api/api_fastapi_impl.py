@@ -42,7 +42,15 @@ class APIFastAPIImpl(FastAPI):
             try:
                 return self.db.get_task_by_id(id=id)
             except TaskNotFoundException as e:
-                raise HTTPException(status_code=404,
+                raise HTTPException(status_code=550,
+                                    detail=e.msg())
+
+        @self.put(os.environ['POST_TASK'])
+        def set_task_status_by_uid(uid: str, status: int):
+            try:
+                return self.db.set_task_status_by_uid(uid=uid, status=status)
+            except TaskNotFoundException as e:
+                raise HTTPException(status_code=550,
                                     detail=e.msg())
 
         @self.get(urljoin(os.environ['GET_TASK_BY_UID'], "{uid}"))
@@ -50,7 +58,7 @@ class APIFastAPIImpl(FastAPI):
             try:
                 return self.db.get_task_by_uid(uid=uid)
             except TaskNotFoundException as e:
-                raise HTTPException(status_code=404,
+                raise HTTPException(status_code=550,
                                     detail=e.msg())
 
         @self.post(os.environ['POST_TASK'])
@@ -68,7 +76,7 @@ class APIFastAPIImpl(FastAPI):
                 self.mq.publish_unfinished_task(task)
 
             except InsertTaskException as e:
-                raise HTTPException(status_code=404,
+                raise HTTPException(status_code=550,
                                     detail=e.msg())
 
             return task
@@ -78,13 +86,13 @@ class APIFastAPIImpl(FastAPI):
             try:
                 task = self.db.get_task_by_id(id=id)
             except TaskNotFoundException as e:
-                raise HTTPException(status_code=404,
+                raise HTTPException(status_code=550,
                                     detail=e.msg())
 
             if os.path.exists(task.input_zip):
                 return FileResponse(task.input_zip)
             else:
-                raise HTTPException(status_code=404, detail="Input zip not found - try posting task again")
+                raise HTTPException(status_code=550, detail="Input zip not found - try posting task again")
 
         @self.post(urljoin(os.environ['POST_OUTPUT_ZIP_BY_UID'], "{uid}"))
         def post_output_zip_by_uid(uid: str,
@@ -92,38 +100,50 @@ class APIFastAPIImpl(FastAPI):
 
             try:
                 task = self.db.post_output_zip_by_uid(uid=uid, zip_file=zip_file.file)
+            except TaskNotFoundException as e:
+                raise HTTPException(status_code=550,
+                                    detail=e.msg())
             except Exception as e:
                 logging.error(e)
                 raise e
-            except TaskNotFoundException as e:
-                raise HTTPException(status_code=404,
-                                    detail=e.msg())
 
             logging.info(task)
             self.mq.publish_finished_task(task)
+            return task
 
         @self.get(urljoin(os.environ['GET_OUTPUT_ZIP_BY_UID'], "{uid}"))
         def get_output_zip_by_uid(uid: str):
             # Zip the output for return
             try:
                 task = self.db.get_task_by_uid(uid=uid)
+                logging.info(str(task))
             except TaskNotFoundException as e:
-                raise HTTPException(status_code=404,
+                raise HTTPException(status_code=550,
                                     detail=e.msg())
 
             # Not doing this with os.path.exists(task.output.zip) to avoid that some of the file is sent before all written
-            if os.path.exists(task.output_zip) and task.is_finished:
+            if os.path.exists(task.output_zip) and task.status == 1:
                 return FileResponse(task.output_zip)
+            elif not os.path.exists(task.output_zip) and task.status == 1:
+                raise HTTPException(status_code=553,
+                                    detail="Job status is 'finished', but output zip does not exist")
+            elif task.status == 0:
+                raise HTTPException(status_code=552,
+                                    detail="Job status is 'failed'")
+            elif task.status == -1:
+                raise HTTPException(status_code=551,
+                                    detail="Job status is 'pending'")
             else:
-                raise HTTPException(status_code=404,
-                                    detail="Output zip not found - this is normal behavior if you are polling for an output")
+                logging.error(str(task))
+                raise HTTPException(status_code=500,
+                                    detail="Internal Server Error - should not be possible")
 
         @self.get(urljoin(os.environ['GET_TASK_BY_ID'], "{id}"))
         def get_task_by_id(id: int):
             try:
                 return self.db.get_task_by_id(id=id)
             except TaskNotFoundException as e:
-                raise HTTPException(status_code=404,
+                raise HTTPException(status_code=550,
                                     detail=e.msg())
 
         @self.get(urljoin(os.environ['GET_TASK_BY_UID'], "{uid}"))
@@ -131,7 +151,7 @@ class APIFastAPIImpl(FastAPI):
             try:
                 return self.db.get_task_by_uid(uid=uid)
             except TaskNotFoundException as e:
-                raise HTTPException(status_code=404,
+                raise HTTPException(status_code=550,
                                     detail=e.msg())
 
         @self.post(os.environ['POST_MODEL'])
@@ -165,7 +185,7 @@ class APIFastAPIImpl(FastAPI):
             try:
                 return self.db.get_model_by_id(id=id)
             except ModelNotFoundException as e:
-                raise HTTPException(status_code=404,
+                raise HTTPException(status_code=550,
                                     detail=e.msg())
 
         @self.get(urljoin(os.environ['GET_MODEL_BY_HUMAN_READABLE_ID'], "{human_readable_id}"))
@@ -173,7 +193,7 @@ class APIFastAPIImpl(FastAPI):
             try:
                 return self.db.get_model_by_human_readable_id(human_readable_id=human_readable_id)
             except ModelNotFoundException as e:
-                raise HTTPException(status_code=404,
+                raise HTTPException(status_code=550,
                                     detail=e.msg())
 
         @self.get(os.environ['GET_MODELS'])
@@ -185,13 +205,13 @@ class APIFastAPIImpl(FastAPI):
             try:
                 model = self.db.get_model_by_id(id=id)
             except ModelNotFoundException as e:
-                raise HTTPException(status_code=404,
+                raise HTTPException(status_code=550,
                                     detail=e.msg())
 
             if os.path.exists(model.model_zip):
                 return FileResponse(model.model_zip)
             else:
-                raise HTTPException(status_code=404, detail="Model zip not found - try posting task again")
+                raise HTTPException(status_code=550, detail="Model zip not found - try posting task again")
 
     def __del__(self):
         for t in self.threads:

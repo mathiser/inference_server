@@ -11,8 +11,7 @@ def main():
     db = DBRestImpl(api_url=os.environ.get("API_URL"))
     consumer = ConsumerRabbitImpl(host=os.environ.get("RABBIT_HOSTNAME"),
                         port=int(os.environ.get("RABBIT_PORT")),
-                        db=db,
-                        JobClass=JobDockerImpl)
+                        db=db)
 
     consumer.consume_unfinished()
 

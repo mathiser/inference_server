@@ -1,3 +1,4 @@
+import enum
 from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
@@ -36,9 +37,6 @@ class Model(Base):
             "output_mountpoint": self.output_mountpoint,
         }
 
-
-
-
 class Task(Base):
     __tablename__ = "tasks"
     id = Column(Integer, primary_key=True)
@@ -51,7 +49,7 @@ class Task(Base):
     output_volume_uuid = Column(String, nullable=False, unique=True)
     datetime_dispatched = Column(DateTime, nullable=True)
     datetime_finished = Column(DateTime, nullable=True)
-    is_finished = Column(Boolean, default=False)
+    status = Column(Integer, nullable=False, default=-1)  # -1: pending, 0: failed, 1: finished
 
     def to_dict(self):
         return {
@@ -65,7 +63,7 @@ class Task(Base):
             "output_volume_uuid": self.output_volume_uuid,
             "datetime_dispatched": self.datetime_dispatched,
             "datetime_finished": self.datetime_finished,
-            "is_finished": self.is_finished
+            "status": self.status
         }
 
 
