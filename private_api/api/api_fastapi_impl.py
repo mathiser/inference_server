@@ -1,7 +1,6 @@
 import logging
 import os
 import secrets
-import threading
 from typing import Any, Union, Optional
 from urllib.parse import urljoin
 
