@@ -63,9 +63,6 @@ class TestDBImpl(unittest.TestCase):
         models = self.db.get_models()
         print(f"models: {models}")
         self.assertEqual(len(models), 1)
-        for k, v in model.items():
-            self.assertIn(k, models[0].keys())
-            self.assertEqual(models[0][k], v)
 
         model = self.test_post_model_intended()
         models = self.db.get_models()

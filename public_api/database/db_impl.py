@@ -11,6 +11,8 @@ from database.db_interface import DBInterface
 from database_client.db_client_interface import DBClientInterface
 from exceptions.exceptions import PostTaskException, TaskOutputZipNotFound, PostModelException
 
+from models.models import Model
+
 
 class DBImpl(DBInterface):
     def __init__(self, db_client: DBClientInterface):
@@ -91,4 +93,4 @@ class DBImpl(DBInterface):
         url = os.environ["GET_MODELS"]
         res = self.db_client.get(url)
         logging.info(res)
-        return json.loads(res.content)
+        return [Model(**m) for m in json.loads(res.content)]
