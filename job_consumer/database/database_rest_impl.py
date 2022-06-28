@@ -11,7 +11,7 @@ from .database_interface import DBInterface
 from .models import Model, Task
 
 LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
-logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
+logging.basicConfig(level=int(os.environ.get("LOG_LEVEL")), format=LOG_FORMAT)
 
 
 class DBRestImpl(DBInterface):

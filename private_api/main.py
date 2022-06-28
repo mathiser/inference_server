@@ -10,7 +10,7 @@ from message_queue.rabbit_mq_impl import MQRabbitImpl
 
 LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
 
-logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
+logging.basicConfig(level=int(os.environ.get("LOG_LEVEL")), format=LOG_FORMAT)
 dotenv.load_dotenv()
 
 def main():

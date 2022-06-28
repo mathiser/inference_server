@@ -6,10 +6,6 @@ from fastapi import File, UploadFile, FastAPI
 from fastapi.responses import StreamingResponse, Response
 from database.db_interface import DBInterface
 
-LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
-
-logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
-
 class PublicFastAPIInterface(FastAPI):
     @abstractmethod
     def __init__(self,

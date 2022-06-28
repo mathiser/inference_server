@@ -16,7 +16,7 @@ from database.db_exceptions import TaskNotFoundException, ModelNotFoundException
 
 LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
 
-logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
+logging.basicConfig(level=int(os.environ.get("LOG_LEVEL")), format=LOG_FORMAT)
 
 dotenv.load_dotenv(".env")
 
