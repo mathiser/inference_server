@@ -69,6 +69,8 @@ services:
     ports:
       - ${RABBIT_PORT}
     hostname: ${RABBIT_HOSTNAME}
+    volumes:
+      - ./rabbit/timeout.conf:/etc/rabbitmq/conf.d/timeout.conf
 
   job-consumer:
     hostname: consumer
