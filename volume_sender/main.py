@@ -25,7 +25,6 @@ def main():
     tmp_zip = zip_folder_to_tmpfile(os.environ.get("VOLUME_MOUNTPOINT"))
     res = requests.post(os.environ.get("URL"), files={"zip_file": tmp_zip})
     print(res)
-    print(res.content)
 
     tmp_zip.close()
     return res
