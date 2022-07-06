@@ -98,7 +98,7 @@ class ConsumerRabbitImpl(ConsumerInterface):
             j.set_model(model=model)
             j.execute()
             j.send_volume_output()
-        except ContainerError as e:
+        except Exception as e:
             logging.error(e)
             self.db.set_task_status_by_uid(uid=task.uid, status=0)
         finally:
