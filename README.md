@@ -14,6 +14,7 @@ InferenceServer depends on:
 ### How to use
 The public api can be inspected and tested at https://<domain>/docs
 Generally the following two methods are useful:
+
 #### Post model
 This is a HTTP POST on https://<domain>/api/tasks/
 With python requests it can be reached like:
@@ -60,6 +61,26 @@ Status codes on task polling:
 
 
 It completely normal to receive 554 immediatly after a task is posted, but you should receive 551 soon after.
+
+### How to reset
+- Doing a soft reset keeping all data intact:  
+`docker-compose down && docker-compose up -d`
+
+- Doing a slightly harder reset pruning volumes that might have caused a failure:  
+```
+docker-compose down
+docker volume prune  # Watchout if you have not binded the datadir to persistent storage!
+docker-compose up -d
+```
+
+- Full take down of the entire server and start anew:  
+```
+docker-compose down
+docker volume prune
+rm mount  # or where the persistent data store is located
+docker-compose up -d
+```
+Repost your models to the server with your own script or go to `https://inferenece_server.domain.com/docs` and add them manually (remember to set `ALLOW_PUBLIC_POST_MODEL` to something/anything in your `.env` (e.g. `ALLOW_PUBLIC_POST_MODEL=1`) to post models.)  
 
 A commandline client is under development [here](https://github.com/mathiser/inference_server_client)
 ## Model creation
