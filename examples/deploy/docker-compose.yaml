@@ -1,0 +1,96 @@
+version: '3'
+
+services:
+  reverse-proxy:
+    restart: always
+    # The official v2 Traefik docker image
+    image: traefik:v2.6
+    # Enables the web UI and tells Traefik to listen to docker
+    hostname: reverse-proxy
+    command:
+      - --api.insecure=true
+      - --providers.docker=true
+      - --entrypoints.websecure.address=:443
+      - --providers.file.directory=/configuration/
+      - --providers.file.watch=true
+
+    ports:
+      - 443:443
+      # The Web UI (enabled by --api.insecure=true)
+      #- 8081:8080
+    labels:
+      traefik.enable: true
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - ./traefik/certs:/tools/certs
+      - ./traefik/configuration:/configuration/
+      - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
+
+  public-api:
+    restart: always
+    build:
+      context: ./public_api
+      dockerfile: Dockerfile
+    hostname: ${PUBLIC_API_HOSTNAME}
+    command: python main.py
+    env_file:
+      - .env
+    ports:
+      - ${PUBLIC_API_PORT}
+    labels:
+      - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.rule=Host(`${PROXY_URL}`)"
+      - "traefik.http.services.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.loadbalancer.server.port=${PUBLIC_API_PORT}"
+      - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.tls=${HTTPS_ON}"
+    #volumes:
+      - ./mounts/logs:/logs
+
+  api:
+    hostname: ${API_HOSTNAME}
+    command: python main.py
+    restart: always
+    depends_on:
+      - rabbit
+    ports:
+      - ${API_PORT}
+    environment:
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - .env
+    build:
+      context: ./private_api
+      dockerfile: Dockerfile
+    volumes:
+     - ./mounts/data:/data
+     - ./mounts/logs:/logs
+
+  rabbit:
+    restart: always
+    image: ${RABBIT_DOCKER_TAG}
+    ports:
+      - ${RABBIT_PORT}
+    hostname: ${RABBIT_HOSTNAME}
+    volumes:
+      - ./rabbit/timeout.conf:/etc/rabbitmq/conf.d/timeout.conf
+
+  job-consumer:
+    hostname: consumer
+    restart: always
+    ports:
+      - "80" #Dummy port to make traefik quiet
+    command: /usr/bin/python3 main.py
+    depends_on:
+      - rabbit
+      - api
+    env_file:
+      - .env
+    build:
+      context: ./job_consumer/
+      dockerfile: Dockerfile
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # needed to dispatch docker containers from inside a docker container
+      - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
+      - ./mounts/logs:/logs
+
+
