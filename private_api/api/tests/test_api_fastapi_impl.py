@@ -75,6 +75,19 @@ class TestFastAPIImpl(unittest.TestCase):
         self.assertEqual(task.to_dict(), echo.to_dict())
         return echo
 
+    def test_delete_task_by_uid_intended(self):
+        task = self.test_post_task()
+        res = self.cli.delete(os.environ['GET_TASK_BY_UID'] + str(task.uid))
+        self.assertEqual(res.status_code, 200)
+        echo = Task(**res.json())
+        self.assertNotEqual(task.to_dict(), echo.to_dict())
+        self.assertTrue(echo.is_deleted)
+
+
+    def test_delete_task_by_uid_TaskNotFoundException(self):
+        res = self.cli.delete(os.environ['GET_TASK_BY_UID'] + "ImportantButNonExistingUID")
+        self.assertEqual(res.status_code, 554)
+
     def test_set_task_status_by_uid_finished_zip_not_exist(self):
         task = self.test_post_task()
         print(f"TASK: {task.to_dict()}")

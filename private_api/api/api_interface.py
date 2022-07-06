@@ -33,6 +33,10 @@ class APIInterface():
             pass
 
         @abstractmethod
+        def delete_task_by_uid(uid: str) -> Task:
+            pass
+
+        @abstractmethod
         def set_task_status_by_id(uid: str, status: int) -> Task:
             pass
 

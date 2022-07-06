@@ -103,7 +103,7 @@ class DBSQLiteImpl(DBInterface):
 
     def get_task_by_id(self, id: int):
         with self.Session() as session:
-            task = session.query(Task).filter_by(id=id).first()
+            task = session.query(Task).filter_by(id=id).filter_by(is_deleted=False).first()
             if task:
                 return task
             else:
@@ -111,7 +111,7 @@ class DBSQLiteImpl(DBInterface):
 
     def get_task_by_uid(self, uid: str) -> Task:
         with self.Session() as session:
-            t = session.query(Task).filter_by(uid=uid).first()
+            t = session.query(Task).filter_by(uid=uid).filter_by(is_deleted=False).first()
             if t:
                 return t
             else:
@@ -119,7 +119,7 @@ class DBSQLiteImpl(DBInterface):
 
     def set_task_status_by_uid(self, uid: str, status: int) -> Task:
         with self.Session() as session:
-            t = session.query(Task).filter_by(uid=uid).first()
+            t = session.query(Task).filter_by(uid=uid).filter_by(is_deleted=False).first()
             if t:
                 t.status = status
                 session.commit()
@@ -129,8 +129,26 @@ class DBSQLiteImpl(DBInterface):
 
     def get_tasks(self) -> List[Task]:
         with self.Session() as session:
-            tasks = session.query(Task)
+            tasks = session.query(Task).filter_by(is_deleted=False)
             return list(tasks)
+
+    def delete_task_by_uid(self, uid: str) -> Task:
+        with self.Session() as session:
+            t = session.query(Task).filter_by(uid=uid).filter_by(is_deleted=False).first()
+            if t:
+                t.is_deleted = True
+                session.commit()
+                in_dir = os.path.dirname(t.input_zip)
+                if os.path.exists(in_dir):
+                    shutil.rmtree(in_dir)
+
+                out_dir = os.path.dirname(t.output_zip)
+                if os.path.exists(out_dir):
+                    shutil.rmtree(out_dir)
+
+                return t
+            else:
+                raise TaskNotFoundException
 
     def post_model(self,
                    container_tag: str,
@@ -208,7 +226,7 @@ class DBSQLiteImpl(DBInterface):
     def post_output_zip_by_uid(self, uid: str, zip_file: BinaryIO) -> Task:
         with self.Session() as session:
             # Get the task
-            task = session.query(Task).filter_by(uid=uid).first()
+            task = session.query(Task).filter_by(uid=uid).filter_by(is_deleted=False).first()
             if not task:
                 raise TaskNotFoundException
 

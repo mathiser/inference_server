@@ -60,6 +60,14 @@ class APIFastAPIImpl(FastAPI):
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
+        @self.delete(urljoin(os.environ['GET_TASK_BY_UID'], "{uid}"))
+        def delete_task_by_uid(uid: str) -> Task:
+            try:
+                return self.db.delete_task_by_uid(uid=uid)
+            except TaskNotFoundException as e:
+                raise HTTPException(status_code=554,
+                                    detail=e.msg())
+
         @self.post(os.environ['POST_TASK'])
         def post_task(model_human_readable_id: str,
                       zip_file: UploadFile = File(...),

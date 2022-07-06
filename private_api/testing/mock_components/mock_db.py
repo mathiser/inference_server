@@ -54,7 +54,8 @@ class MockDB(DBInterface):
                  input_volume_uuid=str(uuid.uuid4()),
                  output_zip=os.path.abspath(os.path.join(self.output_base_folder, uid, "output.zip")),
                  output_volume_uuid=str(uuid.uuid4()),
-                 status=-1)
+                 status=-1,
+                 is_deleted=False)
         self.tasks.append(t)
         self.task_id += 1
         return t
@@ -63,6 +64,23 @@ class MockDB(DBInterface):
         for task in self.tasks:
             if task.id == id:
                 return task
+
+    def delete_task_by_uid(self, uid: str) -> Task:
+        t = self.get_task_by_uid(uid)
+        if t:
+            t.is_deleted = True
+
+            in_dir = os.path.dirname(t.input_zip)
+            if os.path.exists(in_dir):
+                shutil.rmtree(in_dir)
+
+            out_dir = os.path.dirname(t.output_zip)
+            if os.path.exists(out_dir):
+                shutil.rmtree(out_dir)
+
+            return t
+        else:
+            raise TaskNotFoundException
 
     def set_task_status_by_uid(self, uid: str, status: int) -> Task:
         t = self.get_task_by_uid(uid)
