@@ -56,7 +56,6 @@ class JobDockerImpl(JobInterface):
         self.create_model_volume()
         self.create_input_volume()
         self.output_dir = tempfile.mkdtemp()
-        #volume_functions.create_empty_volume(self.task.output_volume_uuid)
 
         try:
             volume_functions.pull_image(self.model.container_tag)

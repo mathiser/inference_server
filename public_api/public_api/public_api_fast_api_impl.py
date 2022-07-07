@@ -74,16 +74,13 @@ class PublicFastAPI(PublicFastAPIInterface):
                     raise HTTPException(status_code=res.status_code, detail=json.loads(res.content))
 
         @self.delete(urljoin(os.environ['PUBLIC_GET_OUTPUT_ZIP_BY_UID'], "{uid}"))
-        def public_delete_task_by_uid(uid: str) -> StreamingResponse:
-            t = self.db.delete_task_by_uid(uid)
+        def public_delete_task_by_uid(uid: str) -> Response:
+            task = self.db.delete_task_by_uid(uid)
 
-            if t.is_deleted:
-                return t
-            else:
-                try:
-                    res.raise_for_status()
-                except requests.HTTPError:
-                    raise HTTPException(status_code=res.status_code, detail=json.loads(res.content))
+            try:
+                return task
+            except Exception as e:
+                raise HTTPException(status_code=550, detail=str(e))
 
         @self.get(os.environ["PUBLIC_GET_MODELS"])
         def public_get_models():
