@@ -67,7 +67,9 @@ class MockDB(DBInterface):
                  input_zip=os.path.abspath(os.path.join(self.input_base_folder, uid, "input.zip")),
                  input_volume_uuid=str(uuid.uuid4()),
                  output_zip=os.path.abspath(os.path.join(self.output_base_folder, uid, "output.zip")),
-                 output_volume_uuid=str(uuid.uuid4())
+                 output_volume_uuid=str(uuid.uuid4()),
+                 status=-1,
+                 is_deleted=False,
                  )
 
         self.tasks.append(t)
@@ -84,11 +86,15 @@ class MockDB(DBInterface):
                 return task
 
     def get_task_by_uid(self, uid: str) -> Task:
-        print(f"MockDB was hit with {uid}")
-        print(f"MockDB's tasks are {[n.to_dict() for n in self.tasks]}")
         for task in self.tasks:
             if task.uid == uid:
                 print(f"Matching task was found: {task}")
+                return task
+
+    def delete_task_by_uid(self, uid: str) -> Task:
+        for task in self.tasks:
+            if task.uid == uid:
+                task.is_deleted = True
                 return task
 
     def get_tasks(self) -> List[Task]:

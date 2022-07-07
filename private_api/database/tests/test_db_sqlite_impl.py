@@ -79,6 +79,17 @@ class TestSQLiteImpl(unittest.TestCase):
         self.assertEqual(len(tasks), 1)
         self.assertEqual(tasks[0].to_dict(), task.to_dict())
 
+    def test_delete_task_by_uid_intended(self):
+        task = self.test_post_task_intended()
+        self.assertFalse(task.is_deleted)
+        self.db.delete_task_by_uid(task.uid)
+
+        self.assertRaises(TaskNotFoundException, self.db.get_task_by_uid, uid=task.uid)
+
+    def test_delete_task_by_uid_TaskNotFoundException(self):
+        self.assertRaises(TaskNotFoundException, self.db.get_task_by_uid, uid="some uid that does not exist")
+
+
     def test_add_model_intended(self):
         model = self.repo.model
         with open(self.repo.model_zip, "rb") as model_zip:

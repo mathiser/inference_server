@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, PickleType, ForeignKey
-from sqlalchemy.orm import declarative_base, relationship, object_session
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
+from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
@@ -52,6 +52,7 @@ class Task(Base):
     datetime_dispatched = Column(DateTime, nullable=True)
     datetime_finished = Column(DateTime, nullable=True)
     status = Column(Integer, default=-1)
+    is_deleted = Column(Boolean, nullable=True)
 
     def to_dict(self):
         return {

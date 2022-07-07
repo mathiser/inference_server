@@ -17,6 +17,10 @@ class DBInterface:
         pass
 
     @abstractmethod
+    def delete_task_by_uid(self, uid: str) -> requests.Response:
+        pass
+
+    @abstractmethod
     def post_model(self,
                    container_tag: str,
                    human_readable_id: str,
