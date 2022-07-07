@@ -3,12 +3,9 @@ version: '3'
 services:
   reverse-proxy:
     restart: always
-    # The official v2 Traefik docker image
     image: traefik:v2.6
-    # Enables the web UI and tells Traefik to listen to docker
     hostname: reverse-proxy
     command:
-      - --api.insecure=true
       - --providers.docker=true
       - --entrypoints.websecure.address=:443
       - --providers.file.directory=/configuration/
@@ -16,12 +13,10 @@ services:
 
     ports:
       - 443:443
-      # The Web UI (enabled by --api.insecure=true)
-      #- 8081:8080
+
     labels:
       traefik.enable: true
     volumes:
-      # So that Traefik can listen to the Docker events
       - ./traefik/certs:/tools/certs
       - ./traefik/configuration:/configuration/
       - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
@@ -41,8 +36,6 @@ services:
       - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.rule=Host(`${PROXY_URL}`)"
       - "traefik.http.services.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.loadbalancer.server.port=${PUBLIC_API_PORT}"
       - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.tls=${HTTPS_ON}"
-    volumes:
-      - ./mounts/logs:/logs
 
   api:
     hostname: ${API_HOSTNAME}
@@ -61,7 +54,6 @@ services:
       dockerfile: Dockerfile
     volumes:
      - ./mounts/data:/data
-     - ./mounts/logs:/logs
 
   rabbit:
     restart: always
@@ -91,6 +83,5 @@ services:
     volumes:
       # needed to dispatch docker containers from inside a docker container
       - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
-      - ./mounts/logs:/logs
 
 
