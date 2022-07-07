@@ -38,7 +38,7 @@ services:
     ports:
       - ${PUBLIC_API_PORT}
     labels:
-      - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.rule=Host(`${PROXY_URL}` &&)"
+      - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.rule=Host(`${PROXY_URL}`)"
       - "traefik.http.services.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.loadbalancer.server.port=${PUBLIC_API_PORT}"
       - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.tls=${HTTPS_ON}"
     volumes:
