@@ -75,10 +75,10 @@ class PublicFastAPI(PublicFastAPIInterface):
 
         @self.delete(urljoin(os.environ['PUBLIC_GET_OUTPUT_ZIP_BY_UID'], "{uid}"))
         def public_delete_task_by_uid(uid: str) -> StreamingResponse:
-            res = self.db.delete_task_by_uid(uid)
+            t = self.db.delete_task_by_uid(uid)
 
-            if res.ok:
-                return res.content
+            if t.is_deleted:
+                return t
             else:
                 try:
                     res.raise_for_status()

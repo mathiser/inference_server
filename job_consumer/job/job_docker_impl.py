@@ -1,5 +1,7 @@
 import logging
 import os
+import shutil
+import tempfile
 from typing import Dict
 from urllib.parse import urljoin
 
@@ -9,9 +11,12 @@ from docker.errors import NotFound, ContainerError
 
 from database.database_interface import DBInterface
 from database.models import Task, Model
+import requests
 from job.job_exceptions import ModelNotSetException, TaskNotSetException
 from job.job_interface import JobInterface
 from docker_helper import volume_functions
+
+from utils.file_handling import zip_folder_to_tmpfile
 
 
 class JobDockerImpl(JobInterface):
@@ -19,6 +24,7 @@ class JobDockerImpl(JobInterface):
         self.db = db
         self.task = None
         self.model = None
+        self.output_dir = None
         self.cli = docker.from_env()
 
     def __del__(self):
@@ -26,8 +32,10 @@ class JobDockerImpl(JobInterface):
             if volume_functions.volume_exists(self.task.input_volume_uuid):
                 volume_functions.delete_volume(self.task.input_volume_uuid)
 
-            if volume_functions.volume_exists(self.task.output_volume_uuid):
-                volume_functions.delete_volume(self.task.output_volume_uuid)
+            if self.output_dir:
+                shutil.rmtree(self.output_dir)
+            # if volume_functions.volume_exists(self.task.output_volume_uuid):
+            #     volume_functions.delete_volume(self.task.output_volume_uuid)
 
         self.cli.close()
 
@@ -47,7 +55,9 @@ class JobDockerImpl(JobInterface):
 
         self.create_model_volume()
         self.create_input_volume()
-        volume_functions.create_empty_volume(self.task.output_volume_uuid)
+        self.output_dir = tempfile.mkdtemp()
+        #volume_functions.create_empty_volume(self.task.output_volume_uuid)
+
         try:
             volume_functions.pull_image(self.model.container_tag)
         except NotFound:
@@ -76,7 +86,7 @@ class JobDockerImpl(JobInterface):
                                                       "mode": "ro"}
 
         # Mount point of output to container
-        kw["volumes"][self.task.output_volume_uuid] = {"bind": self.model.output_mountpoint,
+        kw["volumes"][self.output_dir] = {"bind": self.model.output_mountpoint,
                                                        "mode": "rw"}
 
         # Mount point of model volume to container if exists
@@ -118,16 +128,7 @@ class JobDockerImpl(JobInterface):
 
     def send_volume_output(self):
         url = os.environ.get('API_URL') + urljoin(os.environ.get('POST_OUTPUT_ZIP_BY_UID'), self.task.uid)
-        logging.info("URL to post on: {}".format(url))
-        volume_functions.pull_image(os.environ.get("VOLUME_SENDER_DOCKER_TAG"))
-        tmp_container = self.cli.containers.run(os.environ.get("VOLUME_SENDER_DOCKER_TAG"),
-                                                None,
-                                                volumes={self.task.output_volume_uuid: {"bind": '/data', 'mode': 'ro'}},
-                                                environment={
-                                                    "URL": url,
-                                                    "VOLUME_MOUNTPOINT": "/data"
-                                                },
-                                                remove=True,
-                                                ports={80: []},  ## Dummyport to make traefik shut up
-                                                network=os.environ.get("NETWORK_NAME"))
-        logging.info(tmp_container)
+        tmp_zip = zip_folder_to_tmpfile(src=self.output_dir)
+        res = requests.post(url, files={"zip_file": tmp_zip})
+        print(res)
+        res.raise_for_status()
