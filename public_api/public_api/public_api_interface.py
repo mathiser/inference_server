@@ -29,6 +29,10 @@ class PublicFastAPIInterface(FastAPI):
             pass
 
         @abstractmethod
+        def public_delete_task_by_uid(uid: str) -> Response:
+            pass
+
+        @abstractmethod
         def public_post_model(container_tag: str,
                        human_readable_id: str,
                        input_mountpoint: Optional[str] = None,

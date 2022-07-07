@@ -51,6 +51,14 @@ class DBImpl(DBInterface):
         logging.info(f"[X]: Get output from task: {uid}")
         return res
 
+    def delete_task_by_by_uid(self, uid: str):
+        # Zip the output for return
+        logging.info(f"[ ]: Delete task: {uid}")
+        url = urljoin(os.environ['GET_OUTPUT_ZIP_BY_UID'], f"{uid}")
+        res = self.db_client.delete(url)
+
+        logging.info(f"[X]: Delete task: {uid}")
+        return res
 
     def post_model(self,
                    container_tag: str,
