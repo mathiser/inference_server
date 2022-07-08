@@ -21,7 +21,7 @@ class DBInterface(ABC):
         pass
 
     @abstractmethod
-    def delete_task_by_uid(self, uid: str) -> Task:
+    def delete_task_by_uid(self, uid: str) -> str:
         pass
 
     @abstractmethod

@@ -13,11 +13,11 @@ class DBInterface:
         pass
 
     @abstractmethod
-    def get_output_zip_by_uid(self, uid: str) -> requests.Response:
+    def get_output_zip_by_uid(self, uid: str):
         pass
 
     @abstractmethod
-    def delete_task_by_uid(self, uid: str) -> requests.Response:
+    def delete_task_by_uid(self, uid: str):
         pass
 
     @abstractmethod

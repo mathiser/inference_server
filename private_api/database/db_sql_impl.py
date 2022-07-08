@@ -136,8 +136,6 @@ class DBSQLiteImpl(DBInterface):
         with self.Session() as session:
             t = session.query(Task).filter_by(uid=uid).filter_by(is_deleted=False).first()
             if t:
-                t.is_deleted = True
-                session.commit()
                 in_dir = os.path.dirname(t.input_zip)
                 if os.path.exists(in_dir):
                     shutil.rmtree(in_dir)
@@ -146,6 +144,8 @@ class DBSQLiteImpl(DBInterface):
                 if os.path.exists(out_dir):
                     shutil.rmtree(out_dir)
 
+                t.is_deleted = True
+                session.commit()
                 return t
             else:
                 raise TaskNotFoundException

@@ -16,15 +16,12 @@ from job.job_exceptions import ModelNotSetException, TaskNotSetException
 from job.job_interface import JobInterface
 from docker_helper import volume_functions
 
-from utils.file_handling import zip_folder_to_tmpfile
-
 
 class JobDockerImpl(JobInterface):
     def __init__(self, db: DBInterface):
         self.db = db
         self.task = None
         self.model = None
-        self.output_dir = None
         self.cli = docker.from_env()
 
     def __del__(self):
@@ -32,10 +29,8 @@ class JobDockerImpl(JobInterface):
             if volume_functions.volume_exists(self.task.input_volume_uuid):
                 volume_functions.delete_volume(self.task.input_volume_uuid)
 
-            if self.output_dir:
-                shutil.rmtree(self.output_dir)
-            # if volume_functions.volume_exists(self.task.output_volume_uuid):
-            #     volume_functions.delete_volume(self.task.output_volume_uuid)
+            if volume_functions.volume_exists(self.task.output_volume_uuid):
+                volume_functions.delete_volume(self.task.output_volume_uuid)
 
         self.cli.close()
 
@@ -55,13 +50,12 @@ class JobDockerImpl(JobInterface):
 
         self.create_model_volume()
         self.create_input_volume()
-        self.output_dir = tempfile.mkdtemp()
+        volume_functions.create_empty_volume(self.task.output_volume_uuid)
 
         try:
             volume_functions.pull_image(self.model.container_tag)
         except NotFound:
             pass
-
 
         job_container = self.cli.containers.run(image=self.model.container_tag,
                                                 command=None,  # Already defaults to None, but for explicity
@@ -85,7 +79,7 @@ class JobDockerImpl(JobInterface):
                                                       "mode": "ro"}
 
         # Mount point of output to container
-        kw["volumes"][self.output_dir] = {"bind": self.model.output_mountpoint,
+        kw["volumes"][self.task.output_volume_uuid] = {"bind": self.model.output_mountpoint,
                                                        "mode": "rw"}
 
         # Mount point of model volume to container if exists
@@ -97,7 +91,7 @@ class JobDockerImpl(JobInterface):
         if self.model.use_gpu:
             kw["device_requests"] = [
                 docker.types.DeviceRequest(count=-1, capabilities=[['gpu']])]
-
+        logging.debug(str(kw))
         return kw
 
     def create_model_volume(self):
@@ -112,7 +106,7 @@ class JobDockerImpl(JobInterface):
             else:
                 logging.info(f"Model {self.model.human_readable_id} has a docker volume already")
         else:
-            logging.info(f"Model {self.model.human_readable_id}, does not have a model_zip")
+            logging.info(f"Model {self.model.human_readable_id}, does not have a model_zip, which is fine!")
 
     def create_input_volume(self):
         if not self.task:
@@ -127,7 +121,16 @@ class JobDockerImpl(JobInterface):
 
     def send_volume_output(self):
         url = os.environ.get('API_URL') + urljoin(os.environ.get('POST_OUTPUT_ZIP_BY_UID'), self.task.uid)
-        tmp_zip = zip_folder_to_tmpfile(src=self.output_dir)
-        res = requests.post(url, files={"zip_file": tmp_zip})
-        print(res)
-        res.raise_for_status()
+        logging.info("URL to post on: {}".format(url))
+        volume_functions.pull_image(os.environ.get("VOLUME_SENDER_DOCKER_TAG"))
+        tmp_container = self.cli.containers.run(os.environ.get("VOLUME_SENDER_DOCKER_TAG"),
+                                                None,
+                                                volumes={self.task.output_volume_uuid: {"bind": '/data', 'mode': 'ro'}},
+                                                environment={
+                                                    "URL": url,
+                                                    "VOLUME_MOUNTPOINT": "/data"
+                                                },
+                                                remove=True,
+                                                ports={80: []},  ## Dummyport to make traefik shut up
+                                                network=os.environ.get("NETWORK_NAME"))
+        logging.info(tmp_container)
