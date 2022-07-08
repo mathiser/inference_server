@@ -10,10 +10,10 @@ services:
       - --entrypoints.websecure.address=:443
       - --providers.file.directory=/configuration/
       - --providers.file.watch=true
-
     ports:
       - 443:443
-
+    networks:
+      - internal_network
     labels:
       traefik.enable: true
     volumes:
@@ -27,6 +27,8 @@ services:
       context: ./public_api
       dockerfile: Dockerfile
     hostname: ${PUBLIC_API_HOSTNAME}
+    networks:
+      - internal_network
     command: python main.py
     env_file:
       - .env
@@ -45,6 +47,8 @@ services:
       - rabbit
     ports:
       - ${API_PORT}
+    networks:
+      - internal_network
     environment:
       - PYTHONUNBUFFERED=1
     env_file:
@@ -61,6 +65,8 @@ services:
     ports:
       - ${RABBIT_PORT}
     hostname: ${RABBIT_HOSTNAME}
+    networks:
+      - internal_network
     volumes:
       - ./rabbit/timeout.conf:/etc/rabbitmq/conf.d/timeout.conf
 
@@ -70,6 +76,8 @@ services:
     ports:
       - "80" #Dummy port to make traefik quiet
     command: /usr/bin/python3 main.py
+    networks:
+      - internal_network
     depends_on:
       - rabbit
       - api
@@ -85,3 +93,5 @@ services:
       - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
 
 
+networks:
+  internal_network:

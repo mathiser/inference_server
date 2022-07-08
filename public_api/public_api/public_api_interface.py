@@ -15,7 +15,7 @@ class PublicFastAPIInterface(FastAPI):
         self.db = db
 
         @abstractmethod
-        def public_hello_world() -> Response:
+        def public_hello_world():
             pass
 
         @abstractmethod
@@ -29,7 +29,7 @@ class PublicFastAPIInterface(FastAPI):
             pass
 
         @abstractmethod
-        def public_delete_task_by_uid(uid: str) -> Response:
+        def public_delete_task_by_uid(uid: str):
             pass
 
         @abstractmethod
@@ -42,9 +42,9 @@ class PublicFastAPIInterface(FastAPI):
                        zip_file: Optional[UploadFile] = File(None),
                        model_available: Optional[bool] = True,
                        use_gpu: Optional[bool] = True,
-                       ) -> Response:
+                       ):
             pass
 
         @abstractmethod
-        def public_get_models() -> Response:
+        def public_get_models():
             pass

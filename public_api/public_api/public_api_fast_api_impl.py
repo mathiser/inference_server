@@ -4,6 +4,7 @@ import os
 import secrets
 import tempfile
 import threading
+import traceback
 from typing import Any, Optional, Union, Dict
 from urllib.parse import urljoin
 
@@ -74,12 +75,13 @@ class PublicFastAPI(PublicFastAPIInterface):
                     raise HTTPException(status_code=res.status_code, detail=json.loads(res.content))
 
         @self.delete(urljoin(os.environ['PUBLIC_GET_OUTPUT_ZIP_BY_UID'], "{uid}"))
-        def public_delete_task_by_uid(uid: str) -> Response:
-            task = self.db.delete_task_by_uid(uid)
+        def public_delete_task_by_uid(uid: str):
+            status = self.db.delete_task_by_uid(uid)
 
             try:
-                return task
+                return status
             except Exception as e:
+                traceback.print_exc()
                 raise HTTPException(status_code=550, detail=str(e))
 
         @self.get(os.environ["PUBLIC_GET_MODELS"])
