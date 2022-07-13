@@ -6,7 +6,7 @@ InferenceServer depends on:
 - A GPU installed with appropriate nvidia and CUDA drivers
 
 ### How to host
-- Clone repo
+- Download `examples/multi_node/inference`. 
 - Adjust .env.example and put in .env in root. Make sure you have a vaild domain
 - Add certificates in traefik/certs and make sure the naming matches traefik/configuration/config.toml. There is a script to generate certs in traefik/certs/generate_self_signed_certs. Make sure the domain you host on is equal to the certificate.
 - run `docker-compose up -d`
