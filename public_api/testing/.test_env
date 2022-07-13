@@ -1,0 +1,21 @@
+ALLOW_PUBLIC_POST_MODEL=""
+LOG_LEVEL=20
+PUBLIC_TASKS=/tasks/
+PUBLIC_MODELS=/models/
+
+PRIVATE_TASKS=/tasks/
+PRIVATE_TASK_BY_UID=/tasks/uid/
+PRIVATE_TASK_BY_ID=/tasks/id/
+
+PRIVATE_OUTPUT_ZIPS_BY_ID=/outputs/id/
+PRIVATE_OUTPUT_ZIPS_BY_UID=/outputs/uid/
+
+PRIVATE_INPUT_ZIPS_BY_ID=/inputs/id/
+PRIVATE_INPUT_ZIPS_BY_UID=/inputs/uid/
+
+## A task is the context with which to run a container on an input
+PRIVATE_MODELS=/models/
+PRIVATE_MODEL_BY_ID=/models/id/
+PRIVATE_MODEL_BY_UID=/models/uid/
+PRIVATE_MODEL_BY_HUMAN_READABLE_ID=/models/human_readable_id/
+PRIVATE_MODEL_ZIPS_BY_ID=/models/zip/uid/
