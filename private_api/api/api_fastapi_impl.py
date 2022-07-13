@@ -32,11 +32,11 @@ class APIFastAPIImpl(FastAPI):
         def hello_world():
             return {"message": "Hello world - Welcome to the private database API"}
 
-        @self.get(os.environ["GET_TASKS"])
+        @self.get(os.environ["PRIVATE_TASKS"])
         def get_tasks():
             return self.db.get_tasks()
 
-        @self.get(urljoin(os.environ['GET_TASK_BY_ID'], "{id}"))
+        @self.get(urljoin(os.environ['PRIVATE_TASK_BY_ID'], "{id}"))
         def get_task_by_id(id: int):
             try:
                 return self.db.get_task_by_id(id=id)
@@ -52,7 +52,7 @@ class APIFastAPIImpl(FastAPI):
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-        @self.get(urljoin(os.environ['GET_TASK_BY_UID'], "{uid}"))
+        @self.get(urljoin(os.environ['PRIVATE_TASK_BY_UID'], "{uid}"))
         def get_task_by_uid(uid: str):
             try:
                 return self.db.get_task_by_uid(uid=uid)
@@ -60,15 +60,15 @@ class APIFastAPIImpl(FastAPI):
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-        @self.delete(urljoin(os.environ['GET_TASK_BY_UID'], "{uid}"))
-        def delete_task_by_uid(uid: str) -> Task:
+        @self.delete(urljoin(os.environ['PRIVATE_TASK_BY_UID'], "{uid}"))
+        def delete_task_by_uid(uid: str):
             try:
                 return self.db.delete_task_by_uid(uid=uid)
             except TaskNotFoundException as e:
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-        @self.post(os.environ['POST_TASK'])
+        @self.post(os.environ['PRIVATE_TASKS'])
         def post_task(model_human_readable_id: str,
                       zip_file: UploadFile = File(...),
                       uid: Union[str, None] = None) -> str:
@@ -88,7 +88,7 @@ class APIFastAPIImpl(FastAPI):
 
             return task
 
-        @self.get(urljoin(os.environ['GET_INPUT_ZIP_BY_ID'], "{id}"))
+        @self.get(urljoin(os.environ['PRIVATE_INPUT_ZIPS_BY_ID'], "{id}"))
         def get_input_zip_by_id(id: int) -> FileResponse:
             try:
                 task = self.db.get_task_by_id(id=id)
@@ -101,7 +101,7 @@ class APIFastAPIImpl(FastAPI):
             else:
                 raise HTTPException(status_code=554, detail="Input zip not found - try posting task again")
 
-        @self.post(urljoin(os.environ['POST_OUTPUT_ZIP_BY_UID'], "{uid}"))
+        @self.post(urljoin(os.environ['PRIVATE_OUTPUT_ZIPS_BY_UID'], "{uid}"))
         def post_output_zip_by_uid(uid: str,
                                    zip_file: UploadFile = File(...)) -> Task:
 
@@ -118,7 +118,7 @@ class APIFastAPIImpl(FastAPI):
             self.mq.publish_finished_task(task)
             return task
 
-        @self.get(urljoin(os.environ['GET_OUTPUT_ZIP_BY_UID'], "{uid}"))
+        @self.get(urljoin(os.environ['PRIVATE_OUTPUT_ZIPS_BY_UID'], "{uid}"))
         def get_output_zip_by_uid(uid: str):
             # Zip the output for return
             try:
@@ -145,7 +145,7 @@ class APIFastAPIImpl(FastAPI):
                 raise HTTPException(status_code=500,
                                     detail="Internal Server Error - should not be possible")
 
-        @self.get(urljoin(os.environ['GET_TASK_BY_ID'], "{id}"))
+        @self.get(urljoin(os.environ['PRIVATE_TASK_BY_ID'], "{id}"))
         def get_task_by_id(id: int):
             try:
                 return self.db.get_task_by_id(id=id)
@@ -153,7 +153,7 @@ class APIFastAPIImpl(FastAPI):
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-        @self.get(urljoin(os.environ['GET_TASK_BY_UID'], "{uid}"))
+        @self.get(urljoin(os.environ['PRIVATE_TASK_BY_UID'], "{uid}"))
         def get_task_by_uid(uid: str):
             try:
                 return self.db.get_task_by_uid(uid=uid)
@@ -161,7 +161,7 @@ class APIFastAPIImpl(FastAPI):
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-        @self.post(os.environ['POST_MODEL'])
+        @self.post(os.environ['PRIVATE_MODELS'])
         def post_model(container_tag: str,
                        human_readable_id: str,
                        input_mountpoint: Union[str, None] = None,
@@ -187,7 +187,7 @@ class APIFastAPIImpl(FastAPI):
                 use_gpu=use_gpu,
             )
 
-        @self.get(urljoin(os.environ['GET_MODEL_BY_ID'], "{id}"))
+        @self.get(urljoin(os.environ['PRIVATE_MODEL_BY_ID'], "{id}"))
         def get_model_by_id(id: int):
             try:
                 return self.db.get_model_by_id(id=id)
@@ -195,7 +195,7 @@ class APIFastAPIImpl(FastAPI):
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-        @self.get(urljoin(os.environ['GET_MODEL_BY_HUMAN_READABLE_ID'], "{human_readable_id}"))
+        @self.get(urljoin(os.environ['PRIVATE_MODEL_BY_HUMAN_READABLE_ID'], "{human_readable_id}"))
         def get_model_by_human_readable_id(human_readable_id: str):
             try:
                 return self.db.get_model_by_human_readable_id(human_readable_id=human_readable_id)
@@ -203,11 +203,11 @@ class APIFastAPIImpl(FastAPI):
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-        @self.get(os.environ['GET_MODELS'])
+        @self.get(os.environ['PRIVATE_MODELS'])
         def get_models():
             return self.db.get_models()
 
-        @self.get(urljoin(os.environ['GET_MODEL_ZIP_BY_ID'], "{id}"))
+        @self.get(urljoin(os.environ['PRIVATE_MODEL_BY_ID'], "{id}"))
         def get_model_zip_by_id(id: int) -> FileResponse:
             try:
                 model = self.db.get_model_by_id(id=id)

@@ -1,7 +1,11 @@
 import os
 import unittest
 
+print(os.getcwd())
+
 import dotenv
+
+dotenv.load_dotenv("testing/.env")
 
 from public_api.public_api_fast_api_impl import PublicFastAPI
 from testing.mock_components.mock_db import MockDB
@@ -9,14 +13,11 @@ from testing.mock_components.mock_fast_api_testclient import MockDBClient
 from testing.mock_components.mock_models_and_tasks import MockModelsAndTasks
 from testing.mock_components.models import Task, Model
 
-dotenv.load_dotenv()
-
 
 class TestPublicAPIFastAPI(unittest.TestCase):
     """
     This is a testing of functions in public_api/public_api_fast_api_impl.py
     """
-    dotenv.load_dotenv("testing/.env")
 
     def setUp(self) -> None:
         self.base_dir = ".tmp"
@@ -41,7 +42,7 @@ class TestPublicAPIFastAPI(unittest.TestCase):
 
         model = self.test_public_post_model()
         with open(self.repo.input_zip, "rb") as r:
-            res = db_client.post(os.environ['PUBLIC_POST_TASK'],
+            res = db_client.post(os.environ['PUBLIC_TASKS'],
                                  params={"model_human_readable_id": self.repo.model.human_readable_id},
                                  files={"zip_file": r})
         print(res.content)
@@ -54,7 +55,7 @@ class TestPublicAPIFastAPI(unittest.TestCase):
         db_client = MockDBClient(app)
 
         with open(self.repo.model_zip, "rb") as r:
-            res = db_client.post(os.environ['PUBLIC_POST_MODEL'],
+            res = db_client.post(os.environ['PUBLIC_MODELS'],
                                  params={
                                      "container_tag": self.repo.model.container_tag,
                                      "human_readable_id": self.repo.model.human_readable_id,
@@ -66,6 +67,7 @@ class TestPublicAPIFastAPI(unittest.TestCase):
                                      "use_gpu": self.repo.model.use_gpu
                                  },
                                  files={"zip_file": r})
+        print(res.content)
 
         self.assertEqual(res.status_code, 200)
         echo = Model(**res.json())
@@ -78,7 +80,7 @@ class TestPublicAPIFastAPI(unittest.TestCase):
         db_client = MockDBClient(app)
 
         with open(self.repo.model_zip, "rb") as r:
-            res = db_client.post(os.environ['PUBLIC_POST_MODEL'],
+            res = db_client.post(os.environ['PUBLIC_MODELS'],
                                  params={
                                      "container_tag": self.repo.model.container_tag,
                                      "human_readable_id": self.repo.model.human_readable_id,
@@ -91,11 +93,6 @@ class TestPublicAPIFastAPI(unittest.TestCase):
                                  },
                                  files={"zip_file": r})
         self.assertEqual(res.status_code, 405)
-
-    # def test_public_get_output_zip_by_uid(self):
-    #     model = self.test_public_post_model()
-    #     task = self.test_public_post_task()
-
 
 if __name__ == '__main__':
     unittest.main()

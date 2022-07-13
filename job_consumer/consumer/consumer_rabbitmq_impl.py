@@ -7,7 +7,6 @@ import time
 
 import docker
 import pika
-from docker.errors import ContainerError
 
 from database.database_interface import DBInterface
 from job.job_docker_impl import JobDockerImpl
@@ -15,6 +14,7 @@ from .consumer_interface import ConsumerInterface
 
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
               '-35s %(lineno) -5d: %(message)s')
+
 LOGGER = logging.getLogger(__name__)
 logging.basicConfig(level=int(os.environ.get("LOG_LEVEL")), format=LOG_FORMAT)
 
@@ -64,7 +64,7 @@ class ConsumerRabbitImpl(ConsumerInterface):
             self.set_connection_and_channel()
 
 
-        prefetch_val = 1
+        prefetch_val = os.environ.get("PREFETCH_VALUE")
         logging.info(f": Setting RabbitMQ prefetch_count to {prefetch_val}")
         self.channel.basic_qos(prefetch_count=prefetch_val)
 

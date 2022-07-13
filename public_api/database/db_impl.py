@@ -31,7 +31,7 @@ class DBImpl(DBInterface):
             "uid": uid
         }
         files = {"zip_file": zip_file}
-        url = os.environ.get("POST_TASK")
+        url = os.environ.get("PRIVATE_TASKS")
 
         logging.info(f"[ ] Posting task: {params}")
         res = self.db_client.post(url=url, files=files, params=params)
@@ -45,7 +45,7 @@ class DBImpl(DBInterface):
     def get_output_zip_by_uid(self, uid: str):
         # Zip the output for return
         logging.info(f"[ ]: Get output from task: {uid}")
-        url = urljoin(os.environ['GET_OUTPUT_ZIP_BY_UID'], f"{uid}")
+        url = urljoin(os.environ['PRIVATE_OUTPUT_ZIPS_BY_UID'], f"{uid}")
         res = self.db_client.get(url)
 
         logging.info(f"[X]: Get output from task: {uid}")
@@ -54,7 +54,7 @@ class DBImpl(DBInterface):
     def delete_task_by_uid(self, uid: str):
         # Zip the output for return
         logging.info(f"[ ]: Delete task: {uid}")
-        url = urljoin(os.environ['GET_TASK_BY_UID'], f"{uid}")
+        url = urljoin(os.environ['PRIVATE_TASKS_BY_UID'], f"{uid}")
         res = self.db_client.delete(url)
 
         logging.info(f"[X]: Delete task: {uid}")
@@ -83,12 +83,13 @@ class DBImpl(DBInterface):
             "use_gpu": use_gpu
         }
         files = {"zip_file": zip_file}
-        url = os.environ.get("POST_MODEL")
+        url = os.environ.get("PRIVATE_MODELS")
+        print(url)
 
         if zip_file:
             res = self.db_client.post(url, files=files, params=params)
         else:
-            res = self.db_client.post(url, params=params)
+            res = self.db_client.post(url, params=params, files={"zip_file": ""})
 
         if not res.ok:
             logging.error(res.content)
@@ -98,7 +99,7 @@ class DBImpl(DBInterface):
             return params
 
     def get_models(self):
-        url = os.environ["GET_MODELS"]
+        url = os.environ["PRIVATE_MODELS"]
         res = self.db_client.get(url)
         logging.info(res)
         return [Model(**m) for m in json.loads(res.content)]

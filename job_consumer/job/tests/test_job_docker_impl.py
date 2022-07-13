@@ -1,10 +1,13 @@
 import secrets
 import unittest
 
+import dotenv
+
+dotenv.load_dotenv("testing/.env")
+
 from docker_helper import volume_functions
 from job.job_docker_impl import JobDockerImpl
 from testing.mock_components.mock_db import MockDB
-
 from testing.mock_components.mock_models_and_tasks import MockModelsAndTasks
 
 

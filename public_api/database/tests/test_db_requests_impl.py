@@ -1,20 +1,12 @@
-import os
-import random
-import tempfile
 import unittest
 
 import dotenv
-
+dotenv.load_dotenv("testing/.env")
 from database.db_impl import DBImpl
 from testing.mock_components.mock_db import MockDB
 from testing.mock_components.mock_fast_api_testclient import MockDBClient
 from testing.mock_components.mock_models_and_tasks import MockModelsAndTasks
 from testing.mock_components.mock_private_fast_api import MockPrivateFastAPI
-
-from exceptions.exceptions import NoZipAttachedException
-
-dotenv.load_dotenv()
-
 
 class TestDBImpl(unittest.TestCase):
     """

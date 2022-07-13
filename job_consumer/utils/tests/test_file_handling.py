@@ -1,14 +1,14 @@
 import _io
 import os
-import secrets
 import tarfile
 import tempfile
 import unittest
 import zipfile
 
-import requests
+import dotenv
 
-from utils.file_handling import unzip_tmp_file_to_location, zip_folder_to_tmpfile, tar_folder_to_tmpfile
+dotenv.load_dotenv("testing/.env")
+from utils.file_handling import zip_folder_to_tmpfile, tar_folder_to_tmpfile
 
 
 class TestFileHandling(unittest.TestCase):

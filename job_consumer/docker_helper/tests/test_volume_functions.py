@@ -1,9 +1,12 @@
-import tempfile
+import traceback
 import unittest
-import uuid
 import zipfile
 
+import dotenv
+
+dotenv.load_dotenv("testing/.env")
 from docker_helper.volume_functions import *
+
 
 class TestVolumeFunctions(unittest.TestCase):
     def tearDown(self) -> None:
@@ -42,12 +45,13 @@ class TestVolumeFunctions(unittest.TestCase):
             with open(txt_file, "w") as f:
                 f.write("importent test txt")
             tmp_file = tempfile.TemporaryFile(suffix=".zip")
-            with zipfile.ZipFile(tmp_file) as zf:
+            with zipfile.ZipFile(tmp_file, "w") as zf:
                 zf.write(txt_file)
 
             vol_uid = create_volume_from_tmp_file(tmp_file=tmp_file)
             self.assertTrue(volume_exists(volume_uuid=vol_uid))
         except Exception as e:
+            traceback.print_exc()
             logging.error(e)
         finally:
             os.remove(txt_file)

@@ -15,9 +15,9 @@ class MockPrivateFastAPI(FastAPI):
 
         @self.get("/")
         def hello_world():
-            return {"message": "Hello world - Welcome to the public database API"}
+            return {"message": "Hello world - Welcome to the private database API"}
 
-        @self.post(os.environ['POST_TASK'])
+        @self.post(os.environ['PRIVATE_TASKS'])
         def post_task(model_human_readable_id: str,
                       zip_file: UploadFile = File(...),
                       uid=None) -> Task:
@@ -28,7 +28,7 @@ class MockPrivateFastAPI(FastAPI):
             return t
 
 
-        @self.get(urljoin(os.environ['GET_OUTPUT_ZIP_BY_UID'], "{uid}"))
+        @self.get(urljoin(os.environ['PRIVATE_TASKS'], "{uid}"))
         def get_output_zip_by_uid(uid: str):
             # Zip the output for return
             output_tmp_file = self.db.get_output_zip_by_uid(uid=uid)
@@ -46,7 +46,7 @@ class MockPrivateFastAPI(FastAPI):
             return StreamingResponse(iterfile())
 
 
-        @self.post(os.environ['POST_MODEL'])
+        @self.post(os.environ['PRIVATE_MODELS'])
         def post_model(container_tag: str,
                        human_readable_id: str,
                        input_mountpoint: Optional[str] = None,
@@ -72,7 +72,7 @@ class MockPrivateFastAPI(FastAPI):
 
 
 
-        @self.get(os.environ['GET_MODELS'])
+        @self.get(os.environ['PRIVATE_MODELS'])
         def get_models():
             return self.db.get_models()
 
