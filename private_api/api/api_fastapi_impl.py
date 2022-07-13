@@ -36,7 +36,7 @@ class APIFastAPIImpl(FastAPI):
         def get_tasks():
             return self.db.get_tasks()
 
-        @self.get(urljoin(os.environ['PRIVATE_TASK_BY_ID'], "{id}"))
+        @self.get(urljoin(os.environ['PRIVATE_TASKS_BY_ID'], "{id}"))
         def get_task_by_id(id: int):
             try:
                 return self.db.get_task_by_id(id=id)
@@ -44,7 +44,7 @@ class APIFastAPIImpl(FastAPI):
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-        @self.put(os.environ['POST_TASK'])
+        @self.put(os.environ['PRIVATE_TASKS'])
         def set_task_status_by_uid(uid: str, status: int):
             try:
                 return self.db.set_task_status_by_uid(uid=uid, status=status)
@@ -52,7 +52,7 @@ class APIFastAPIImpl(FastAPI):
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-        @self.get(urljoin(os.environ['PRIVATE_TASK_BY_UID'], "{uid}"))
+        @self.get(urljoin(os.environ['PRIVATE_TASKS_BY_UID'], "{uid}"))
         def get_task_by_uid(uid: str):
             try:
                 return self.db.get_task_by_uid(uid=uid)
@@ -60,7 +60,7 @@ class APIFastAPIImpl(FastAPI):
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-        @self.delete(urljoin(os.environ['PRIVATE_TASK_BY_UID'], "{uid}"))
+        @self.delete(urljoin(os.environ['PRIVATE_TASKS_BY_UID'], "{uid}"))
         def delete_task_by_uid(uid: str):
             try:
                 return self.db.delete_task_by_uid(uid=uid)

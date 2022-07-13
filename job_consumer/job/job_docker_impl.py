@@ -123,10 +123,10 @@ class JobDockerImpl(JobInterface):
             logging.info(f"Task {self.task.uid} has a docker volume already")
 
     def send_volume_output(self):
+        tmp_zip = volume_functions.create_tmp_file_from_volume(self.task.output_volume_uuid)
         url = os.environ.get('API_URL') + urljoin(os.environ.get('PRIVATE_OUTPUT_ZIPS_BY_UID'), self.task.uid)
         logging.info("URL to post on: {}".format(url))
-        tmp_zip = volume_functions.create_tmp_file_from_folder(self.task.output_volume_uuid)
-        res = requests.post(os.environ.get("URL"), files={"zip_file": tmp_zip})
+        res = requests.post(url, files={"zip_file": tmp_zip})
         logging.info(res)
         res.raise_for_status()
 

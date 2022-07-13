@@ -64,7 +64,7 @@ class ConsumerRabbitImpl(ConsumerInterface):
             self.set_connection_and_channel()
 
 
-        prefetch_val = os.environ.get("PREFETCH_VALUE")
+        prefetch_val = int(os.environ.get("PREFETCH_VALUE"))
         logging.info(f": Setting RabbitMQ prefetch_count to {prefetch_val}")
         self.channel.basic_qos(prefetch_count=prefetch_val)
 

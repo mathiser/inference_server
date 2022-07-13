@@ -3,14 +3,13 @@ import os
 import tarfile
 import tempfile
 import uuid
-from typing import BinaryIO
 
 import docker
 
 from docker_helper.docker_volume_exceptions import VolumeNotFoundException
 from utils import file_handling
 
-from job_consumer.utils.file_handling import zip_folder_to_tmpfile
+from utils.file_handling import zip_folder_to_tmpfile
 
 
 def create_empty_volume(volume_uuid=None) -> str:
@@ -88,7 +87,7 @@ def create_tmp_file_from_volume(volume_uuid=None) -> tempfile.TemporaryFile():
         # Create a helper container and mount
         cli.images.pull("busybox:1.35")
         tmp_container = cli.containers.run(image="busybox:1.35",
-                                              command="cp -r /data/ /blue_pill/",
+                                              command="ls /data && cp -r /data/* /blue_pill/",
                                               volumes={volume_uuid: {"bind": "/data", "mode": "ro"},
                                                        tmp_vol_folder: {"bind": "/blue_pill", "mode": "rw"}},
                                               remove=True)

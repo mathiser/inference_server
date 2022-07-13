@@ -189,9 +189,6 @@ class DBSQLiteImpl(DBInterface):
         elif model.model_available and not zip_file:
             raise ZipFileMissingException
 
-        elif not model.model_available and zip_file:
-            raise ContradictingZipFileException
-
         try:
             ## Add model to DB
             with self.Session() as session:
