@@ -1,7 +1,7 @@
 import unittest
 
 import dotenv
-dotenv.load_dotenv("testing/.env")
+dotenv.load_dotenv("testing/.test_env")
 from database.db_impl import DBImpl
 from testing.mock_components.mock_db import MockDB
 from testing.mock_components.mock_fast_api_testclient import MockDBClient

@@ -1,0 +1,17 @@
+LOG_LEVEL=20
+PREFETCH_VALUE=1
+API_URL=http://api:7000
+UNFINISHED_JOB_QUEUE=unfinished_job_queue
+FINISHED_JOB_QUEUE=finished_job_queue
+
+PRIVATE_TASKS=/tasks/
+PRIVATE_TASKS_BY_UID=/tasks/uid/
+PRIVATE_MODELS_BY_ID=/models/id/
+PRIVATE_MODELS_BY_HUMAN_READABLE_ID=/models/human_readable_id/
+PRIVATE_MODEL_ZIPS_BY_ID=/models/zip/uid/
+PRIVATE_OUTPUT_ZIPS_BY_UID=/outputs/uid/
+PRIVATE_INPUT_ZIPS_BY_ID=/inputs/id/
+GPU_UUID=""
+NETWORK_NAME=interence_server_private
+VOLUME_SENDER_DOCKER_TAG=mathiser/inference_server:volume_sender
+BUSYBOX_DOCKER_TAG=busybox:1.35

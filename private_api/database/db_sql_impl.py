@@ -9,7 +9,7 @@ from typing import List, BinaryIO, Union, Optional
 import dotenv
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker
-dotenv.load_dotenv("testing/.env")
+dotenv.load_dotenv("testing/.test_env")
 from .db_exceptions import TaskNotFoundException, ModelNotFoundException, \
     TaskZipPathExistsException, InsertTaskException, ZipFileMissingException, ContradictingZipFileException, \
     ModelInsertionException, TaskInitializationException, ModelMountPointMissingException

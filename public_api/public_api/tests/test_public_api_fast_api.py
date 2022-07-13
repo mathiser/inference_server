@@ -5,7 +5,7 @@ print(os.getcwd())
 
 import dotenv
 
-dotenv.load_dotenv("testing/.env")
+dotenv.load_dotenv("testing/.test_env")
 
 from public_api.public_api_fast_api_impl import PublicFastAPI
 from testing.mock_components.mock_db import MockDB

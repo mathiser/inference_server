@@ -30,4 +30,5 @@ ENV GPU_UUID=""
 ENV NETWORK_NAME=interence_server_private
 ENV VOLUME_SENDER_DOCKER_TAG=mathiser/inference_server:volume_sender
 ENV BUSYBOX_DOCKER_TAG=busybox:1.35
+
 CMD python3 /opt/app/main.py

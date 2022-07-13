@@ -9,7 +9,7 @@ from testing.mock_components.mock_db import MockDB
 from testing.mock_components.mock_models_and_tasks import MockModelsAndTasks
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path="testing/.env")
+load_dotenv(dotenv_path="testing/.test_env")
 cli = docker.from_env()
 RABBIT_NAME = "rapper_rabbit"
 RABBIT_HOSTNAME = "localhost"

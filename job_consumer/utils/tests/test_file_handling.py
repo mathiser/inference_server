@@ -7,7 +7,7 @@ import zipfile
 
 import dotenv
 
-dotenv.load_dotenv("testing/.env")
+dotenv.load_dotenv("testing/.test_env")
 from utils.file_handling import zip_folder_to_tmpfile, tar_folder_to_tmpfile
 
 

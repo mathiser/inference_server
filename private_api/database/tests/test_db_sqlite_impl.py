@@ -154,18 +154,7 @@ class TestSQLiteImpl(unittest.TestCase):
             self.assertIsNone(model.model_mountpoint)
             print(model.to_dict())
 
-    def test_add_model_ContradictingZipFileException(self):
-        model = self.repo.model
-        with open(self.repo.model_zip, "rb") as model_zip:
-            kw = {
-                "container_tag": model.container_tag,
-                "human_readable_id": model.human_readable_id,
-                "model_available": False
-                }
-            self.assertRaises(ContradictingZipFileException,
-                              self.db.post_model,
-                              zip_file=model_zip,
-                              **kw)
+
 
     def test_add_model_ModelInsertionException(self):
         model = self.repo.model
@@ -191,19 +180,6 @@ class TestSQLiteImpl(unittest.TestCase):
                 "model_available": True
                 }
             self.assertRaises(ModelMountPointMissingException,
-                              self.db.post_model,
-                              zip_file=model_zip,
-                              **kw)
-
-    def test_add_model_ContradictingZipFileException(self):
-        model = self.repo.model
-        with open(self.repo.model_zip, "rb") as model_zip:
-            kw = {
-                "container_tag": model.container_tag,
-                "human_readable_id": model.human_readable_id,
-                "model_available": False
-                }
-            self.assertRaises(ContradictingZipFileException,
                               self.db.post_model,
                               zip_file=model_zip,
                               **kw)

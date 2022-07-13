@@ -80,21 +80,6 @@ def create_volume_from_tmp_file(tmp_file: tempfile.TemporaryFile, volume_uuid=No
     cli.close()
     return volume_uuid
 
-def create_tmp_file_from_volume(volume_uuid=None) -> tempfile.TemporaryFile():
-    cli = docker.from_env()
-    assert volume_exists(volume_uuid=volume_uuid)
-    with tempfile.TemporaryDirectory() as tmp_vol_folder:
-        # Create a helper container and mount
-        cli.images.pull("busybox:1.35")
-        tmp_container = cli.containers.run(image="busybox:1.35",
-                                              command="ls /data && cp -r /data/* /blue_pill/",
-                                              volumes={volume_uuid: {"bind": "/data", "mode": "ro"},
-                                                       tmp_vol_folder: {"bind": "/blue_pill", "mode": "rw"}},
-                                              remove=True)
-
-        tmp_file = zip_folder_to_tmpfile(tmp_vol_folder)
-    cli.close()
-    return tmp_file
 
 def pull_image(container_tag: str):
     cli = docker.from_env()

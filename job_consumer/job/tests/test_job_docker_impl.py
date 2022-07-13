@@ -3,7 +3,7 @@ import unittest
 
 import dotenv
 
-dotenv.load_dotenv("testing/.env")
+dotenv.load_dotenv("testing/.test_env")
 
 from docker_helper import volume_functions
 from job.job_docker_impl import JobDockerImpl

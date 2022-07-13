@@ -145,7 +145,7 @@ class APIFastAPIImpl(FastAPI):
                 raise HTTPException(status_code=500,
                                     detail="Internal Server Error - should not be possible")
 
-        @self.get(urljoin(os.environ['PRIVATE_TASK_BY_ID'], "{id}"))
+        @self.get(urljoin(os.environ['PRIVATE_TASKS_BY_ID'], "{id}"))
         def get_task_by_id(id: int):
             try:
                 return self.db.get_task_by_id(id=id)
@@ -153,7 +153,7 @@ class APIFastAPIImpl(FastAPI):
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-        @self.get(urljoin(os.environ['PRIVATE_TASK_BY_UID'], "{uid}"))
+        @self.get(urljoin(os.environ['PRIVATE_TASKS_BY_UID'], "{uid}"))
         def get_task_by_uid(uid: str):
             try:
                 return self.db.get_task_by_uid(uid=uid)
@@ -187,7 +187,7 @@ class APIFastAPIImpl(FastAPI):
                 use_gpu=use_gpu,
             )
 
-        @self.get(urljoin(os.environ['PRIVATE_MODEL_BY_ID'], "{id}"))
+        @self.get(urljoin(os.environ['PRIVATE_MODELS_BY_ID'], "{id}"))
         def get_model_by_id(id: int):
             try:
                 return self.db.get_model_by_id(id=id)
@@ -195,7 +195,7 @@ class APIFastAPIImpl(FastAPI):
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-        @self.get(urljoin(os.environ['PRIVATE_MODEL_BY_HUMAN_READABLE_ID'], "{human_readable_id}"))
+        @self.get(urljoin(os.environ['PRIVATE_MODELS_BY_HUMAN_READABLE_ID'], "{human_readable_id}"))
         def get_model_by_human_readable_id(human_readable_id: str):
             try:
                 return self.db.get_model_by_human_readable_id(human_readable_id=human_readable_id)
@@ -207,7 +207,7 @@ class APIFastAPIImpl(FastAPI):
         def get_models():
             return self.db.get_models()
 
-        @self.get(urljoin(os.environ['PRIVATE_MODEL_BY_ID'], "{id}"))
+        @self.get(urljoin(os.environ['PRIVATE_MODELS_BY_ID'], "{id}"))
         def get_model_zip_by_id(id: int) -> FileResponse:
             try:
                 model = self.db.get_model_by_id(id=id)

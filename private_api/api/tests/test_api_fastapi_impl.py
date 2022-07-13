@@ -2,6 +2,8 @@ import os
 import unittest
 
 import dotenv
+
+dotenv.load_dotenv("testing/.test_env")
 from fastapi.testclient import TestClient
 
 from database.models import Task, Model
@@ -16,7 +18,6 @@ class TestFastAPIImpl(unittest.TestCase):
     """
     This is a testing of functions in api/img/api/private_fastapi_impl.py
     """
-    dotenv.load_dotenv("testing/.env")
 
     def setUp(self) -> None:
         self.hostname = "localhost"
@@ -61,7 +62,7 @@ class TestFastAPIImpl(unittest.TestCase):
 
     def test_get_task_by_id(self):
         task = self.test_post_task()
-        res = self.cli.get(os.environ['PRIVATE_TASK_BY_ID'] + str(task.id))
+        res = self.cli.get(os.environ['PRIVATE_TASKS_BY_ID'] + str(task.id))
         self.assertEqual(res.status_code, 200)
         echo = Task(**res.json())
         self.assertEqual(task.to_dict(), echo.to_dict())
@@ -69,7 +70,7 @@ class TestFastAPIImpl(unittest.TestCase):
 
     def test_get_task_by_uid(self):
         task = self.test_post_task()
-        res = self.cli.get(os.environ['PRIVATE_TASK_BY_UID'] + str(task.uid))
+        res = self.cli.get(os.environ['PRIVATE_TASKS_BY_UID'] + str(task.uid))
         self.assertEqual(res.status_code, 200)
         echo = Task(**res.json())
         self.assertEqual(task.to_dict(), echo.to_dict())
@@ -77,7 +78,7 @@ class TestFastAPIImpl(unittest.TestCase):
 
     def test_delete_task_by_uid_intended(self):
         task = self.test_post_task()
-        res = self.cli.delete(os.environ['PRIVATE_TASK_BY_UID'] + str(task.uid))
+        res = self.cli.delete(os.environ['PRIVATE_TASKS_BY_UID'] + str(task.uid))
         self.assertEqual(res.status_code, 200)
         echo = Task(**res.json())
         self.assertNotEqual(task.to_dict(), echo.to_dict())
@@ -85,7 +86,7 @@ class TestFastAPIImpl(unittest.TestCase):
 
 
     def test_delete_task_by_uid_TaskNotFoundException(self):
-        res = self.cli.delete(os.environ['PRIVATE_TASK_BY_UID'] + "ImportantButNonExistingUID")
+        res = self.cli.delete(os.environ['PRIVATE_TASKS_BY_UID'] + "ImportantButNonExistingUID")
         self.assertEqual(res.status_code, 554)
 
     def test_set_task_status_by_uid_finished_zip_not_exist(self):
