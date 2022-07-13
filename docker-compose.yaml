@@ -29,7 +29,6 @@ services:
     hostname: ${PUBLIC_API_HOSTNAME}
     networks:
       - internal_network
-    command: python main.py
     env_file:
       - .env
     ports:
@@ -41,7 +40,6 @@ services:
 
   api:
     hostname: ${API_HOSTNAME}
-    command: python main.py
     restart: always
     depends_on:
       - rabbit
@@ -75,7 +73,6 @@ services:
     restart: always
     ports:
       - "80" #Dummy port to make traefik quiet
-    command: /usr/bin/python3 main.py
     networks:
       - internal_network
     depends_on:

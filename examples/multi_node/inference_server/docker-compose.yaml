@@ -28,7 +28,6 @@ services:
       - inference_server_private
     image: mathiser/inference_server:public_api_dev
     hostname: ${PUBLIC_API_HOSTNAME}
-    command: python main.py
     env_file:
       - .env
     ports:
@@ -42,7 +41,6 @@ services:
 
   api:
     hostname: ${API_HOSTNAME}
-    command: python main.py
     restart: always
     depends_on:
       - rabbit
@@ -69,6 +67,26 @@ services:
     hostname: ${RABBIT_HOSTNAME}
     volumes:
       - ./rabbit/timeout.conf:/etc/rabbitmq/conf.d/timeout.conf
+
+
+  job-consumer:
+    hostname: consumer
+    restart: always
+    ports:
+      - "80" # Dummy port to make traefik quiet
+    networks:
+      - inference_server_private
+    depends_on:
+      - rabbit
+      - api
+    env_file:
+      - .env
+    image: mathiser/inference_server:job_consumer_dev
+
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
 
 networks:
   inference_server_private:

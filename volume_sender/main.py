@@ -5,10 +5,9 @@ import logging
 import requests
 
 LOG_FORMAT = ('%(levelname)s:%(asctime)s:%(message)s')
-logging.basicConfig(level=int(os.environ.get("LOG_LEVEL")), format=LOG_FORMAT)
+logging.basicConfig(level=20, format=LOG_FORMAT)
 
 def zip_folder_to_tmpfile(src) -> zipfile.ZipFile:
-    print(os.listdir(src))
     if len(os.listdir(src)) == 0:
         with open(os.path.join(src, "no_output_files_found.error"), "w") as f:
             f.write("This is a dummyfile")

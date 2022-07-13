@@ -28,3 +28,5 @@ ENV PRIVATE_MODEL_BY_ID=/models/id/
 ENV PRIVATE_MODEL_BY_UID=/models/uid/
 ENV PRIVATE_MODEL_BY_HUMAN_READABLE_ID=/models/human_readable_id/
 ENV PRIVATE_MODEL_ZIPS_BY_ID=/models/zip/uid/
+
+CMD python main.py

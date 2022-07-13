@@ -1,5 +1,6 @@
 import logging
 import os
+import traceback
 from typing import Dict
 from urllib.parse import urljoin
 
@@ -123,10 +124,11 @@ class JobDockerImpl(JobInterface):
             logging.info(f"Task {self.task.uid} has a docker volume already")
 
     def send_volume_output(self):
-        url = os.environ.get('API_URL') + urljoin(os.environ.get('POST_OUTPUT_ZIP_BY_UID'), self.task.uid)
+        url = os.environ.get('API_URL') + urljoin(os.environ.get('PRIVATE_OUTPUT_ZIPS_BY_UID'), self.task.uid)
         logging.info("URL to post on: {}".format(url))
         volume_functions.pull_image(os.environ.get("VOLUME_SENDER_DOCKER_TAG"))
-        tmp_container = self.cli.containers.run(os.environ.get("VOLUME_SENDER_DOCKER_TAG"),
+        try:
+            tmp_container = self.cli.containers.run(os.environ.get("VOLUME_SENDER_DOCKER_TAG"),
                                                 None,
                                                 volumes={self.task.output_volume_uuid: {"bind": '/data', 'mode': 'ro'}},
                                                 environment={
@@ -136,4 +138,8 @@ class JobDockerImpl(JobInterface):
                                                 remove=True,
                                                 ports={80: []},  ## Dummyport to make traefik shut up
                                                 network=os.environ.get("NETWORK_NAME"))
-        logging.info(tmp_container)
+            logging.info(tmp_container)
+        except Exception as e:
+            traceback.print_exc()
+            logging.error(e)
+            raise e
