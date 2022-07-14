@@ -9,6 +9,7 @@ services:
       - --api.insecure=true
       - --providers.docker=true
       - --entrypoints.websecure.address=:443
+      - --entrypoints.dashboard.address=:3000
       - --providers.file.directory=/configuration/
       - --providers.file.watch=true
     ports:
@@ -68,7 +69,6 @@ services:
     volumes:
       - ./rabbit/timeout.conf:/etc/rabbitmq/conf.d/timeout.conf
 
-
   job-consumer:
     hostname: consumer
     restart: always
@@ -88,6 +88,17 @@ services:
     volumes:
       - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
 
+
+  dashboard:
+    image: grafana/alpine
+    ports:
+      3000:3000
+    networks:
+      - inference_server_private
+    labels:
+      - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.rule=Host(`dashboard.${PROXY_URL}`)"
+      - "traefik.http.services.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.loadbalancer.server.port=3000}"
+      - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.tls=${HTTPS_ON}"
 networks:
   inference_server_private:
     external: true
