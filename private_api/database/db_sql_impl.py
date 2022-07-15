@@ -122,6 +122,10 @@ class DBSQLiteImpl(DBInterface):
             t = session.query(Task).filter_by(uid=uid).filter_by(is_deleted=False).first()
             if t:
                 t.status = status
+                if status in [0, 1]:
+                    t.datetime_finished = datetime.utcnow()
+                elif status == 2:
+                    t.datetime_dispatched = datetime.utcnow()
                 session.commit()
                 return t
             else:
@@ -145,6 +149,8 @@ class DBSQLiteImpl(DBInterface):
                     shutil.rmtree(out_dir)
 
                 t.is_deleted = True
+                if t.status == -1:
+                    t.status = 0
                 session.commit()
                 return t
             else:
@@ -239,10 +245,8 @@ class DBSQLiteImpl(DBInterface):
                 raise e
 
             # Set task as finished and finished_datetime
-            task.status = 1
-            task.datetime_finished = datetime.utcnow()
-
             # Save changes
             session.commit()
             session.refresh(task)
-            return task
+        self.set_task_status_by_uid(task.uid, 1)
+        return task

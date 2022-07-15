@@ -137,9 +137,9 @@ class APIFastAPIImpl(FastAPI):
             elif task.status == 0:
                 raise HTTPException(status_code=552,
                                     detail="Job status is 'failed'")
-            elif task.status == -1:
+            elif task.status in [-1, 2]:
                 raise HTTPException(status_code=551,
-                                    detail="Job status is 'pending'")
+                                    detail="Job status is 'pending' or 'running'")
             else:
                 logging.error(str(task))
                 raise HTTPException(status_code=500,

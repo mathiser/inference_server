@@ -85,25 +85,26 @@ class ConsumerRabbitImpl(ConsumerInterface):
         thread_id = threading.get_ident()
         fmt1: str = 'Thread id: {} Delivery tag: {} Message body: {}'
         logging.info(fmt1.format(thread_id, delivery_tag, body))
-
-        # Parse body to get task uid to run
         uid = body.decode()
-        task = self.db.get_task_by_uid(uid)
-        model = self.db.get_model_by_human_readable_id(task.model_human_readable_id)
 
-        # Execute task - function handles dispatchment of docker jobs.
-        self.db.set_task_status_by_uid(uid=task.uid, status=2)
         try:
+            # Parse body to get task uid to run
+            task = self.db.get_task_by_uid(uid)
+            model = self.db.get_model_by_human_readable_id(task.model_human_readable_id)
+
+            # Execute task - function handles dispatchment of docker jobs.
+
             j = JobDockerImpl(db=self.db)
             j.set_task(task=task)
             j.set_model(model=model)
+
+            self.db.set_task_status_by_uid(uid=uid, status=2)  # Set status to running
             j.execute()
             j.send_volume_output()
         except Exception as e:
             logging.error(e)
-            self.db.set_task_status_by_uid(uid=task.uid, status=0)
-        finally:
-            del j
+            self.db.set_task_status_by_uid(uid=uid, status=0)
+
         # Acknowledgement callback
         cb = functools.partial(self.ack_message, channel, delivery_tag)
         connection.add_callback_threadsafe(cb)
