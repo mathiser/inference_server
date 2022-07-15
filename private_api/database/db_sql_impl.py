@@ -103,7 +103,7 @@ class DBSQLiteImpl(DBInterface):
 
     def get_task_by_id(self, id: int):
         with self.Session() as session:
-            task = session.query(Task).filter_by(id=id).filter_by(is_deleted=False).first()
+            task = session.query(Task).filter_by(id=id).first()
             if task:
                 return task
             else:
@@ -111,7 +111,7 @@ class DBSQLiteImpl(DBInterface):
 
     def get_task_by_uid(self, uid: str) -> Task:
         with self.Session() as session:
-            t = session.query(Task).filter_by(uid=uid).filter_by(is_deleted=False).first()
+            t = session.query(Task).filter_by(uid=uid).first()
             if t:
                 return t
             else:
@@ -119,7 +119,7 @@ class DBSQLiteImpl(DBInterface):
 
     def set_task_status_by_uid(self, uid: str, status: int) -> Task:
         with self.Session() as session:
-            t = session.query(Task).filter_by(uid=uid).filter_by(is_deleted=False).first()
+            t = session.query(Task).filter_by(uid=uid).first()
             if t:
                 t.status = status
                 if status in [0, 1]:
@@ -133,12 +133,14 @@ class DBSQLiteImpl(DBInterface):
 
     def get_tasks(self) -> List[Task]:
         with self.Session() as session:
-            tasks = session.query(Task).filter_by(is_deleted=False)
+            tasks = session.query(Task)
             return list(tasks)
 
     def delete_task_by_uid(self, uid: str) -> Task:
         with self.Session() as session:
-            t = session.query(Task).filter_by(uid=uid).filter_by(is_deleted=False).first()
+            t = session.query(Task).filter_by(uid=uid).first()
+            if t.status == 2:
+                raise Exception("Cannot delete a running task")
             if t:
                 in_dir = os.path.dirname(t.input_zip)
                 if os.path.exists(in_dir):
@@ -232,7 +234,7 @@ class DBSQLiteImpl(DBInterface):
     def post_output_zip_by_uid(self, uid: str, zip_file: BinaryIO) -> Task:
         with self.Session() as session:
             # Get the task
-            task = session.query(Task).filter_by(uid=uid).filter_by(is_deleted=False).first()
+            task = session.query(Task).filter_by(uid=uid).first()
             if not task:
                 raise TaskNotFoundException
 

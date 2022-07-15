@@ -134,6 +134,9 @@ class APIFastAPIImpl(FastAPI):
             elif not os.path.exists(task.output_zip) and task.status == 1:
                 raise HTTPException(status_code=553,
                                     detail="Job status is 'finished', but output zip does not exist")
+            elif task.is_deleted == 1:
+                raise HTTPException(status_code=552,
+                                    detail="Job files are 'deleted'")
             elif task.status == 0:
                 raise HTTPException(status_code=552,
                                     detail="Job status is 'failed'")
