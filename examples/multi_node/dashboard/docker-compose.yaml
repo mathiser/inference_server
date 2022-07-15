@@ -89,7 +89,6 @@ services:
     volumes:
       - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
 
-
   dashboard:
     image: grafana/grafana-enterprise:9.0.2-ubuntu
     networks:
