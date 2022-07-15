@@ -92,6 +92,7 @@ class ConsumerRabbitImpl(ConsumerInterface):
         model = self.db.get_model_by_human_readable_id(task.model_human_readable_id)
 
         # Execute task - function handles dispatchment of docker jobs.
+        self.db.set_task_status_by_uid(uid=task.uid, status=2)
         try:
             j = JobDockerImpl(db=self.db)
             j.set_task(task=task)
