@@ -44,7 +44,7 @@ class Task(Base):
     id = Column(Integer, primary_key=True)
     uid = Column(String)
     model_human_readable_id = Column(String, ForeignKey("models.human_readable_id"))
-    datetime_created = Column(DateTime, default=datetime.utcnow)
+    datetime_created = Column(DateTime, default=datetime.now)
     input_zip = Column(String, nullable=True)
     output_zip = Column(String, nullable=True)
     input_volume_uuid = Column(String, nullable=False)

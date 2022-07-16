@@ -36,15 +36,12 @@ class Model(Base):
             "output_mountpoint": self.output_mountpoint,
         }
 
-
-
-
 class Task(Base):
     __tablename__ = "tasks"
     id = Column(Integer, primary_key=True)
     uid = Column(String)
     model_human_readable_id = Column(String, ForeignKey("models.human_readable_id"))
-    datetime_created = Column(DateTime, default=datetime.utcnow)
+    datetime_created = Column(DateTime, default=datetime.now)
     input_zip = Column(String, nullable=False)
     output_zip = Column(String, nullable=False)
     input_volume_uuid = Column(String, nullable=False)

@@ -123,9 +123,9 @@ class DBSQLiteImpl(DBInterface):
             if t:
                 t.status = status
                 if status in [0, 1]:
-                    t.datetime_finished = datetime.utcnow()
+                    t.datetime_finished = datetime.now()
                 elif status == 2:
-                    t.datetime_dispatched = datetime.utcnow()
+                    t.datetime_dispatched = datetime.now()
                 session.commit()
                 return t
             else:
