@@ -12,5 +12,5 @@ RUN mkdir -p /opt/app/
 
 WORKDIR /opt/app/
 COPY . /opt/app/
-
+ENV TZ=Europe/Copenhagen
 CMD python3 /opt/app/main.py

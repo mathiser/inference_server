@@ -6,3 +6,4 @@ RUN pip install -r /requirements.txt
 RUN mkdir /opt/app/
 COPY . /opt/app/
 WORKDIR /opt/app/
+ENV TZ=Europe/Copenhagen
