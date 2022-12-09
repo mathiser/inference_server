@@ -1,11 +1,14 @@
+import os
+os.environ["LOG_LEVEL"] = "100"
+
+
 import unittest
 
 from database.db_exceptions import InsertTaskException, TaskNotFoundException, \
-    ZipFileMissingException, ContradictingZipFileException, ModelInsertionException, ModelMountPointMissingException, \
-    ModelNotFoundException
+    ZipFileMissingException, ContradictingZipFileException, ModelNotFoundException
+
 from database.db_sql_impl import DBSQLiteImpl
 from testing.mock_components.mock_models_and_tasks import MockModelsAndTasks
-
 
 class TestSQLiteImpl(unittest.TestCase):
     """
@@ -24,7 +27,7 @@ class TestSQLiteImpl(unittest.TestCase):
     def test_post_task_intended(self):
         with open(self.repo.input_zip, "rb") as r:
             task = self.db.post_task(model_human_readable_id=self.repo.model.human_readable_id,
-                                    zip_file=r)
+                                     zip_file=r)
         self.assertIn(self.repo.model.human_readable_id, task.model_human_readable_id)
         return task
 
@@ -98,10 +101,9 @@ class TestSQLiteImpl(unittest.TestCase):
                                            model_available=model.model_available,
                                            zip_file=model_zip,
                                            description=model.description,
-                                           input_mountpoint=model.input_mountpoint,
-                                           output_mountpoint=model.output_mountpoint,
+
                                            use_gpu=model.use_gpu,
-                                           model_mountpoint=model.model_mountpoint
+
                                            )
         model = self.db.get_model_by_human_readable_id(echo_model.human_readable_id)
 
@@ -122,10 +124,7 @@ class TestSQLiteImpl(unittest.TestCase):
             "model_available": model.model_available,
             "zip_file": None,
             "description": model.description,
-            "input_mountpoint": model.input_mountpoint,
-            "output_mountpoint": model.output_mountpoint,
             "use_gpu": model.use_gpu,
-            "model_mountpoint": model.model_mountpoint
         }
         self.assertRaises(ZipFileMissingException, self.db.post_model, **kw)
 
@@ -147,11 +146,7 @@ class TestSQLiteImpl(unittest.TestCase):
             self.assertTrue(model.use_gpu)
             self.assertFalse(model.model_available)
             self.assertIsNone(model.model_zip)
-            self.assertIsNone(model.model_volume_uuid)
-            self.assertIsNone(model.model_mountpoint)
-            self.assertEqual(model.input_mountpoint, "/input")
-            self.assertEqual(model.output_mountpoint, "/output")
-            self.assertIsNone(model.model_mountpoint)
+            self.assertIsNotNone(model.model_volume_id)
             print(model.to_dict())
 
     def test_add_model_ContradictingZipFileException(self):
@@ -176,24 +171,10 @@ class TestSQLiteImpl(unittest.TestCase):
                 "model_available": True,
                 "model_mountpoint": "/model"
                 }
-            self.db.post_model(zip_file=model_zip, **kw)
-            self.assertRaises(ModelInsertionException,
+            self.assertRaises(TypeError,
                               self.db.post_model,
                               zip_file=model_zip,
-                              **kw)
-
-    def test_add_model_ModelMountPointMissingException(self):
-        model = self.repo.model
-        with open(self.repo.model_zip, "rb") as model_zip:
-            kw = {
-                "container_tag": model.container_tag,
-                "human_readable_id": model.human_readable_id,
-                "model_available": True
-                }
-            self.assertRaises(ModelMountPointMissingException,
-                              self.db.post_model,
-                              zip_file=model_zip,
-                              **kw)
+                              )
 
     def test_add_model_ContradictingZipFileException(self):
         model = self.repo.model

@@ -12,12 +12,13 @@ from sqlalchemy.orm import sessionmaker
 from .db_exceptions import TaskNotFoundException, ModelNotFoundException, \
     TaskZipPathExistsException, InsertTaskException, ZipFileMissingException, ContradictingZipFileException, \
     ModelInsertionException, TaskInitializationException, ModelMountPointMissingException
-from .db_interface import DBInterface
-from .models import Model, Task, Base
+from interfaces.db_interface import DBInterface
+from interfaces.db_models import Model, Task, Base
 
 LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
-logging.basicConfig(level=int(os.environ.get("LOG_LEVEL")), format=LOG_FORMAT)
+#logging.basicConfig(level=int(os.environ.get("LOG_LEVEL")), format=LOG_FORMAT)
 
+logging.basicConfig(level=int(100), format=LOG_FORMAT)
 
 class DBSQLiteImpl(DBInterface):
     def __init__(self, base_dir, declarative_base=Base):
@@ -69,9 +70,9 @@ class DBSQLiteImpl(DBInterface):
                 task = Task(uid=uid,
                             model_human_readable_id=model_human_readable_id,
                             input_zip=os.path.abspath(os.path.join(self.input_base_folder, uid, "input.zip")),
-                            input_volume_uuid=str(uuid.uuid4()),
+                            input_volume_id=str(uuid.uuid4()),
                             output_zip=os.path.abspath(os.path.join(self.output_base_folder, uid, "output.zip")),
-                            output_volume_uuid=str(uuid.uuid4())
+                            output_volume_id=str(uuid.uuid4())
                             )
 
             except Exception as e:
@@ -111,7 +112,7 @@ class DBSQLiteImpl(DBInterface):
 
     def get_task_by_uid(self, uid: str) -> Task:
         with self.Session() as session:
-            t = session.query(Task).filter_by(uid=uid).first()
+            t = session.query(Task).filter_by(uid=uid, is_deleted=False).first()
             if t:
                 return t
             else:
@@ -139,53 +140,45 @@ class DBSQLiteImpl(DBInterface):
     def delete_task_by_uid(self, uid: str) -> Task:
         with self.Session() as session:
             t = session.query(Task).filter_by(uid=uid).first()
-            if t.status == 2:
-                raise Exception("Cannot delete a running task")
             if t:
-                in_dir = os.path.dirname(t.input_zip)
-                if os.path.exists(in_dir):
-                    shutil.rmtree(in_dir)
+                # If task is running -> cannot delete
+                if t.status == 2:
+                    raise Exception("Cannot delete a running task")
+                if t.status in [-1, 0, 1]:
+                    in_dir = os.path.dirname(t.input_zip)
+                    if os.path.exists(in_dir):
+                        shutil.rmtree(in_dir)
 
-                out_dir = os.path.dirname(t.output_zip)
-                if os.path.exists(out_dir):
-                    shutil.rmtree(out_dir)
+                    out_dir = os.path.dirname(t.output_zip)
+                    if os.path.exists(out_dir):
+                        shutil.rmtree(out_dir)
 
-                t.is_deleted = True
-                if t.status == -1:
-                    t.status = 0
-                session.commit()
-                return t
+                    t.is_deleted = True
+                    if t.status == -1:
+                        t.status = 0
+                    session.commit()
+                    return t
             else:
                 raise TaskNotFoundException
 
     def post_model(self,
                    container_tag: str,
                    human_readable_id: str,
-                   input_mountpoint: Union[str, None] = None,
-                   output_mountpoint: Union[str, None] = None,
-                   model_mountpoint: Union[str, None] = None,
                    description: Union[str, None] = None,
                    zip_file: Optional[Union[BinaryIO, None]] = None,
                    model_available: Union[bool, None] = None,
-                   use_gpu: Union[bool, None] = None
-                   ):
+                   use_gpu: Union[bool, None] = None):
 
         model = Model(
             uid=str(uuid.uuid4()),
             description=description,
             human_readable_id=human_readable_id,
             container_tag=container_tag,
-            input_mountpoint=input_mountpoint,
-            output_mountpoint=output_mountpoint,
-            model_mountpoint=model_mountpoint,
             model_available=model_available,
             use_gpu=use_gpu
         )
 
         if model.model_available and zip_file:
-            if not model_mountpoint:
-                raise ModelMountPointMissingException
-
             model.model_volume_uuid = model.uid
             model.model_zip = os.path.join(self.model_base_folder, model.uid, "model.zip")
             os.makedirs(os.path.dirname(model.model_zip))

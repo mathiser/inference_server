@@ -1,13 +1,12 @@
 import _io
-import logging
 import os
-import secrets
 import tarfile
 import tempfile
 import unittest
 import zipfile
 
 import requests
+os.environ["LOG_LEVEL"] = "20"
 
 from utils.file_handling import unzip_response_to_location, zip_folder_to_tmpfile, tar_folder_to_tmpfile
 

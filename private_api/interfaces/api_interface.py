@@ -1,13 +1,12 @@
 from abc import abstractmethod
-from abc import abstractmethod
 from typing import Any, Union, List, Dict
 
-from database.models import Task, Model
 from fastapi import File, UploadFile
-from starlette.responses import FileResponse
-
 from private_api.database import DBInterface
 from private_api.message_queue import MQInterface
+from starlette.responses import FileResponse
+
+from database.models import Task, Model
 
 
 class APIInterface():

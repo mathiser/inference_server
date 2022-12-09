@@ -5,20 +5,21 @@ from typing import Any, Union, Optional
 from urllib.parse import urljoin
 
 import dotenv
-from database.models import Task, Model
+from interfaces.db_models import Task, Model
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import FileResponse
 
-from database.db_interface import DBInterface
-from message_queue.mq_interface import MQInterface
+from interfaces.db_interface import DBInterface
+from interfaces.mq_interface import MQInterface
 
 from database.db_exceptions import TaskNotFoundException, ModelNotFoundException, InsertTaskException
 
 LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
-
-logging.basicConfig(level=int(os.environ.get("LOG_LEVEL")), format=LOG_FORMAT)
-
 dotenv.load_dotenv(".env")
+
+# logging.basicConfig(level=int(os.environ.get("LOG_LEVEL")), format=LOG_FORMAT)
+logging.basicConfig(level=100, format=LOG_FORMAT)
+
 
 
 class APIFastAPIImpl(FastAPI):

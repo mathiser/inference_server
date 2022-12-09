@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List, BinaryIO, Optional, Union
+from typing import List, BinaryIO, Union
 
-from .models import Task, Model
+from interfaces.db_models import Task, Model
 
 
 class DBInterface(ABC):
@@ -36,9 +36,6 @@ class DBInterface(ABC):
     def post_model(self,
                    container_tag: str,
                    human_readable_id: str,
-                   input_mountpoint: Union[str, None] = None,
-                   output_mountpoint: Union[str, None] = None,
-                   model_mountpoint: Union[str, None] = None,
                    description: Union[str, None] = None,
                    zip_file: Union[BinaryIO, None] = None,
                    model_available: Union[bool, None] = None,

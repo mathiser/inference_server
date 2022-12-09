@@ -4,9 +4,9 @@ import time
 
 import pika
 
-from message_queue.mq_interface import MQInterface
+from interfaces.mq_interface import MQInterface
 from message_queue.mq_exceptions import PublishTaskException
-from database import Task
+from interfaces.db_models import Task
 
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
               '-35s %(lineno) -5d: %(message)s')

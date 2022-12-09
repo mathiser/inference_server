@@ -4,7 +4,7 @@ import unittest
 import dotenv
 from fastapi.testclient import TestClient
 
-from database.models import Task, Model
+from interfaces.db_models import Task, Model
 from api.api_fastapi_impl import APIFastAPIImpl
 from testing.mock_components.mock_db import MockDB
 from testing.mock_components.mock_mq import MockMQ
@@ -17,6 +17,8 @@ class TestFastAPIImpl(unittest.TestCase):
     This is a testing of functions in api/img/api/private_fastapi_impl.py
     """
     dotenv.load_dotenv("testing/.env")
+    print(os.environ.get("LOG_LEVEL"))
+    os.environ["LOG_LEVEL"] = "100"
 
     def setUp(self) -> None:
         self.hostname = "localhost"
@@ -133,9 +135,6 @@ class TestFastAPIImpl(unittest.TestCase):
                                 params={
                                     "container_tag": self.repo.model.container_tag,
                                     "human_readable_id": self.repo.model.human_readable_id,
-                                    "input_mountpoint": self.repo.model.input_mountpoint,
-                                    "output_mountpoint": self.repo.model.output_mountpoint,
-                                    "model_mountpoint": self.repo.model.model_mountpoint,
                                     "description": self.repo.model.description,
                                     "model_available": self.repo.model.model_available,
                                     "use_gpu": self.repo.model.use_gpu

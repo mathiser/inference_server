@@ -1,5 +1,5 @@
-from database.models import Task
-from message_queue.mq_interface import MQInterface
+from interfaces.db_models import Task
+from interfaces.mq_interface import MQInterface
 
 
 class MockMQ(MQInterface):

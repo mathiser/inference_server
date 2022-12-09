@@ -5,7 +5,7 @@ import tempfile
 import uuid
 import zipfile
 
-from database.models import Model, Task
+from interfaces.db_models import Model, Task
 
 
 class MockModelsAndTasks():
@@ -39,11 +39,7 @@ class MockModelsAndTasks():
         self.id_lookup["two"] = 2
         self.id_lookup["three"] = 3
         self.model = Model(container_tag="hello-world",
-                            id=1,
                             human_readable_id="one",
-                            input_mountpoint="/input",
-                            output_mountpoint="/output",
-                            model_mountpoint="/model",
                             description="This is a testing of a very important database",
                             model_available=True,
                             use_gpu=True,
@@ -66,8 +62,8 @@ class MockModelsAndTasks():
             model_human_readable_id=self.model.human_readable_id,
             input_zip=task_input,
             output_zip=task_output,
-            input_volume_uuid=str(uuid.uuid4()),
-            output_volume_uuid=str(uuid.uuid4())
+            input_volume_id=str(uuid.uuid4()),
+            output_volume_id=str(uuid.uuid4())
         )
 
     def purge(self):

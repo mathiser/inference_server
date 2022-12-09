@@ -5,8 +5,8 @@ import uuid
 from typing import BinaryIO, List, Optional
 
 from database.db_exceptions import TaskNotFoundException
-from database.models import Model, Task
-from database.db_interface import DBInterface
+from interfaces.db_models import Model, Task
+from interfaces.db_interface import DBInterface
 
 
 class MockDB(DBInterface):
@@ -123,10 +123,7 @@ class MockDB(DBInterface):
             human_readable_id=human_readable_id,
             container_tag=container_tag,
             model_zip=model_zip,
-            model_volume_uuid=str(uuid.uuid4()),
-            input_mountpoint=input_mountpoint,
-            output_mountpoint=output_mountpoint,
-            model_mountpoint=model_mountpoint,
+            model_volume_id=str(uuid.uuid4()),
             model_available=model_available,
             use_gpu=use_gpu
         )
