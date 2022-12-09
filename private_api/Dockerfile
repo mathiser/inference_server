@@ -9,7 +9,6 @@ COPY . /opt/app/
 WORKDIR /opt/app/
 ENV TZ=Europe/Copenhagen
 ENV RABBIT_DOCKER_TAG=rabbitmq:3.9.17
-ENV ALLOW_PUBLIC_POST_MODEL=""
 
 ENV API_HOSTNAME=private_api
 ENV API_PORT=7000

@@ -19,15 +19,28 @@ class TestMessageQueueRabbitMQImpl(unittest.TestCase):
     """
     This is a tests of functions in api/img/message_queue/rabbit_mq_impl.py
     """
+    def __init__(self, port=None, hostname=None):
+        super().__init__()
+        self.deterministic_port = port
+        self.deterministic_host = hostname
+
     def get_port(self):
-        global PORT_NO
-        PORT_NO += 1
-        return PORT_NO
+        if self.deterministic_port:
+            return self.deterministic_port
+        else:
+            global PORT_NO
+            PORT_NO += 1
+            return PORT_NO
+    def get_hostname(self):
+        if self.deterministic_host:
+            return self.deterministic_port
+        else:
+            return str(self.RABBIT_PORT)
 
     def make_mq_container(self):
         cli = docker.from_env()
         self.RABBIT_PORT = self.get_port()
-        self.take_down_mq_container(str(self.RABBIT_PORT))
+        self.take_down_mq_container(self.get_hostname())
 
         self.RABBIT_HOSTNAME = "localhost"
 
@@ -36,7 +49,7 @@ class TestMessageQueueRabbitMQImpl(unittest.TestCase):
 
         cli.containers.run(os.environ.get("RABBIT_DOCKER_TAG"),
                            name=str(self.RABBIT_PORT),
-                           hostname=self.RABBIT_HOSTNAME,
+                           hostname=self.get_hostname(),
                            ports={5672: self.RABBIT_PORT},
                            detach=True)
         cli.close()

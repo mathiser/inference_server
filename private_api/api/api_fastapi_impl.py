@@ -1,20 +1,17 @@
 import logging
 import os
 import secrets
-from typing import Any, Union, Optional
+from typing import Union, Optional
 from urllib.parse import urljoin
 
 import dotenv
-
-from interfaces.api_interface import APIInterface
-from interfaces.db_models import Task, Model
+from database.db_exceptions import TaskNotFoundException, ModelNotFoundException, InsertTaskException
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import FileResponse
-
+from interfaces.api_interface import APIInterface
 from interfaces.db_interface import DBInterface
+from interfaces.db_models import Task, Model
 from interfaces.mq_interface import MQInterface
-
-from database.db_exceptions import TaskNotFoundException, ModelNotFoundException, InsertTaskException
 
 LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
 dotenv.load_dotenv(".env")
@@ -56,13 +53,6 @@ class APIFastAPIImpl(APIInterface):
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-        @self.app.get(urljoin(os.environ['API_TASKS'], "{uid}"))
-        def get_task(uid: str):
-            try:
-                return self.db.get_task(uid=uid)
-            except TaskNotFoundException as e:
-                raise HTTPException(status_code=554,
-                                    detail=e.msg())
 
         @self.app.delete(urljoin(os.environ['API_TASKS'], "{uid}"))
         def delete_task(uid: str) -> Task:

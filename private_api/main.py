@@ -6,7 +6,7 @@ import uvicorn
 dotenv.load_dotenv()
 
 from database.db_sql_impl import DBSQLiteImpl
-from api import APIFastAPIImpl
+from api.api_fastapi_impl import APIFastAPIImpl
 from message_queue.rabbit_mq_impl import MQRabbitImpl
 
 LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
@@ -19,9 +19,9 @@ def main():
                       unfinished_queue_name=os.environ.get("UNFINISHED_JOB_QUEUE"),
                       finished_queue_name=os.environ.get("FINISHED_JOB_QUEUE"))
 
-    db = DBSQLiteImpl(base_dir=os.environ.get("DATA_DIR")) # HARDCODED as it is easier to maintain
-    app = APIFastAPIImpl(db=db, mq=mq)
-    uvicorn.run(app=app, host="0.0.0.0", port=int(os.environ.get("API_PORT")))
+    db = DBSQLiteImpl(base_dir=os.environ.get("DATA_DIR"))
+    api = APIFastAPIImpl(db=db, mq=mq)
+    uvicorn.run(app=api.app, host="0.0.0.0", port=int(os.environ.get("API_PORT")), )
 
 if __name__ == "__main__":
     main()
