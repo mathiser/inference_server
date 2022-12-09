@@ -1,9 +1,8 @@
 python-multipart
 fastapi
 uvicorn[standard]
-sqlalchemy>=1.4
+sqlalchemy
 pika
 pydantic
-psycopg2
-asyncpg
-python-dotenv
+docker
+httpx

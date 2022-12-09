@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from private_api.message_queue.tests.test_mq_rabbit_impl import TestMessageQueueRabbitMQImpl
+from message_queue.tests.test_mq_rabbit_impl import TestMessageQueueRabbitMQImpl
 
 os.environ["TZ"] = "Europe/Copenhagen"
 os.environ["API_HOSTNAME"] = "private_api"

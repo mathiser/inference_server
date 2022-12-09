@@ -1,4 +1,5 @@
 import os
+
 os.environ["TZ"] = "Europe/Copenhagen"
 os.environ["API_HOSTNAME"] = "private_api"
 os.environ["API_PORT"] = "7000"
@@ -41,7 +42,6 @@ class TestFastAPIImpl(unittest.TestCase):
         self.mq_tests = TestMessageQueueRabbitMQImpl()
         self.mq_tests.setUp()
         self.mq = self.mq_tests.mq_client
-
 
         api = APIFastAPIImpl(db=self.db, mq=self.mq)
         self.cli = TestClient(api.app)
@@ -88,7 +88,6 @@ class TestFastAPIImpl(unittest.TestCase):
         echo = Task(**res.json())
         self.assertNotEqual(task.to_dict(), echo.to_dict())
         self.assertTrue(echo.is_deleted)
-
 
     def test_delete_task_by_uid_TaskNotFoundException(self):
         res = self.cli.delete(os.environ['API_TASKS'] + "ImportantButNonExistingUID")
@@ -141,11 +140,15 @@ class TestFastAPIImpl(unittest.TestCase):
                                     "use_gpu": self.repo.model.use_gpu
                                 },
                                 files={"zip_file": r})
-        
+
         self.assertEqual(res.status_code, 200)
         echo = Model(**res.json())
         self.assertEqual(echo.container_tag, self.repo.model.container_tag)
         return Model(**res.json())
 
+
 if __name__ == '__main__':
-    unittest.main()
+    #unittest.main()
+    suite = unittest.TestSuite()
+    suite.addTest(TestFastAPIImpl())
+    unittest.TextTestRunner().run(suite)

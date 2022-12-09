@@ -1,7 +1,7 @@
 import logging
 import os
 os.environ["RABBIT_DOCKER_TAG"] = "rabbitmq:3.9.17"
-os.environ["LOG_LEVEL"] = "10"
+os.environ["LOG_LEVEL"] = "80"
 os.environ["UNFINISHED_JOB_QUEUE"] = "unfinished_job_queue"
 os.environ["FINISHED_JOB_QUEUE"] = "finished_job_queue"
 
@@ -19,28 +19,16 @@ class TestMessageQueueRabbitMQImpl(unittest.TestCase):
     """
     This is a tests of functions in api/img/message_queue/rabbit_mq_impl.py
     """
-    def __init__(self, port=None, hostname=None):
-        super().__init__()
-        self.deterministic_port = port
-        self.deterministic_host = hostname
 
     def get_port(self):
-        if self.deterministic_port:
-            return self.deterministic_port
-        else:
-            global PORT_NO
-            PORT_NO += 1
-            return PORT_NO
-    def get_hostname(self):
-        if self.deterministic_host:
-            return self.deterministic_port
-        else:
-            return str(self.RABBIT_PORT)
+        global PORT_NO
+        PORT_NO += 1
+        return PORT_NO
 
     def make_mq_container(self):
         cli = docker.from_env()
         self.RABBIT_PORT = self.get_port()
-        self.take_down_mq_container(self.get_hostname())
+        self.take_down_mq_container(str(self.RABBIT_PORT))
 
         self.RABBIT_HOSTNAME = "localhost"
 
@@ -49,7 +37,7 @@ class TestMessageQueueRabbitMQImpl(unittest.TestCase):
 
         cli.containers.run(os.environ.get("RABBIT_DOCKER_TAG"),
                            name=str(self.RABBIT_PORT),
-                           hostname=self.get_hostname(),
+                           hostname=self.RABBIT_HOSTNAME,
                            ports={5672: self.RABBIT_PORT},
                            detach=True)
         cli.close()
@@ -84,9 +72,9 @@ class TestMessageQueueRabbitMQImpl(unittest.TestCase):
     def tearDown(self) -> None:
         self.db_tests.tearDown()
         self.mq_client.close(*self.mq_client.get_connection_and_channel())
-
-        t = threading.Thread(target=self.take_down_mq_container, kwargs={"name": str(self.RABBIT_PORT)})
-        t.start()
+        self.take_down_mq_container(self.take_down_mq_container(str(self.RABBIT_PORT)))
+        #t = threading.Thread(target=self.take_down_mq_container, kwargs={"name": str(self.RABBIT_PORT)})
+        #t.start()
 
     def test_get_connection_and_channel(self):
         self.conn, self.chan = self.mq_client.get_connection_and_channel()
