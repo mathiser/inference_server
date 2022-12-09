@@ -2,16 +2,13 @@ import json
 import logging
 import os
 import secrets
-import tempfile
-import threading
 from typing import BinaryIO, Union, Optional
 from urllib.parse import urljoin
 
-from database.db_interface import DBInterface
-from database_client.db_client_interface import DBClientInterface
-from exceptions.exceptions import PostTaskException, TaskOutputZipNotFound, PostModelException
-
-from models.models import Model
+from interfaces.db_client_interface import DBClientInterface
+from exceptions.exceptions import PostTaskException, PostModelException
+from interfaces.db_interface import DBInterface
+from interfaces.db_models import Model
 
 
 class DBImpl(DBInterface):
@@ -31,7 +28,7 @@ class DBImpl(DBInterface):
             "uid": uid
         }
         files = {"zip_file": zip_file}
-        url = os.environ.get("POST_TASK")
+        url = os.environ.get("API_TASKS")
 
         logging.info(f"[ ] Posting task: {params}")
         res = self.db_client.post(url=url, files=files, params=params)
@@ -45,7 +42,7 @@ class DBImpl(DBInterface):
     def get_output_zip_by_uid(self, uid: str):
         # Zip the output for return
         logging.info(f"[ ]: Get output from task: {uid}")
-        url = urljoin(os.environ['GET_OUTPUT_ZIP_BY_UID'], f"{uid}")
+        url = urljoin(os.environ['API_OUTPUT_ZIPS'], f"{uid}")
         res = self.db_client.get(url)
 
         logging.info(f"[X]: Get output from task: {uid}")
@@ -54,7 +51,7 @@ class DBImpl(DBInterface):
     def delete_task_by_uid(self, uid: str):
         # Zip the output for return
         logging.info(f"[ ]: Delete task: {uid}")
-        url = urljoin(os.environ['GET_TASK_BY_UID'], f"{uid}")
+        url = urljoin(os.environ['API_TASKS'], f"{uid}")
         res = self.db_client.delete(url)
 
         logging.info(f"[X]: Delete task: {uid}")
@@ -83,7 +80,7 @@ class DBImpl(DBInterface):
             "use_gpu": use_gpu
         }
         files = {"zip_file": zip_file}
-        url = os.environ.get("POST_MODEL")
+        url = os.environ.get("API_MODELS")
 
         if zip_file:
             res = self.db_client.post(url, files=files, params=params)
@@ -98,7 +95,7 @@ class DBImpl(DBInterface):
             return params
 
     def get_models(self):
-        url = os.environ["GET_MODELS"]
+        url = os.environ["API_MODELS"]
         res = self.db_client.get(url)
         logging.info(res)
         return [Model(**m) for m in json.loads(res.content)]
