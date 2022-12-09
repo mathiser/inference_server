@@ -13,18 +13,18 @@ Base = declarative_base()
 class Model(Base):
     __tablename__ = "models"
     id = Column(Integer, unique=True, primary_key=True, autoincrement=True)
-    uid = Column(String, unique=True, default=secrets.token_hex, index=True)
+    uid = Column(String, unique=True, default=secrets.token_urlsafe, index=True)
     human_readable_id = Column(String, unique=True, nullable=False)
     description = Column(String, nullable=True, default=None)
     container_tag = Column(String, nullable=False)
     use_gpu = Column(Boolean, default=True)
     model_available = Column(Boolean, default=False)
     model_zip = Column(String, nullable=True, unique=True, default=None)
-    model_volume_id = Column(String, unique=True, default=secrets.token_hex)
+    model_volume_id = Column(String, unique=True, default=secrets.token_urlsafe)
 
     def to_dict(self):
         return {
-            "id": self.id,
+            "uid": self.id,
             "human_readable_id": self.human_readable_id,
             "description": self.description,
             "container_tag": self.container_tag,
@@ -37,13 +37,13 @@ class Model(Base):
 class Task(Base):
     __tablename__ = "tasks"
     id = Column(Integer, unique=True, primary_key=True, autoincrement=True)
-    uid = Column(String, unique=True, default=secrets.token_hex, index=True)
+    uid = Column(String, unique=True, default=secrets.token_urlsafe, index=True)
     model_human_readable_id = Column(String, ForeignKey("models.human_readable_id"))
     datetime_created = Column(DateTime, default=datetime.now)
     input_zip = Column(String, nullable=True, unique=True)
     output_zip = Column(String, nullable=True, unique=True)
-    input_volume_id = Column(String, nullable=False, unique=True, default=secrets.token_hex)
-    output_volume_id = Column(String, nullable=False, unique=True, default=secrets.token_hex)
+    input_volume_id = Column(String, nullable=False, unique=True, default=secrets.token_urlsafe)
+    output_volume_id = Column(String, nullable=False, unique=True, default=secrets.token_urlsafe)
     datetime_dispatched = Column(DateTime, nullable=True)
     datetime_finished = Column(DateTime, nullable=True)
     status = Column(Integer, nullable=False, default=-1)  # -1: pending, 0: failed, 1: finished, 2: running
@@ -51,7 +51,7 @@ class Task(Base):
 
     def to_dict(self):
         return {
-            "id": self.id,
+            "uid": self.uid,
             "model_human_readable_id": self.model_human_readable_id,
             "datetime_created": self.datetime_created,
             "input_zip": self.input_zip,

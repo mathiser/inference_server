@@ -13,19 +13,15 @@ class DBInterface(ABC):
         pass
 
     @abstractmethod
-    def get_task_by_id(self, id: int) -> Task:
+    def get_task(self, uid: str) -> Task:
         pass
 
     @abstractmethod
-    def get_task_by_uid(self, uid: str) -> Task:
+    def delete_task(self, uid: str) -> Task:
         pass
 
     @abstractmethod
-    def delete_task_by_uid(self, uid: str) -> str:
-        pass
-
-    @abstractmethod
-    def set_task_status_by_uid(self, uid: str, status: int) -> Task:
+    def set_task_status(self, uid: str, status: int) -> Task:
         pass
 
     @abstractmethod
@@ -44,11 +40,9 @@ class DBInterface(ABC):
         pass
 
     @abstractmethod
-    def get_model_by_human_readable_id(self, human_readable_id: str) -> Model:
-        pass
-
-    @abstractmethod
-    def get_model_by_id(self, id: int) -> Model:
+    def get_model(self,
+                  uid: Union[str, None] = None,
+                  human_readable_id: Union[str, None] = None) -> Model:
         pass
 
     @abstractmethod
@@ -56,6 +50,6 @@ class DBInterface(ABC):
         pass
 
     @abstractmethod
-    def post_output_zip_by_uid(self, uid: str, zip_file: BinaryIO) -> Task:
+    def post_output_zip(self, uid: str, zip_file: BinaryIO) -> Task:
         pass
 

@@ -1,53 +1,79 @@
+import logging
 import os
-import time
+os.environ["RABBIT_DOCKER_TAG"] = "rabbitmq:3.9.17"
+os.environ["LOG_LEVEL"] = "10"
+os.environ["UNFINISHED_JOB_QUEUE"] = "unfinished_job_queue"
+os.environ["FINISHED_JOB_QUEUE"] = "finished_job_queue"
+
+import threading
 import unittest
 
 import docker
-from docker import errors
+
+from database.tests.test_db_sqlite_impl import TestSQLiteImpl
 from message_queue.rabbit_mq_impl import MQRabbitImpl
-from testing.mock_components.mock_db import MockDB
-from testing.mock_components.mock_models_and_tasks import MockModelsAndTasks
-from dotenv import load_dotenv
 
-load_dotenv(dotenv_path="testing/.env")
-cli = docker.from_env()
-RABBIT_NAME = "rapper_rabbit"
-RABBIT_HOSTNAME = "localhost"
-RABBIT_PORT = 5672
-
-try:
-    container = cli.containers.get(RABBIT_NAME)
-    container.stop()
-    container.remove()
-except errors.NotFound as e:
-    print(e)
-print(os.environ)
-cli.images.pull(os.environ.get("RABBIT_DOCKER_TAG"))
-print("Spinning up RabbitMQ")
-
-rabbit_container = cli.containers.run(os.environ.get("RABBIT_DOCKER_TAG"),
-                                      name=RABBIT_NAME,
-                                      hostname=RABBIT_HOSTNAME,
-                                      ports={RABBIT_PORT: RABBIT_PORT},
-                                      detach=True)
-print(rabbit_container)
-
+PORT_NO = 5672
 
 class TestMessageQueueRabbitMQImpl(unittest.TestCase):
     """
     This is a tests of functions in api/img/message_queue/rabbit_mq_impl.py
     """
+    def get_port(self):
+        global PORT_NO
+        PORT_NO += 1
+        return PORT_NO
+
+    def make_mq_container(self):
+        cli = docker.from_env()
+        self.RABBIT_PORT = self.get_port()
+        self.take_down_mq_container(str(self.RABBIT_PORT))
+
+        self.RABBIT_HOSTNAME = "localhost"
+
+        cli.images.pull(os.environ.get("RABBIT_DOCKER_TAG"))
+        print(f"Spinning up RabbitMQ with name {str(self.RABBIT_PORT)}")
+
+        cli.containers.run(os.environ.get("RABBIT_DOCKER_TAG"),
+                           name=str(self.RABBIT_PORT),
+                           hostname=self.RABBIT_HOSTNAME,
+                           ports={5672: self.RABBIT_PORT},
+                           detach=True)
+        cli.close()
+
+    @staticmethod
+    def take_down_mq_container(name):
+        cli = docker.from_env()
+        try:
+            logging.info(f"Closing RabbitMQ container with name {name}")
+            container = cli.containers.get(name)
+            if container:
+                container.stop()
+                container.remove()
+        except Exception as e:
+            print(e)
+            logging.info(f"Did not find: {name} - which is great!")
+        finally:
+            cli.close()
+
 
     def setUp(self) -> None:
         self.base_dir = ".tmp"
-        self.db = MockDB()
-        self.repo = MockModelsAndTasks()
         self.mq_client = None
-
-        self.mq_client = MQRabbitImpl(host=RABBIT_HOSTNAME,
-                                      port=int(RABBIT_PORT),
+        self.db_tests = TestSQLiteImpl()
+        self.db_tests.setUp()
+        self.make_mq_container()
+        self.mq_client = MQRabbitImpl(host=self.RABBIT_HOSTNAME,
+                                      port=self.RABBIT_PORT,
                                       unfinished_queue_name=os.environ["UNFINISHED_JOB_QUEUE"],
                                       finished_queue_name=os.environ["FINISHED_JOB_QUEUE"])
+
+    def tearDown(self) -> None:
+        self.db_tests.tearDown()
+        self.mq_client.close(*self.mq_client.get_connection_and_channel())
+
+        t = threading.Thread(target=self.take_down_mq_container, kwargs={"name": str(self.RABBIT_PORT)})
+        t.start()
 
     def test_get_connection_and_channel(self):
         self.conn, self.chan = self.mq_client.get_connection_and_channel()
@@ -56,18 +82,22 @@ class TestMessageQueueRabbitMQImpl(unittest.TestCase):
         return self.conn, self.chan
 
     def test_publish_unfinished(self):
-        self.mq_client.publish_unfinished_task(self.repo.task)
+        task = self.db_tests.test_post_task_intended()
+        self.mq_client.publish_unfinished_task(task)
         conn, chan = self.mq_client.get_connection_and_channel()
         method_frame, header_frame, body = chan.basic_get(self.mq_client.unfinished_queue_name)
-        self.assertEqual(body.decode(), self.repo.task.uid)
+        self.assertEqual(body.decode(), task.uid)
         chan.basic_ack(method_frame.delivery_tag)
         self.mq_client.close(conn, chan)
 
     def test_publish_finished(self):
-        self.mq_client.publish_finished_task(self.repo.task)
+        task = self.db_tests.test_post_task_intended()
+        self.mq_client.publish_finished_task(task)
+
         conn, chan = self.mq_client.get_connection_and_channel()
         method_frame, header_frame, body = chan.basic_get(self.mq_client.finished_queue_name)
-        self.assertEqual(body.decode(), self.repo.task.uid)
+
+        self.assertEqual(body.decode(), task.uid)
         chan.basic_ack(method_frame.delivery_tag)
         self.mq_client.close(conn, chan)
 

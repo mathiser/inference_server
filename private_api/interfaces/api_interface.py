@@ -1,20 +1,15 @@
 from abc import abstractmethod
-from typing import Any, Union, List, Dict
+from typing import Union, List, Dict
 
 from fastapi import File, UploadFile
-from private_api.database import DBInterface
-from private_api.message_queue import MQInterface
 from starlette.responses import FileResponse
 
-from database.models import Task, Model
+from interfaces.db_models import Task, Model
 
 
-class APIInterface():
-    def __init__(self, db: DBInterface, mq: MQInterface, **extra: Any):
-        super().__init__(**extra)
-        self.db = db
-        self.mq = mq
-
+class APIInterface:
+    @abstractmethod
+    def __init__(self):
         @abstractmethod
         def hello_world() -> Dict:
             pass
@@ -24,15 +19,11 @@ class APIInterface():
             pass
 
         @abstractmethod
-        def get_task_by_id(id: int) -> Task:
+        def get_task(uid: str) -> Task:
             pass
 
         @abstractmethod
-        def get_task_by_uid(uid: str) -> Task:
-            pass
-
-        @abstractmethod
-        def delete_task_by_uid(uid: str) -> Task:
+        def delete_task(uid: str) -> Task:
             pass
 
         @abstractmethod
@@ -46,16 +37,16 @@ class APIInterface():
             pass
 
         @abstractmethod
-        def get_input_zip_by_id(id: int) -> FileResponse:
+        def get_input_zip_by_uid(uid: str) -> FileResponse:
             pass
 
         @abstractmethod
-        def post_output_zip_by_uid(uid: str,
-                                   zip_file: UploadFile = File(...)) -> Task:
+        def post_output_zip(uid: str,
+                            zip_file: UploadFile = File(...)) -> Task:
             pass
 
         @abstractmethod
-        def get_output_zip_by_uid(uid: str) -> Task:
+        def get_output_zip(uid: str) -> Task:
             pass
 
         @abstractmethod
@@ -72,7 +63,7 @@ class APIInterface():
             pass
 
         @abstractmethod
-        def get_model_by_id(id: int) -> Model:
+        def get_model(uid: str) -> Model:
             pass
 
         @abstractmethod
@@ -84,5 +75,5 @@ class APIInterface():
             pass
 
         @abstractmethod
-        def get_model_zip_by_id(id: int) -> FileResponse:
+        def get_model_zip(uid: str) -> FileResponse:
             pass

@@ -2,23 +2,20 @@ import logging
 import os
 import secrets
 import shutil
-import uuid
+import traceback
 from datetime import datetime
 from typing import List, BinaryIO, Union, Optional
 
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 
-from .db_exceptions import TaskNotFoundException, ModelNotFoundException, \
-    TaskZipPathExistsException, InsertTaskException, ZipFileMissingException, ContradictingZipFileException, \
-    ModelInsertionException, TaskInitializationException, ModelMountPointMissingException
 from interfaces.db_interface import DBInterface
 from interfaces.db_models import Model, Task, Base
+from .db_exceptions import TaskNotFoundException, ModelNotFoundException, \
+    TaskZipPathExistsException, ZipFileMissingException, ContradictingZipFileException
 
 LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
-#logging.basicConfig(level=int(os.environ.get("LOG_LEVEL")), format=LOG_FORMAT)
-
-logging.basicConfig(level=int(100), format=LOG_FORMAT)
+logging.basicConfig(level=int(os.environ.get("LOG_LEVEL")), format=LOG_FORMAT)
 
 class DBSQLiteImpl(DBInterface):
     def __init__(self, base_dir, declarative_base=Base):
@@ -62,7 +59,7 @@ class DBSQLiteImpl(DBInterface):
                   uid: str = None):
 
         if not uid:
-            uid = secrets.token_urlsafe(32)
+            uid = secrets.token_urlsafe()
 
         with self.Session() as session:
             # Define task
@@ -70,24 +67,17 @@ class DBSQLiteImpl(DBInterface):
                 task = Task(uid=uid,
                             model_human_readable_id=model_human_readable_id,
                             input_zip=os.path.abspath(os.path.join(self.input_base_folder, uid, "input.zip")),
-                            input_volume_id=str(uuid.uuid4()),
                             output_zip=os.path.abspath(os.path.join(self.output_base_folder, uid, "output.zip")),
-                            output_volume_id=str(uuid.uuid4())
                             )
 
-            except Exception as e:
-                logging.error(e)
-                raise TaskInitializationException
-
-            # Commit task and refresh
-            try:
+                # Commit task and refresh
                 session.add(task)
                 session.commit()
                 session.refresh(task)
 
             except Exception as e:
-                print(e)
-                raise InsertTaskException
+                traceback.print_exc()
+                raise e
 
             # Make input and output dirs
             try:
@@ -102,15 +92,8 @@ class DBSQLiteImpl(DBInterface):
 
             return task
 
-    def get_task_by_id(self, id: int):
-        with self.Session() as session:
-            task = session.query(Task).filter_by(id=id).first()
-            if task:
-                return task
-            else:
-                raise TaskNotFoundException
 
-    def get_task_by_uid(self, uid: str) -> Task:
+    def get_task(self, uid: str) -> Task:
         with self.Session() as session:
             t = session.query(Task).filter_by(uid=uid, is_deleted=False).first()
             if t:
@@ -118,7 +101,7 @@ class DBSQLiteImpl(DBInterface):
             else:
                 raise TaskNotFoundException
 
-    def set_task_status_by_uid(self, uid: str, status: int) -> Task:
+    def set_task_status(self, uid: str, status: int) -> Task:
         with self.Session() as session:
             t = session.query(Task).filter_by(uid=uid).first()
             if t:
@@ -128,6 +111,7 @@ class DBSQLiteImpl(DBInterface):
                 elif status == 2:
                     t.datetime_dispatched = datetime.now()
                 session.commit()
+                session.refresh(t)
                 return t
             else:
                 raise TaskNotFoundException
@@ -137,9 +121,9 @@ class DBSQLiteImpl(DBInterface):
             tasks = session.query(Task)
             return list(tasks)
 
-    def delete_task_by_uid(self, uid: str) -> Task:
+    def delete_task(self, uid: str) -> Task:
         with self.Session() as session:
-            t = session.query(Task).filter_by(uid=uid).first()
+            t = session.query(Task).filter_by(uid=uid, is_deleted=False).first()
             if t:
                 # If task is running -> cannot delete
                 if t.status == 2:
@@ -157,6 +141,7 @@ class DBSQLiteImpl(DBInterface):
                     if t.status == -1:
                         t.status = 0
                     session.commit()
+                    session.refresh(t)
                     return t
             else:
                 raise TaskNotFoundException
@@ -170,28 +155,26 @@ class DBSQLiteImpl(DBInterface):
                    use_gpu: Union[bool, None] = None):
 
         model = Model(
-            uid=str(uuid.uuid4()),
+            uid=secrets.token_hex(),
             description=description,
             human_readable_id=human_readable_id,
             container_tag=container_tag,
             model_available=model_available,
             use_gpu=use_gpu
         )
+        if model.model_available and not zip_file:
+            raise ZipFileMissingException
+
+        if not model.model_available and zip_file:
+            raise ContradictingZipFileException
 
         if model.model_available and zip_file:
-            model.model_volume_uuid = model.uid
+            model.model_volume_id = model.uid
             model.model_zip = os.path.join(self.model_base_folder, model.uid, "model.zip")
             os.makedirs(os.path.dirname(model.model_zip))
             # write model_zip to model_zip
             with open(model.model_zip, 'wb') as f:
                 f.write(zip_file.read())
-
-        elif model.model_available and not zip_file:
-            raise ZipFileMissingException
-
-        elif not model.model_available and zip_file:
-            raise ContradictingZipFileException
-
         try:
             ## Add model to DB
             with self.Session() as session:
@@ -199,22 +182,22 @@ class DBSQLiteImpl(DBInterface):
                 session.commit()
                 session.refresh(model)
         except Exception as e:
-            logging.error(e)
-            raise ModelInsertionException
+            raise e
 
         return model
 
-    def get_model_by_id(self, id: int) -> Model:
-        with self.Session() as session:
-            model = session.query(Model).filter_by(id=id).first()
-            if model:
-                return model
-            else:
-                raise ModelNotFoundException
+    def get_model(self,
+                  uid: Union[str, None] = None,
+                  human_readable_id: Union[str, None] = None) -> Model:
 
-    def get_model_by_human_readable_id(self, human_readable_id: str) -> Model:
         with self.Session() as session:
-            model = session.query(Model).filter_by(human_readable_id=human_readable_id).first()
+            # Prioritize uid over human_readable_id
+            if uid:
+                model = session.query(Model).filter_by(uid=uid).first()
+            elif human_readable_id:
+                model = session.query(Model).filter_by(human_readable_id=human_readable_id).first()
+
+            # Return if found model or raise
             if model:
                 return model
             else:
@@ -224,7 +207,7 @@ class DBSQLiteImpl(DBInterface):
         with self.Session() as session:
             return list(session.query(Model))
 
-    def post_output_zip_by_uid(self, uid: str, zip_file: BinaryIO) -> Task:
+    def post_output_zip(self, uid: str, zip_file: BinaryIO) -> Task:
         with self.Session() as session:
             # Get the task
             task = session.query(Task).filter_by(uid=uid).first()
@@ -243,5 +226,5 @@ class DBSQLiteImpl(DBInterface):
             # Save changes
             session.commit()
             session.refresh(task)
-        self.set_task_status_by_uid(task.uid, 1)
+        self.set_task_status(task.uid, 1)
         return task
