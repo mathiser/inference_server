@@ -1,3 +1,4 @@
+import datetime
 import os
 import secrets
 import shutil
@@ -5,7 +6,7 @@ import tempfile
 import uuid
 import zipfile
 
-from testing.mock_components.models import Model, Task
+from interfaces.db_models import Model, Task
 
 
 class MockModelsAndTasks:
@@ -41,9 +42,6 @@ class MockModelsAndTasks:
         self.model = Model(container_tag="hello-world",
                            id=1,
                            human_readable_id="one",
-                           #input_mountpoint="/input",
-                           #output_mountpoint="/output",
-                           #model_mountpoint="/model",
                            description="This is a testing of a very important database",
                            model_available=True,
                            use_gpu=True,
@@ -65,8 +63,9 @@ class MockModelsAndTasks:
             model_human_readable_id=self.model.human_readable_id,
             input_zip=task_input,
             output_zip=task_output,
-            input_volume_uuid=str(uuid.uuid4()),
-            output_volume_uuid=str(uuid.uuid4())
+            input_volume_id=secrets.token_urlsafe(),
+            output_volume_id=secrets.token_urlsafe(),
+            datetime_created=datetime.datetime.now(),
         )
 
     def purge(self):

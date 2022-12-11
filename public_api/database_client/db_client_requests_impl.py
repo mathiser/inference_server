@@ -2,7 +2,7 @@ from urllib.parse import urljoin
 
 import requests
 
-from database_client.db_client_interface import DBClientInterface
+from interfaces.db_client_interface import DBClientInterface
 
 
 class DBClientRequestsImpl(DBClientInterface):

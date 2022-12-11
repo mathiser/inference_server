@@ -1,12 +1,12 @@
 import json
 import logging
 import os
+
 import secrets
 from typing import BinaryIO, Union, Optional
 from urllib.parse import urljoin
 
 from interfaces.db_client_interface import DBClientInterface
-from exceptions.exceptions import PostTaskException, PostModelException
 from interfaces.db_interface import DBInterface
 from interfaces.db_models import Model
 
@@ -18,10 +18,7 @@ class DBImpl(DBInterface):
     def post_task(self,
                   model_human_readable_id: str,
                   zip_file: BinaryIO,
-                  uid=None):
-
-        if not uid:
-            uid = secrets.token_urlsafe(32)
+                  uid: str):
 
         params = {
             "model_human_readable_id": model_human_readable_id,
@@ -32,14 +29,11 @@ class DBImpl(DBInterface):
 
         logging.info(f"[ ] Posting task: {params}")
         res = self.db_client.post(url=url, files=files, params=params)
-        if not res.ok:
-            logging.error(res.content)
-            raise PostTaskException
-        else:
-            logging.info(f"[X] Posting task: {params}")
-            return params
+        res.raise_for_status()
+        logging.info(f"[X] Posting task: {params}")
+        return params
 
-    def get_output_zip_by_uid(self, uid: str):
+    def get_output_zip(self, uid: str):
         # Zip the output for return
         logging.info(f"[ ]: Get output from task: {uid}")
         url = urljoin(os.environ['API_OUTPUT_ZIPS'], f"{uid}")
@@ -48,21 +42,18 @@ class DBImpl(DBInterface):
         logging.info(f"[X]: Get output from task: {uid}")
         return res
 
-    def delete_task_by_uid(self, uid: str):
+    def delete_task(self, uid: str):
         # Zip the output for return
         logging.info(f"[ ]: Delete task: {uid}")
         url = urljoin(os.environ['API_TASKS'], f"{uid}")
         res = self.db_client.delete(url)
-
         logging.info(f"[X]: Delete task: {uid}")
+
         return res
 
     def post_model(self,
                    container_tag: str,
                    human_readable_id: str,
-                   input_mountpoint: Union[str, None] = None,
-                   output_mountpoint: Union[str, None] = None,
-                   model_mountpoint: Union[str, None] = None,
                    description: Union[str, None] = None,
                    model_available: Union[bool, None] = None,
                    use_gpu: Union[bool, None] = None,
@@ -72,9 +63,6 @@ class DBImpl(DBInterface):
         params = {
             "container_tag": container_tag,
             "human_readable_id": human_readable_id,
-            "input_mountpoint": input_mountpoint,
-            "output_mountpoint": output_mountpoint,
-            "model_mountpoint": model_mountpoint,
             "description": description,
             "model_available": model_available,
             "use_gpu": use_gpu
@@ -82,17 +70,11 @@ class DBImpl(DBInterface):
         files = {"zip_file": zip_file}
         url = os.environ.get("API_MODELS")
 
-        if zip_file:
-            res = self.db_client.post(url, files=files, params=params)
-        else:
-            res = self.db_client.post(url, params=params)
+        res = self.db_client.post(url, files=files, params=params)
+        res.raise_for_status()
 
-        if not res.ok:
-            logging.error(res.content)
-            raise PostModelException
-        else:
-            logging.info(f"[X] Posting task: {params}")
-            return params
+        logging.info(f"[X] Posting task: {params}")
+        return params
 
     def get_models(self):
         url = os.environ["API_MODELS"]
