@@ -1,19 +1,16 @@
 import logging
 import os
-import shutil
-import tempfile
 from typing import Dict
 from urllib.parse import urljoin
 
 import docker
 from docker import types
-from docker.errors import NotFound, ContainerError
+from docker.errors import NotFound
 
-from database.database_interface import DBInterface
-from database.models import Task, Model
-import requests
+from interfaces.database_interface import DBInterface
+from interfaces.db_models import Task, Model
 from job.job_exceptions import ModelNotSetException, TaskNotSetException
-from job.job_interface import JobInterface
+from interfaces.job_interface import JobInterface
 from docker_helper import volume_functions
 
 
@@ -26,11 +23,11 @@ class JobDockerImpl(JobInterface):
 
     def __del__(self):
         if self.task:
-            if volume_functions.volume_exists(self.task.input_volume_uuid):
-                volume_functions.delete_volume(self.task.input_volume_uuid)
+            if volume_functions.volume_exists(self.task.input_volume_id):
+                volume_functions.delete_volume(self.task.input_volume_id)
 
-            if volume_functions.volume_exists(self.task.output_volume_uuid):
-                volume_functions.delete_volume(self.task.output_volume_uuid)
+            if volume_functions.volume_exists(self.task.output_volume_id):
+                volume_functions.delete_volume(self.task.output_volume_id)
 
         self.cli.close()
 
@@ -50,7 +47,7 @@ class JobDockerImpl(JobInterface):
 
         self.create_model_volume()
         self.create_input_volume()
-        volume_functions.create_empty_volume(self.task.output_volume_uuid)
+        volume_functions.create_empty_volume(self.task.output_volume_id)
 
         try:
             volume_functions.pull_image(self.model.container_tag)
@@ -75,16 +72,16 @@ class JobDockerImpl(JobInterface):
         kw["volumes"] = {}
 
         # Mount point of input to container
-        kw["volumes"][self.task.input_volume_uuid] = {"bind": self.model.input_mountpoint,
+        kw["volumes"][self.task.input_volume_id] = {"bind": "/input",
                                                       "mode": "ro"}
 
         # Mount point of output to container
-        kw["volumes"][self.task.output_volume_uuid] = {"bind": self.model.output_mountpoint,
+        kw["volumes"][self.task.output_volume_id] = {"bind": "/output",
                                                        "mode": "rw"}
 
         # Mount point of model volume to container if exists
         if self.model.model_available:
-            kw["volumes"][self.model.model_volume_uuid] = {"bind": self.model.model_mountpoint,
+            kw["volumes"][self.model.model_volume_id] = {"bind": "/model",
                                                            "mode": "ro"}
 
         # Allow GPU usage if "use_gpu" is True
@@ -104,10 +101,10 @@ class JobDockerImpl(JobInterface):
             raise ModelNotSetException
 
         if self.model.model_available:
-            if not volume_functions.volume_exists(self.model.model_volume_uuid):
-                with self.db.get_model_zip_by_id(self.model.id) as model_tmp_file:
+            if not volume_functions.volume_exists(self.model.model_volume_id):
+                with self.db.get_model_zip(self.model.uid) as model_tmp_file:
                     volume_functions.create_volume_from_tmp_file(tmp_file=model_tmp_file,
-                                                                 volume_uuid=self.model.model_volume_uuid)
+                                                                 volume_id=self.model.model_volume_id)
             else:
                 logging.info(f"Model {self.model.human_readable_id} has a docker volume already")
         else:
@@ -117,10 +114,10 @@ class JobDockerImpl(JobInterface):
         if not self.task:
             raise TaskNotSetException
 
-        if not volume_functions.volume_exists(self.task.input_volume_uuid):
-            with self.db.get_input_zip_by_id(self.task.id) as input_tmp_file:
+        if not volume_functions.volume_exists(self.task.input_volume_id):
+            with self.db.get_input_zip(self.task.uid) as input_tmp_file:
                 volume_functions.create_volume_from_tmp_file(tmp_file=input_tmp_file,
-                                                             volume_uuid=self.task.input_volume_uuid)
+                                                             volume_id=self.task.input_volume_id)
         else:
             logging.info(f"Task {self.task.uid} has a docker volume already")
 
@@ -130,7 +127,7 @@ class JobDockerImpl(JobInterface):
         volume_functions.pull_image(os.environ.get("VOLUME_SENDER_DOCKER_TAG"))
         tmp_container = self.cli.containers.run(os.environ.get("VOLUME_SENDER_DOCKER_TAG"),
                                                 None,
-                                                volumes={self.task.output_volume_uuid: {"bind": '/data', 'mode': 'ro'}},
+                                                volumes={self.task.output_volume_id: {"bind": '/data', 'mode': 'ro'}},
                                                 environment={
                                                     "URL": url,
                                                     "VOLUME_MOUNTPOINT": "/data"
