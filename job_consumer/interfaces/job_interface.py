@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from database.models import Model, Task
+from interfaces.db_models import Model, Task
 
 
 class JobInterface(ABC):
