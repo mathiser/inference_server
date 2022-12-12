@@ -1,25 +1,36 @@
 import logging
-import os
-from typing import Dict
+from typing import Dict, Union
 from urllib.parse import urljoin
 
 import docker
 from docker import types
-from docker.errors import NotFound
 
+from docker_helper import volume_functions
 from interfaces.database_interface import DBInterface
 from interfaces.db_models import Task, Model
-from job.job_exceptions import ModelNotSetException, TaskNotSetException
 from interfaces.job_interface import JobInterface
-from docker_helper import volume_functions
+from job.job_exceptions import ModelNotSetException, TaskNotSetException
 
 
 class JobDockerImpl(JobInterface):
-    def __init__(self, db: DBInterface):
+    def __init__(self,
+                 db: DBInterface,
+                 api_url: str,
+                 api_output_zips: str,
+                 volume_sender_docker_tag: str,
+                 network_name: str,
+                 gpu_uuid: Union[str, None] = None
+                 ):
         self.db = db
         self.task = None
         self.model = None
         self.cli = docker.from_env()
+
+        self.api_url = api_url
+        self.api_output_zips = api_output_zips
+        self.volume_sender_docker_tag = volume_sender_docker_tag
+        self.network_name = network_name
+        self.gpu_uuid = gpu_uuid
 
     def __del__(self):
         if self.task:
@@ -51,8 +62,8 @@ class JobDockerImpl(JobInterface):
 
         try:
             volume_functions.pull_image(self.model.container_tag)
-        except NotFound:
-            pass
+        except Exception as e:
+            raise e
 
         job_container = self.cli.containers.run(image=self.model.container_tag,
                                                 command=None,  # Already defaults to None, but for explicity
@@ -86,9 +97,9 @@ class JobDockerImpl(JobInterface):
 
         # Allow GPU usage if "use_gpu" is True
         if self.model.use_gpu:
-            if os.environ.get("GPU_UUID"):
+            if self.gpu_uuid:
                 kw["device_requests"] = [
-                    docker.types.DeviceRequest(device_ids=[os.environ.get("GPU_UUID")], capabilities=[['gpu']])]
+                    docker.types.DeviceRequest(device_ids=[self.gpu_uuid], capabilities=[['gpu']])]
             else:
                 kw["device_requests"] = [
                     docker.types.DeviceRequest(count=-1, capabilities=[['gpu']])]
@@ -122,10 +133,10 @@ class JobDockerImpl(JobInterface):
             logging.info(f"Task {self.task.uid} has a docker volume already")
 
     def send_volume_output(self):
-        url = os.environ.get('API_URL') + urljoin(os.environ.get('POST_OUTPUT_ZIP_BY_UID'), self.task.uid)
+        url = self.api_url + urljoin(self.api_output_zips, self.task.uid)
         logging.info("URL to post on: {}".format(url))
-        volume_functions.pull_image(os.environ.get("VOLUME_SENDER_DOCKER_TAG"))
-        tmp_container = self.cli.containers.run(os.environ.get("VOLUME_SENDER_DOCKER_TAG"),
+        volume_functions.pull_image(self.volume_sender_docker_tag)
+        tmp_container = self.cli.containers.run(self.volume_sender_docker_tag,
                                                 None,
                                                 volumes={self.task.output_volume_id: {"bind": '/data', 'mode': 'ro'}},
                                                 environment={
@@ -134,5 +145,5 @@ class JobDockerImpl(JobInterface):
                                                 },
                                                 remove=True,
                                                 ports={80: []},  ## Dummyport to make traefik shut up
-                                                network=os.environ.get("NETWORK_NAME"))
+                                                network=self.network_name)
         logging.info(tmp_container)

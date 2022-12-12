@@ -2,7 +2,7 @@ from urllib.parse import urljoin
 
 import requests
 
-from database_client.db_client_interface import DBClientInterface
+from interfaces.db_client_interface import DBClientInterface
 
 
 class DBClientRequestsImpl(DBClientInterface):
@@ -14,3 +14,6 @@ class DBClientRequestsImpl(DBClientInterface):
 
     def post(self, url, params=None, files=None):
         return requests.post(urljoin(self.base_url, url), params=params, files=files)
+
+    def put(self, url, params=None):
+        return requests.put(urljoin(self.base_url, url), params=params)
