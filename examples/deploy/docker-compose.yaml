@@ -29,18 +29,18 @@ services:
     ports:
       - ${PUBLIC_API_PORT}
     labels:
-      - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.rule=Host(`${PROXY_URL}`)"
-      - "traefik.http.services.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.loadbalancer.server.port=${PUBLIC_API_PORT}"
-      - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.tls=${HTTPS_ON}"
+      - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.rule=Host(`omen.onerm.dk`)"
+      - "traefik.http.services.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.loadbalancer.server.port=8000"
+      - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.tls=true"
 
   api:
-    hostname: ${API_HOSTNAME}
-    command: python main.py
+    hostname: private-api
+    command: python /opt/app/main.py
     restart: always
     depends_on:
       - rabbit
     ports:
-      - ${API_PORT}
+      - 7000
     environment:
       - PYTHONUNBUFFERED=1
     env_file:
@@ -64,7 +64,7 @@ services:
     restart: always
     ports:
       - "80" # Dummy port to make traefik quiet
-    command: /usr/bin/python3 main.py
+    command: /usr/bin/python3 /opt/app/main.py
     depends_on:
       - rabbit
       - api

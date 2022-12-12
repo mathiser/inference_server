@@ -14,7 +14,7 @@ WORKDIR /opt/app/
 COPY . /opt/app/
 
 ENV TZ=Europe/Copenhagen
-ENV NETWORK_NAME=inference_server_default
+ENV NETWORK_NAME=inference_server_backend
 ENV API_HOSTNAME=private_api
 ENV API_PORT=7000
 ENV API_URL=http://private_api:7000
