@@ -12,6 +12,8 @@ class Model(BaseModel):
     model_available: bool = True
     model_volume_id: Union[str, None]
     model_zip: str
+    uid: str
+    id: int
 
 class Task(BaseModel):
     uid: str

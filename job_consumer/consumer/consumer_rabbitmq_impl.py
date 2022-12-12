@@ -4,14 +4,15 @@ import logging
 import os
 import threading
 import time
+import traceback
+from typing import Union
 
 import docker
 import pika
-from docker.errors import ContainerError
 
-from database.database_interface import DBInterface
+from interfaces.database_interface import DBInterface
 from job.job_docker_impl import JobDockerImpl
-from .consumer_interface import ConsumerInterface
+from interfaces.consumer_interface import ConsumerInterface
 
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
               '-35s %(lineno) -5d: %(message)s')
@@ -20,16 +21,34 @@ logging.basicConfig(level=int(os.environ.get("LOG_LEVEL")), format=LOG_FORMAT)
 
 
 class ConsumerRabbitImpl(ConsumerInterface):
-    def __init__(self, host: str, port: int, db: DBInterface):
+    def __init__(self,
+                 host: str,
+                 port: int,
+                 db: DBInterface,
+                 unfinished_queue_name: str,
+                 finished_queue_name: str,
+                 prefetch_value: int,
+                 api_url: str,
+                 api_output_zips: str,
+                 volume_sender_docker_tag: str,
+                 network_name: str,
+                 gpu_uuid: Union[str, None] = None
+                 ):
         self.host = host
         self.port = port
         self.db = db
         self.threads = []
-        self.unfinished_queue_name = os.environ["UNFINISHED_JOB_QUEUE"]
-        self.finished_queue_name = os.environ["FINISHED_JOB_QUEUE"]
+        self.unfinished_queue_name = unfinished_queue_name
+        self.finished_queue_name = finished_queue_name
         self.connection = None
         self.channel = None
+        self.prefetch_value = prefetch_value
         self.cli = docker.from_env()
+        self.api_url = api_url
+        self.api_output_zips = api_output_zips
+        self.volume_sender_docker_tag = volume_sender_docker_tag
+        self.network_name = network_name
+        self.gpu_uuid = gpu_uuid
 
         # Close things on exit
         exit_func = functools.partial(self.on_exit, self.threads, self.connection, self.cli)
@@ -63,10 +82,8 @@ class ConsumerRabbitImpl(ConsumerInterface):
         if not self.connection or not self.channel:
             self.set_connection_and_channel()
 
-
-        prefetch_val = 1
-        logging.info(f": Setting RabbitMQ prefetch_count to {prefetch_val}")
-        self.channel.basic_qos(prefetch_count=prefetch_val)
+        logging.info(f": Setting RabbitMQ prefetch_count to {self.prefetch_value}")
+        self.channel.basic_qos(prefetch_count=self.prefetch_value)
 
         on_message_callback = functools.partial(self.on_message, args=(self.connection, self.threads))
         self.channel.basic_consume(queue=self.unfinished_queue_name, on_message_callback=on_message_callback)
@@ -89,25 +106,32 @@ class ConsumerRabbitImpl(ConsumerInterface):
 
         try:
             # Parse body to get task uid to run
-            task = self.db.get_task_by_uid(uid)
+            task = self.db.get_task(uid)
             model = self.db.get_model_by_human_readable_id(task.model_human_readable_id)
 
-            # Execute task - function handles dispatchment of docker jobs.
-
-            j = JobDockerImpl(db=self.db)
+            # Execute task
+            j = JobDockerImpl(db=self.db,
+                              api_url=self.api_url,
+                              api_output_zips=self.api_output_zips,
+                              volume_sender_docker_tag=self.volume_sender_docker_tag,
+                              network_name=self.network_name,
+                              gpu_uuid=self.gpu_uuid)
             j.set_task(task=task)
             j.set_model(model=model)
 
-            self.db.set_task_status_by_uid(uid=uid, status=2)  # Set status to running
+            self.db.set_task_status(uid=uid, status=2)  # Set status to running
             j.execute()
             j.send_volume_output()
-        except Exception as e:
-            logging.error(e)
-            self.db.set_task_status_by_uid(uid=uid, status=0)
 
-        # Acknowledgement callback
-        cb = functools.partial(self.ack_message, channel, delivery_tag)
-        connection.add_callback_threadsafe(cb)
+        except Exception as e:
+            self.db.set_task_status(uid=uid, status=0)
+            traceback.print_exc()
+            raise e
+
+        finally:
+            # Acknowledgement callback
+            cb = functools.partial(self.ack_message, channel, delivery_tag)
+            connection.add_callback_threadsafe(cb)
 
     def ack_message(self, channel, delivery_tag):
         if self.channel.is_open:

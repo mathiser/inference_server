@@ -1,7 +1,7 @@
-import tempfile
 import unittest
-import uuid
 import zipfile
+import os
+os.environ["LOG_LEVEL"] = "20"
 
 from docker_helper.volume_functions import *
 
@@ -17,38 +17,38 @@ class TestVolumeFunctions(unittest.TestCase):
         self.to_del = []
 
     def test_create_empty_volume(self):
-        volume_uuid = create_empty_volume()
-        self.to_del.append(volume_uuid)
-        self.assertTrue(volume_exists(volume_uuid=volume_uuid))
+        volume_id = create_empty_volume()
+        self.to_del.append(volume_id)
+        self.assertTrue(volume_exists(volume_id=volume_id))
 
-        volume_uuid = create_empty_volume(str(uuid.uuid4()))
-        self.to_del.append(volume_uuid)
-        self.assertTrue(volume_exists(volume_uuid=volume_uuid))
+        volume_id = create_empty_volume(secrets.token_urlsafe())
+        self.to_del.append(volume_id)
+        self.assertTrue(volume_exists(volume_id=volume_id))
 
     def test_delete_volume(self):
-        vol = str(uuid.uuid4())
-        self.assertFalse(volume_exists(volume_uuid=vol))
+        vol = secrets.token_urlsafe()
+        self.assertFalse(volume_exists(volume_id=vol))
 
-        echo_vol = create_empty_volume(volume_uuid=vol)
+        echo_vol = create_empty_volume(volume_id=vol)
         self.assertEqual(echo_vol, vol)
-        self.assertTrue(volume_exists(volume_uuid=vol))
+        self.assertTrue(volume_exists(volume_id=vol))
 
-        delete_volume(volume_uuid=vol)
-        self.assertFalse(volume_exists(volume_uuid=vol))
+        delete_volume(volume_id=vol)
+        self.assertFalse(volume_exists(volume_id=vol))
 
     def test_create_volume_from_tmp_file(self):
         try:
             txt_file = "test.txt"
             with open(txt_file, "w") as f:
                 f.write("importent test txt")
-            tmp_file = tempfile.TemporaryFile(suffix=".zip")
-            with zipfile.ZipFile(tmp_file) as zf:
+            tmp_file = tempfile.TemporaryFile()
+            with zipfile.ZipFile(tmp_file, mode="w") as zf:
                 zf.write(txt_file)
-
+            tmp_file.seek(0)
             vol_uid = create_volume_from_tmp_file(tmp_file=tmp_file)
-            self.assertTrue(volume_exists(volume_uuid=vol_uid))
+            self.assertTrue(volume_exists(volume_id=vol_uid))
         except Exception as e:
-            logging.error(e)
+            raise e
         finally:
             os.remove(txt_file)
             if tmp_file:
