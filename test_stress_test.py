@@ -1,8 +1,6 @@
-import logging
 import os.path
 import random
 import secrets
-import shutil
 import tempfile
 import time
 import unittest
@@ -25,6 +23,7 @@ def build_model(tag, dockerfile):
         raise e
     finally:
         cli.close()
+
 class TestEndToEnd(unittest.TestCase):
     path = os.path.dirname(os.path.abspath(__file__))
 
@@ -41,25 +40,6 @@ class TestEndToEnd(unittest.TestCase):
         os.system("docker-compose -f test_stack.yaml logs consumer > job_consumer_test_log")
         pass
 
-
-    def test_post_model_private_api(self):
-        tag = "mathiser/inference_server_test:pass_through_model"
-        human_readable_id = secrets.token_urlsafe(4)
-        dockerfile = BytesIO('FROM busybox\nRUN mkdir /input /output /model\nCMD ["cp -r /input/ /output/"]'.encode("utf-8"))
-        build_model(tag=tag, dockerfile=dockerfile)
-
-        params = {
-            "container_tag": tag,
-            "human_readable_id": human_readable_id,
-            "model_available": False,
-            "use_gpu": False,
-            "description": "Testmodel"
-        }
-        res = requests.post(url="http://localhost:7000/api/models/", params=params)
-        self.assertEqual(res.status_code, 200)
-        model = Model(**res.json())
-        print(model)
-        return model
 
     def test_post_model_public_api(self):
         tag = "mathiser/inference_server_test:pass_through_model"
@@ -79,16 +59,6 @@ class TestEndToEnd(unittest.TestCase):
         model = Model(**res.json())
         print(model)
         return model
-
-    def test_get_models_public_api(self):
-        self.test_post_model_private_api()
-        self.test_post_model_private_api()
-
-        ress = requests.get(url="http://localhost:8000/api/models/")
-        models = [Model(**res) for res in ress.json()]
-        print(models)
-        self.assertEqual(ress.status_code, 200)
-        return models
 
     def test_post_task(self, model=None):
         if not model:
@@ -132,26 +102,6 @@ class TestEndToEnd(unittest.TestCase):
         t.join()
         print(results)
 
-    def test_post_model_with_zip_public_api(self):
-        tag = "mathiser/inference_server_test:pass_through_model_with_model_zip"
-        human_readable_id = secrets.token_urlsafe(4)
-        dockerfile = BytesIO('FROM busybox\nRUN mkdir /input /output /model\nCMD cp -r /model/* /output/'.encode("utf-8"))
-        build_model(tag=tag, dockerfile=dockerfile)
-        params = {
-            "container_tag": tag,
-            "human_readable_id": human_readable_id,
-            "model_available": True,
-            "use_gpu": False,
-            "description": "Testmodel"
-        }
-        with self.make_temp_zip_file() as f:
-            res = requests.post(url="http://localhost:8000/api/models/", params=params, files={"zip_file": f})
-
-        self.assertEqual(res.status_code, 200)
-        model = Model(**res.json())
-        models = self.test_get_models_public_api()
-        self.assertIn(model.uid, [m.uid for m in models])
-        return model
 
     def make_temp_zip_file(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
