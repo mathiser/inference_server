@@ -3,6 +3,7 @@ import os
 import secrets
 import shutil
 import tempfile
+import uuid
 import zipfile
 
 from interfaces.db_models import Model, Task
@@ -58,8 +59,8 @@ class MockModelsAndTasks:
             model_human_readable_id=self.model.human_readable_id,
             input_zip=task_input,
             output_zip=task_output,
-            input_volume_id=secrets.token_urlsafe(),
-            output_volume_id=secrets.token_urlsafe(),
+            input_volume_id=str(uuid.uuid4()),
+            output_volume_id=str(uuid.uuid4()),
             status=-1,
             datetime_created=datetime.datetime.now()
         )

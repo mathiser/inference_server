@@ -1,3 +1,4 @@
+import random
 import secrets
 import unittest
 import os
@@ -43,14 +44,7 @@ class TestJob(unittest.TestCase):
 
         self.db.purge()
 
-    def test_volume_methods(self):
-        volume = volume_functions.create_empty_volume()
-        self.assertIsNotNone(volume)
-        self.assertTrue(volume_functions.volume_exists(volume))
-        volume_functions.delete_volume(volume_id=volume)
-        self.assertFalse(volume_functions.volume_exists(volume_id=volume))
-
-    def test_add_task(self):
+    def post_task(self):
         with open(self.repo.input_zip, "rb") as r:
             task = self.db.add_task(model_human_readable_id=self.repo.model.human_readable_id,
                                     zip_file=r,
@@ -59,14 +53,14 @@ class TestJob(unittest.TestCase):
 
     def test_get_task(self):
         model = self.test_add_model()
-        ref_task = self.test_add_task()
+        ref_task = self.post_task()
         db_task = self.db.get_task(ref_task.uid)
 
         self.assertEqual(ref_task.dict(), db_task.dict())
 
     def test_get_tasks(self):
         with open(self.repo.input_zip, "rb") as r:
-            task = self.test_add_task()
+            task = self.post_task()
 
         tasks = self.db.get_tasks()
         self.assertEqual(len(tasks), 1)
@@ -105,7 +99,7 @@ class TestJob(unittest.TestCase):
         self.assertEqual(models[0].dict(), model.dict())
 
     def test_post_output(self):
-        task = self.test_add_task()
+        task = self.post_task()
         with open(self.repo.output_zip, "rb") as r:
             echo_task = self.db.post_output(task.uid, r)
 
@@ -115,7 +109,7 @@ class TestJob(unittest.TestCase):
 
     def test_dispatch_docker_job(self):
         model = self.test_add_model()
-        task = self.test_add_task()
+        task = self.post_task()
         self.job.set_task(task)
         self.job.set_model(model)
         self.job.execute()
@@ -142,11 +136,23 @@ class TestJob(unittest.TestCase):
         return echo_model
     def test_dispatch_docker_job_error(self):
         model = self.test_add_failing_model()
-        task = self.test_add_task()
+        task = self.post_task()
         self.job.set_task(task)
         self.job.set_model(model)
 
         self.assertRaises(errors.ImageNotFound, self.job.execute)
+
+
+    def test_build_volume_sender(self):
+        unique_tag = "something_someone:test"
+        if volume_functions.image_exists(unique_tag):
+            volume_functions.delete_image(unique_tag, force=True)
+        else:
+            self.job.build_volume_sender(unique_tag)
+
+        self.assertTrue(volume_functions.image_exists(unique_tag))
+        volume_functions.delete_image(tag=unique_tag)
+        self.assertFalse(volume_functions.image_exists(unique_tag))
 
 
 

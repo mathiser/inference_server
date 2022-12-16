@@ -11,7 +11,7 @@ class Model(BaseModel):
     use_gpu: bool = True
     model_available: bool = True
     model_volume_id: Union[str, None]
-    model_zip: str
+    model_zip: Union[str, None]
     uid: str
     id: int
 

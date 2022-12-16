@@ -12,8 +12,11 @@ class DBClientRequestsImpl(DBClientInterface):
     def get(self, url, stream=False):
         return requests.get(urljoin(self.base_url, url))
 
-    def post(self, url, params=None, files=None):
-        return requests.post(urljoin(self.base_url, url), params=params, files=files)
+    def post(self, url, params, files=None):
+        if files:
+            return requests.post(urljoin(self.base_url, url), params=params, files=files)
+        else:
+            return requests.post(urljoin(self.base_url, url), params=params)
 
     def delete(self, url):
         return requests.delete(urljoin(self.base_url, url))

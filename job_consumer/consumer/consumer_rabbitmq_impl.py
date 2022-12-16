@@ -9,6 +9,7 @@ from typing import Union
 
 import docker
 import pika
+from pika import exceptions
 
 from interfaces.database_interface import DBInterface
 from job.job_docker_impl import JobDockerImpl
@@ -64,10 +65,8 @@ class ConsumerRabbitImpl(ConsumerInterface):
                     self.channel.queue_declare(queue=self.finished_queue_name, durable=True)
                     break
             except Exception as e:
-                logging.error(
-                    f"Could not connect to RabbitMQ - is it running? Expecting it on {self.host}:{self.port}")
+                logging.info(f"Could not connect to RabbitMQ - is it running? Expecting it on {self.host}:{self.port}")
                 time.sleep(10)
-
     def close(self):
         if self.channel.is_open:
             self.channel.close()
@@ -126,7 +125,7 @@ class ConsumerRabbitImpl(ConsumerInterface):
         except Exception as e:
             self.db.set_task_status(uid=uid, status=0)
             traceback.print_exc()
-            raise e
+
 
         finally:
             # Acknowledgement callback

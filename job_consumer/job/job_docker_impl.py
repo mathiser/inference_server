@@ -1,10 +1,10 @@
 import logging
+import os
 from typing import Dict, Union
 from urllib.parse import urljoin
 
 import docker
 from docker import types
-
 from docker_helper import volume_functions
 from interfaces.database_interface import DBInterface
 from interfaces.db_models import Task, Model
@@ -31,6 +31,10 @@ class JobDockerImpl(JobInterface):
         self.volume_sender_docker_tag = volume_sender_docker_tag
         self.network_name = network_name
         self.gpu_uuid = gpu_uuid
+
+        self.volume_sender = "volume_sender:temp"
+
+        os.environ["LOG_LEVEL"] = "10"
 
     def __del__(self):
         if self.task:
@@ -63,7 +67,7 @@ class JobDockerImpl(JobInterface):
         try:
             volume_functions.pull_image(self.model.container_tag)
         except Exception as e:
-            raise e
+            logging.error(e)
 
         job_container = self.cli.containers.run(image=self.model.container_tag,
                                                 command=None,  # Already defaults to None, but for explicity
@@ -71,6 +75,7 @@ class JobDockerImpl(JobInterface):
                                                 ports={80: []},  # Dummy port to make traefik shut up
                                                 **self.generate_keywords())
         logging.info(job_container)
+        return job_container
 
     def generate_keywords(self) -> Dict:
         ## Prepare docker keywords ###
@@ -84,16 +89,16 @@ class JobDockerImpl(JobInterface):
 
         # Mount point of input to container
         kw["volumes"][self.task.input_volume_id] = {"bind": "/input",
-                                                      "mode": "ro"}
+                                                    "mode": "ro"}
 
         # Mount point of output to container
         kw["volumes"][self.task.output_volume_id] = {"bind": "/output",
-                                                       "mode": "rw"}
+                                                     "mode": "rw"}
 
         # Mount point of model volume to container if exists
         if self.model.model_available:
             kw["volumes"][self.model.model_volume_id] = {"bind": "/model",
-                                                           "mode": "ro"}
+                                                         "mode": "ro"}
 
         # Allow GPU usage if "use_gpu" is True
         if self.model.use_gpu:
@@ -135,9 +140,8 @@ class JobDockerImpl(JobInterface):
     def send_volume_output(self):
         url = self.api_url + urljoin(self.api_output_zips, self.task.uid)
         logging.info("URL to post on: {}".format(url))
-        volume_functions.pull_image(self.volume_sender_docker_tag)
-        tmp_container = self.cli.containers.run(self.volume_sender_docker_tag,
-                                                None,
+        self.build_volume_sender(self.volume_sender)
+        tmp_container = self.cli.containers.run(self.volume_sender,
                                                 volumes={self.task.output_volume_id: {"bind": '/data', 'mode': 'ro'}},
                                                 environment={
                                                     "URL": url,
@@ -147,3 +151,10 @@ class JobDockerImpl(JobInterface):
                                                 ports={80: []},  ## Dummyport to make traefik shut up
                                                 network=self.network_name)
         logging.info(tmp_container)
+
+    def build_volume_sender(self, tag):
+        p = os.path.abspath("volume_sender")
+        if not volume_functions.image_exists(tag):
+            volume_functions.build_image(path=p, tag=tag)
+        else:
+            logging.info(f"{tag} image exists")

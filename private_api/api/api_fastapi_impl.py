@@ -16,7 +16,6 @@ from interfaces.mq_interface import MQInterface
 LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
 dotenv.load_dotenv(".env")
 
-# logging.basicConfig(level=int(os.environ.get("LOG_LEVEL")), format=LOG_FORMAT)
 logging.basicConfig(level=10, format=LOG_FORMAT)
 
 
@@ -83,7 +82,7 @@ class APIFastAPIImpl(APIInterface):
             return task
 
         @self.app.get(urljoin(os.environ['API_INPUT_ZIPS'], "{uid}"))
-        def get_input_zip_by_id(uid: str) -> FileResponse:
+        def get_input_zip(uid: str) -> FileResponse:
             try:
                 task = self.db.get_task(uid=uid)
             except TaskNotFoundException as e:
@@ -163,7 +162,7 @@ class APIFastAPIImpl(APIInterface):
             )
 
         @self.app.get(urljoin(os.environ['API_MODELS'], "{uid}"))
-        def get_model_by_id(uid: str):
+        def get_model(uid: str):
             try:
                 return self.db.get_model(uid=uid)
             except ModelNotFoundException as e:

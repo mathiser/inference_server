@@ -21,12 +21,12 @@ class TestVolumeFunctions(unittest.TestCase):
         self.to_del.append(volume_id)
         self.assertTrue(volume_exists(volume_id=volume_id))
 
-        volume_id = create_empty_volume(secrets.token_urlsafe())
+        volume_id = create_empty_volume(str(uuid.uuid4()))
         self.to_del.append(volume_id)
         self.assertTrue(volume_exists(volume_id=volume_id))
 
     def test_delete_volume(self):
-        vol = secrets.token_urlsafe()
+        vol = str(uuid.uuid4())
         self.assertFalse(volume_exists(volume_id=vol))
 
         echo_vol = create_empty_volume(volume_id=vol)

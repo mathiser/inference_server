@@ -3,12 +3,9 @@ FROM python:3.9-buster
 ADD requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 
-RUN mkdir /opt/app/
-COPY . /opt/app/
-WORKDIR /opt/app/
-ENV TZ=Europe/Copenhagen
-
-
+RUN mkdir /home/app/
+COPY . /home/app/
+WORKDIR /home/app/
 ENV TZ=Europe/Copenhagen
 ENV API_HOSTNAME=private_api
 ENV API_PORT=7000
@@ -20,3 +17,6 @@ ENV API_MODELS=/api/models/
 ENV PUBLIC_API_HOSTNAME=public_api
 ENV PUBLIC_API_PORT=8000
 ENV ALLOW_PUBLIC_POST_MODEL="true"
+
+EXPOSE $API_PORT
+CMD python3 main.py

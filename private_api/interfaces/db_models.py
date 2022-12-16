@@ -1,6 +1,7 @@
 import os
 import secrets
 import tempfile
+import uuid
 from datetime import datetime
 
 import sqlalchemy
@@ -8,7 +9,8 @@ from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 Base = declarative_base()
-
+def generate_uuid():
+    return str(uuid.uuid4())
 
 class Model(Base):
     __tablename__ = "models"
@@ -20,7 +22,7 @@ class Model(Base):
     use_gpu = Column(Boolean, default=True)
     model_available = Column(Boolean, default=False)
     model_zip = Column(String, nullable=True, unique=True, default=None)
-    model_volume_id = Column(String, unique=True, default=secrets.token_urlsafe)
+    model_volume_id = Column(String, unique=True, default=generate_uuid)
 
     def to_dict(self):
         return {
@@ -42,8 +44,8 @@ class Task(Base):
     datetime_created = Column(DateTime, default=datetime.now)
     input_zip = Column(String, nullable=True, unique=True)
     output_zip = Column(String, nullable=True, unique=True)
-    input_volume_id = Column(String, nullable=False, unique=True, default=secrets.token_urlsafe)
-    output_volume_id = Column(String, nullable=False, unique=True, default=secrets.token_urlsafe)
+    input_volume_id = Column(String, nullable=False, unique=True, default=generate_uuid)
+    output_volume_id = Column(String, nullable=False, unique=True, default=generate_uuid)
     datetime_dispatched = Column(DateTime, nullable=True)
     datetime_finished = Column(DateTime, nullable=True)
     status = Column(Integer, nullable=False, default=-1)  # -1: pending, 0: failed, 1: finished, 2: running

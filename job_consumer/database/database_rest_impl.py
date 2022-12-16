@@ -5,8 +5,6 @@ import tempfile
 from typing import BinaryIO
 from urllib.parse import urljoin
 
-import requests
-
 from interfaces.database_interface import DBInterface
 from interfaces.db_client_interface import DBClientInterface
 from interfaces.db_models import Model, Task
@@ -51,7 +49,7 @@ class DBRestImpl(DBInterface):
         return Model(**res.json())
 
     def set_task_status(self, uid: str, status: int):
-        return self.db_client.put(os.environ["POST_TASK"],
+        return self.db_client.put(os.environ["API_TASKS"],
                                   params={"uid": uid,
                                           "status": status})
 

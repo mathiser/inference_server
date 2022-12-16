@@ -33,7 +33,6 @@ class MQRabbitImpl(MQInterface):
                 if channel.is_open:
                     channel.queue_declare(queue=self.unfinished_queue_name, durable=True)
                     channel.queue_declare(queue=self.finished_queue_name, durable=True)
-
                     return connection, channel
             except Exception as e:
                 logging.error(f"Could not connect to RabbitMQ - is it running? Expecting it on {self.host}:{self.port}")

@@ -1,26 +1,25 @@
 version: '3'
 
 services:
-  reverse-proxy:
-    restart: always
-    image: traefik:v2.6
-    hostname: reverse_proxy
-    command:
-      - --providers.docker=true
-      - --entrypoints.websecure.address=:443
-      - --providers.file.directory=/configuration/
-      - --providers.file.watch=true
-    ports:
-      - 443:443
-    networks:
-      - frontend
-    labels:
-      traefik.enable: true
-    volumes:
-      - ./traefik/certs:/tools/certs
-      - ./traefik/configuration:/configuration/
-      - //var/run/docker.sock://var/run/docker.sock
-
+#  reverse-proxy:
+#    restart: always
+#    image: traefik:v2.6
+#    hostname: reverse_proxy
+#    command:
+#      - --providers.docker=true
+#      - --entrypoints.websecure.address=:443
+#      - --providers.file.directory=/configuration/
+#      - --providers.file.watch=true
+#    ports:
+#      - 443:443
+#    networks:
+#      - frontend
+#    labels:
+#      traefik.enable: true
+#    volumes:
+#      - ./traefik/certs:/tools/certs
+#      - ./traefik/configuration:/configuration/
+#      - //var/run/docker.sock://var/run/docker.sock
 
   public-api:
     restart: always
@@ -44,11 +43,11 @@ services:
       - PUBLIC_API_PORT=8000
       - ALLOW_PUBLIC_POST_MODEL="true"
     ports:
-      - 8000
+      - 8000:8000
     labels:
-      - "traefik.http.routers.inference_server_public_api.rule=Host(`omen.onerm.dk`)"
+      - "traefik.http.routers.inference_server_public_api.rule=Host(`localhost`)"
       - "traefik.http.services.inference_server_public_api.loadbalancer.server.port=8000"
-      - "traefik.http.routers.inference_server_public_api.tls=true"
+      - "traefik.http.routers.inference_server_public_api.tls=false"
 
   api:
     hostname: private_api
@@ -83,8 +82,8 @@ services:
     build:
       context: ./private_api
       dockerfile: Dockerfile
-    volumes:
-     - ./mounts/data:/data
+   # volumes:
+    # - ./mounts/data:/data
 
   rabbit:
     restart: always
@@ -135,11 +134,11 @@ services:
       - BUSYBOX_DOCKER_TAG=busybox:1.35
     volumes:
       # needed to dispatch docker containers from inside a docker container
-      - //var/run/docker.sock://var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock
 
 networks:
   frontend:
   backend:
-    driver: overlay
+#    driver: overlay
     #driver_opts:
     #  encrypted: "true"

@@ -67,14 +67,17 @@ class DBImpl(DBInterface):
             "model_available": model_available,
             "use_gpu": use_gpu
         }
-        files = {"zip_file": zip_file}
+        if zip_file:
+            files = {"zip_file": zip_file}
+        else:
+            files = None
         url = os.environ.get("API_MODELS")
-
         res = self.db_client.post(url, files=files, params=params)
+        logging.error(res.content)
         res.raise_for_status()
 
         logging.info(f"[X] Posting task: {params}")
-        return params
+        return res.json()
 
     def get_models(self):
         url = os.environ["API_MODELS"]

@@ -1,41 +1,43 @@
 version: '3'
 
 services:
-  reverse-proxy:
-    restart: always
-    image: traefik:v2.6
-    hostname: reverse_proxy
-    command:
-      - --providers.docker=true
-      - --entrypoints.websecure.address=:443
-      - --providers.file.directory=/configuration/
-      - --providers.file.watch=true
-    ports:
-      - 443:443
-    networks:
-      - frontend
-    labels:
-      traefik.enable: true
-    volumes:
-      - ./traefik/certs:/tools/certs
-      - ./traefik/configuration:/configuration/
-      - //var/run/docker.sock://var/run/docker.sock
+#  reverse-proxy:
+#    restart: always
+#    image: traefik:v2.6
+#    hostname: reverse_proxy
+#    command:
+#      - --providers.docker=true
+#      - --entrypoints.websecure.address=:443
+#      - --providers.file.directory=/configuration/
+#      - --providers.file.watch=true
+#    ports:
+#      - 443:443
+#    networks:
+#      - frontend
+#    labels:
+#      traefik.enable: true
+#    volumes:
+#      - ./traefik/certs:/tools/certs
+#      - ./traefik/configuration:/configuration/
+#      - //var/run/docker.sock://var/run/docker.sock
 
-  public-api:
+  public_api:
     restart: always
     build:
       context: ./public_api
       dockerfile: Dockerfile
     hostname: public_api
+    depends_on:
+      - rabbit
+      - private_api
     networks:
       - frontend
-    command: python main.py
     environment:
       - TZ=Europe/Copenhagen
       - API_HOSTNAME=private_api
       - API_PORT=7000
       - API_URL=http://private_api:7000
-      - LOG_LEVEL=20
+      - LOG_LEVEL=10
       - API_TASKS=/api/tasks/
       - API_OUTPUT_ZIPS=/api/tasks/outputs/
       - API_MODELS=/api/models/
@@ -49,14 +51,13 @@ services:
       - "traefik.http.services.inference_server_public_api.loadbalancer.server.port=8000"
       - "traefik.http.routers.inference_server_public_api.tls=false"
 
-  api:
+  private_api:
     hostname: private_api
-    command: python main.py
     restart: always
     depends_on:
       - rabbit
     ports:
-      - 7000
+      - 7000:7000
     networks:
       - frontend
       - backend
@@ -67,8 +68,7 @@ services:
       - API_HOSTNAME=private_api
       - API_PORT=7000
       - API_URL=http://private_api:7000
-      - LOG_LEVEL=20
-      - DATA_DIR=/opt/app/data/
+      - LOG_LEVEL=10
       - RABBIT_HOSTNAME=rabbit
       - RABBIT_PORT=5672
       - UNFINISHED_JOB_QUEUE=unfinished_job_queue
@@ -82,31 +82,30 @@ services:
     build:
       context: ./private_api
       dockerfile: Dockerfile
-    volumes:
-     - ./mounts/data:/data
+    #volumes:
+    # - ./mounts/data:/home/app/data:rw
 
   rabbit:
     restart: always
     image: rabbitmq:3.9.17
     ports:
-      - 5672
+      - 5672:5672
     hostname: rabbit
     networks:
       - backend
     volumes:
       - ./rabbit/timeout.conf:/etc/rabbitmq/conf.d/timeout.conf
 
-  job-consumer:
-    hostname: consumer_0
+  consumer:
+    hostname: consumer
     restart: always
     ports:
       - "80" #Dummy port to make traefik quiet
-    command: /usr/bin/python3 main.py
     networks:
       - backend
     depends_on:
       - rabbit
-      - api
+      - private_api
     build:
       context: ./job_consumer/
       dockerfile: Dockerfile
@@ -132,9 +131,11 @@ services:
       - PREFETCH_JOBS=1
       - VOLUME_SENDER_DOCKER_TAG=mathiser/inference_server:volume_sender
       - BUSYBOX_DOCKER_TAG=busybox:1.35
+    security_opt:
+      - label=disable
     volumes:
       # needed to dispatch docker containers from inside a docker container
-      - //var/run/docker.sock://var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock
 
 networks:
   frontend:

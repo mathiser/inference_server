@@ -2,6 +2,7 @@ import datetime
 import os
 import secrets
 import shutil
+import uuid
 from typing import BinaryIO, List, Optional
 
 from interfaces.database_interface import DBInterface
@@ -36,9 +37,9 @@ class MockDB(DBInterface):
                  uid=uid,
                  model_human_readable_id=model_human_readable_id,
                  input_zip=os.path.abspath(os.path.join(self.input_base_folder, uid, "input.zip")),
-                 input_volume_id=secrets.token_urlsafe(),
+                 input_volume_id=str(uuid.uuid4()),
                  output_zip=os.path.abspath(os.path.join(self.output_base_folder, uid, "output.zip")),
-                 output_volume_id=secrets.token_urlsafe(),
+                 output_volume_id=str(uuid.uuid4()),
                  datetime_created=datetime.datetime.now(),
                  status=-1)
         os.makedirs(os.path.dirname(t.input_zip), exist_ok=True)
@@ -86,7 +87,7 @@ class MockDB(DBInterface):
             human_readable_id=human_readable_id,
             container_tag=container_tag,
             model_zip=model_zip,
-            model_volume_id=secrets.token_urlsafe(),
+            model_volume_id=str(uuid.uuid4()),
             model_available=model_available,
             use_gpu=use_gpu
         )

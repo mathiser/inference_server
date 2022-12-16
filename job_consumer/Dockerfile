@@ -8,10 +8,9 @@ RUN apt-get update && apt-get install -y \
 ADD requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 
-RUN mkdir -p /opt/app/
-
-WORKDIR /opt/app/
-COPY . /opt/app/
+RUN mkdir -p /home/app/
+WORKDIR /home/app/
+COPY . /home/app/
 
 ENV TZ=Europe/Copenhagen
 ENV NETWORK_NAME=inference_server_backend
@@ -33,8 +32,8 @@ ENV API_MODELS=/api/models/
 ENV API_MODELS_BY_HUMAN_READABLE_ID=/api/models/human_readable_id/
 ENV API_MODEL_ZIPS=/api/models/zips/
 ENV GPU_UUID=""
-ENV PREFETCH_JOBS=1
+ENV PREFETCH_VALUE=1
 ENV VOLUME_SENDER_DOCKER_TAG=mathiser/inference_server:volume_sender
 ENV BUSYBOX_DOCKER_TAG=busybox:1.35
 
-
+CMD python3 main.py

@@ -4,6 +4,7 @@ from typing import Union
 from pydantic import BaseModel
 
 class Model(BaseModel):
+    uid: str
     human_readable_id: str
     description: Union[str, None]
     container_tag: str
