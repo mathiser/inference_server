@@ -1,0 +1,23 @@
+Attaching to inference_server_consumer_1
+[36mconsumer_1     |[0m INFO:2022-12-16 13:09:15,901:Pika version 1.3.1 connecting to ('172.18.0.2', 5672)
+[36mconsumer_1     |[0m ERROR:2022-12-16 13:09:15,902:Socket failed to connect: <socket.socket fd=8, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6, laddr=('172.18.0.4', 50022)>; error=111 (Connection refused)
+[36mconsumer_1     |[0m ERROR:2022-12-16 13:09:15,902:TCP Connection attempt failed: ConnectionRefusedError(111, 'Connection refused'); dest=(<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_STREAM: 1>, 6, '', ('172.18.0.2', 5672))
+[36mconsumer_1     |[0m ERROR:2022-12-16 13:09:15,902:AMQPConnector - reporting failure: AMQPConnectorSocketConnectError: ConnectionRefusedError(111, 'Connection refused')
+[36mconsumer_1     |[0m ERROR:2022-12-16 13:09:15,902:AMQP connection workflow failed: AMQPConnectionWorkflowFailed: 1 exceptions in all; last exception - AMQPConnectorSocketConnectError: ConnectionRefusedError(111, 'Connection refused'); first exception - None.
+[36mconsumer_1     |[0m ERROR:2022-12-16 13:09:15,902:AMQPConnectionWorkflow - reporting failure: AMQPConnectionWorkflowFailed: 1 exceptions in all; last exception - AMQPConnectorSocketConnectError: ConnectionRefusedError(111, 'Connection refused'); first exception - None
+[36mconsumer_1     |[0m ERROR:2022-12-16 13:09:15,903:Connection workflow failed: AMQPConnectionWorkflowFailed: 1 exceptions in all; last exception - AMQPConnectorSocketConnectError: ConnectionRefusedError(111, 'Connection refused'); first exception - None
+[36mconsumer_1     |[0m ERROR:2022-12-16 13:09:15,903:Error in _create_connection().
+[36mconsumer_1     |[0m Traceback (most recent call last):
+[36mconsumer_1     |[0m   File "/usr/local/lib/python3.8/dist-packages/pika/adapters/blocking_connection.py", line 451, in _create_connection
+[36mconsumer_1     |[0m     raise self._reap_last_connection_workflow_error(error)
+[36mconsumer_1     |[0m pika.exceptions.AMQPConnectionError
+[36mconsumer_1     |[0m INFO:2022-12-16 13:09:15,903:Could not connect to RabbitMQ - is it running? Expecting it on rabbit:5672
+[36mconsumer_1     |[0m INFO:2022-12-16 13:09:25,915:Pika version 1.3.1 connecting to ('172.18.0.2', 5672)
+[36mconsumer_1     |[0m INFO:2022-12-16 13:09:25,915:Socket connected: <socket.socket fd=7, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6, laddr=('172.18.0.4', 39052), raddr=('172.18.0.2', 5672)>
+[36mconsumer_1     |[0m INFO:2022-12-16 13:09:25,916:Streaming transport linked up: (<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7f8671e4aeb0>, _StreamingProtocolShim: <SelectConnection PROTOCOL transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7f8671e4aeb0> params=<ConnectionParameters host=rabbit port=5672 virtual_host=/ ssl=False>>).
+[36mconsumer_1     |[0m INFO:2022-12-16 13:09:25,918:AMQPConnector - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7f8671e4aeb0> params=<ConnectionParameters host=rabbit port=5672 virtual_host=/ ssl=False>>
+[36mconsumer_1     |[0m INFO:2022-12-16 13:09:25,918:AMQPConnectionWorkflow - reporting success: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7f8671e4aeb0> params=<ConnectionParameters host=rabbit port=5672 virtual_host=/ ssl=False>>
+[36mconsumer_1     |[0m INFO:2022-12-16 13:09:25,918:Connection workflow succeeded: <SelectConnection OPEN transport=<pika.adapters.utils.io_services_utils._AsyncPlaintextTransport object at 0x7f8671e4aeb0> params=<ConnectionParameters host=rabbit port=5672 virtual_host=/ ssl=False>>
+[36mconsumer_1     |[0m INFO:2022-12-16 13:09:25,919:Created channel=1
+[36mconsumer_1     |[0m INFO:2022-12-16 13:09:25,927:: Setting RabbitMQ prefetch_count to 1
+[36mconsumer_1     |[0m INFO:2022-12-16 13:09:25,927: [*] Waiting for messages

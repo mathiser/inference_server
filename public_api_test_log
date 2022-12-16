@@ -1,0 +1,22 @@
+Attaching to inference_server_public_api_1
+[36mpublic_api_1   |[0m INFO:     Started server process [7]
+[36mpublic_api_1   |[0m INFO:     Waiting for application startup.
+[36mpublic_api_1   |[0m INFO:     Application startup complete.
+[36mpublic_api_1   |[0m INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[36mpublic_api_1   |[0m DEBUG:2022-12-16 14:09:26,055:Calling on_part_begin with no data
+[36mpublic_api_1   |[0m DEBUG:2022-12-16 14:09:26,055:Calling on_header_field with data[36:55]
+[36mpublic_api_1   |[0m DEBUG:2022-12-16 14:09:26,055:Calling on_header_value with data[57:104]
+[36mpublic_api_1   |[0m DEBUG:2022-12-16 14:09:26,055:Calling on_header_end with no data
+[36mpublic_api_1   |[0m DEBUG:2022-12-16 14:09:26,055:Calling on_headers_finished with no data
+[36mpublic_api_1   |[0m DEBUG:2022-12-16 14:09:26,055:Calling on_part_data with data[108:414]
+[36mpublic_api_1   |[0m DEBUG:2022-12-16 14:09:26,056:Calling on_part_end with no data
+[36mpublic_api_1   |[0m DEBUG:2022-12-16 14:09:26,056:Calling on_end with no data
+[36mpublic_api_1   |[0m DEBUG:2022-12-16 14:09:26,061:Starting new HTTP connection (1): private_api:7000
+[36mpublic_api_1   |[0m DEBUG:2022-12-16 14:09:26,084:http://private_api:7000 "POST /api/models/?container_tag=mathiser%2Finference_server_test%3Apass_through_model_with_model_zip&human_readable_id=5zSV5Q&description=Testmodel&model_available=True&use_gpu=False HTTP/1.1" 200 454
+[36mpublic_api_1   |[0m ERROR:2022-12-16 14:09:26,084:b'{"human_readable_id":"5zSV5Q","container_tag":"mathiser/inference_server_test:pass_through_model_with_model_zip","uid":"af2101f571364ba34eb08ab4c306a900ca34db8e4a74cd37f86dc87077e3fe7c","model_available":true,"model_volume_id":"af2101f571364ba34eb08ab4c306a900ca34db8e4a74cd37f86dc87077e3fe7c","description":"Testmodel","id":1,"use_gpu":false,"model_zip":"/home/app/data/models/af2101f571364ba34eb08ab4c306a900ca34db8e4a74cd37f86dc87077e3fe7c/model.zip"}'
+[36mpublic_api_1   |[0m INFO:2022-12-16 14:09:26,084:[X] Posting task: {'container_tag': 'mathiser/inference_server_test:pass_through_model_with_model_zip', 'human_readable_id': '5zSV5Q', 'description': 'Testmodel', 'model_available': True, 'use_gpu': False}
+[36mpublic_api_1   |[0m INFO:     172.19.0.1:53492 - "POST /api/models/?container_tag=mathiser%2Finference_server_test%3Apass_through_model_with_model_zip&human_readable_id=5zSV5Q&model_available=True&use_gpu=False&description=Testmodel HTTP/1.1" 200 OK
+[36mpublic_api_1   |[0m DEBUG:2022-12-16 14:09:26,197:Starting new HTTP connection (1): private_api:7000
+[36mpublic_api_1   |[0m DEBUG:2022-12-16 14:09:26,200:http://private_api:7000 "GET /api/models/ HTTP/1.1" 200 1094
+[36mpublic_api_1   |[0m INFO:2022-12-16 14:09:26,200:<Response [200]>
+[36mpublic_api_1   |[0m INFO:     172.19.0.1:53502 - "GET /api/models/ HTTP/1.1" 200 OK

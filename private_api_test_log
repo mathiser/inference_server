@@ -1,0 +1,17 @@
+Attaching to inference_server_private_api_1
+[36mprivate_api_1  |[0m INFO:     Started server process [7]
+[36mprivate_api_1  |[0m INFO:     Waiting for application startup.
+[36mprivate_api_1  |[0m INFO:     Application startup complete.
+[36mprivate_api_1  |[0m INFO:     Uvicorn running on http://0.0.0.0:7000 (Press CTRL+C to quit)
+[36mprivate_api_1  |[0m DEBUG:2022-12-16 14:09:26,064:Calling on_part_begin with no data
+[36mprivate_api_1  |[0m DEBUG:2022-12-16 14:09:26,064:Calling on_header_field with data[36:55]
+[36mprivate_api_1  |[0m DEBUG:2022-12-16 14:09:26,064:Calling on_header_value with data[57:104]
+[36mprivate_api_1  |[0m DEBUG:2022-12-16 14:09:26,064:Calling on_header_end with no data
+[36mprivate_api_1  |[0m DEBUG:2022-12-16 14:09:26,064:Calling on_headers_finished with no data
+[36mprivate_api_1  |[0m DEBUG:2022-12-16 14:09:26,064:Calling on_part_data with data[108:414]
+[36mprivate_api_1  |[0m DEBUG:2022-12-16 14:09:26,064:Calling on_part_end with no data
+[36mprivate_api_1  |[0m DEBUG:2022-12-16 14:09:26,064:Calling on_end with no data
+[36mprivate_api_1  |[0m INFO:     172.19.0.3:51880 - "POST /api/models/?container_tag=mathiser%2Finference_server_test%3Apass_through_model_with_model_zip&human_readable_id=5zSV5Q&description=Testmodel&model_available=True&use_gpu=False HTTP/1.1" 200 OK
+[36mprivate_api_1  |[0m INFO:     172.18.0.1:59210 - "POST /api/models/?container_tag=mathiser%2Finference_server_test%3Apass_through_model&human_readable_id=G1y9SQ&model_available=False&use_gpu=False&description=Testmodel HTTP/1.1" 200 OK
+[36mprivate_api_1  |[0m INFO:     172.18.0.1:59214 - "POST /api/models/?container_tag=mathiser%2Finference_server_test%3Apass_through_model&human_readable_id=VJ3TIw&model_available=False&use_gpu=False&description=Testmodel HTTP/1.1" 200 OK
+[36mprivate_api_1  |[0m INFO:     172.19.0.3:51892 - "GET /api/models/ HTTP/1.1" 200 OK
