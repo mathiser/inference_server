@@ -102,12 +102,13 @@ class JobDockerImpl(JobInterface):
 
         # Allow GPU usage if "use_gpu" is True
         if self.model.use_gpu:
-            if self.gpu_uuid:
-                kw["device_requests"] = [
-                    docker.types.DeviceRequest(device_ids=[self.gpu_uuid], capabilities=[['gpu']])]
-            else:
+            logging.info(self.gpu_uuid)
+            if self.gpu_uuid == "-1":
                 kw["device_requests"] = [
                     docker.types.DeviceRequest(count=-1, capabilities=[['gpu']])]
+            else:
+                kw["device_requests"] = [
+                     docker.types.DeviceRequest(device_ids=[self.gpu_uuid], capabilities=[['gpu']])]
 
         logging.debug(str(kw))
         return kw

@@ -81,7 +81,6 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - LOG_LEVEL=20
-      - GPU_UUID=""
     volumes:
       # needed to dispatch docker containers from inside a docker container
       - //var/run/docker.sock://var/run/docker.sock
