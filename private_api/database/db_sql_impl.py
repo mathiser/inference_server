@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import List, BinaryIO, Union, Optional
 
 import sqlalchemy
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 
 from interfaces.db_interface import DBInterface
 from interfaces.db_models import Model, Task, Base
@@ -48,7 +48,8 @@ class DBSQLiteImpl(DBInterface):
         if not os.path.exists(self.database_path):
             self.declarative_base.metadata.create_all(self.engine)
 
-        self.Session = sessionmaker(bind=self.engine)
+        self.session_maker = sessionmaker(bind=self.engine)
+        self.Session = scoped_session(self.session_maker)
 
     def purge(self):
         shutil.rmtree(self.base_dir)
