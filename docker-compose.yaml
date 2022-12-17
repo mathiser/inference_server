@@ -33,16 +33,16 @@ services:
       - ALLOW_PUBLIC_POST_MODEL="true"
       - PYTHONUNBUFFERED=1
     ports:
-      - 8000:8000
+      - 8000
     labels:
       - "traefik.http.routers.inference_server_public_api.rule=Host(`omen.onerm.dk`)"
       - "traefik.http.services.inference_server_public_api.loadbalancer.server.port=8000"
       - "traefik.http.routers.inference_server_public_api.tls=true"
 
-  api:
+  private-api:
     hostname: private_api
     restart: always
-    image: mathiser/inference_server:private_api
+    image: mathiser/inference_server:private_api_dev
     depends_on:
       - rabbit
     ports:
@@ -53,8 +53,8 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - LOG_LEVEL=20
-   # volumes:
-    # - ./mounts/data:/data
+    volumes:
+      - ./mounts/data:/home/app/data
 
   rabbit:
     restart: always
@@ -77,14 +77,14 @@ services:
       - backend
     depends_on:
       - rabbit
-      - api
+      - private-api
     environment:
       - PYTHONUNBUFFERED=1
       - LOG_LEVEL=20
       - GPU_UUID=""
     volumes:
       # needed to dispatch docker containers from inside a docker container
-      - /var/run/docker.sock:/var/run/docker.sock
+      - //var/run/docker.sock://var/run/docker.sock
 
 networks:
   frontend:
