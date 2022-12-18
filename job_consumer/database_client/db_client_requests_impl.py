@@ -14,3 +14,6 @@ class DBClientRequestsImpl(DBClientInterface):
 
     def post(self, url, params=None, files=None):
         return requests.post(urljoin(self.base_url, url), params=params, files=files)
+
+    def put(self, url, params=None):
+        return requests.put(urljoin(self.base_url, url), params=params)

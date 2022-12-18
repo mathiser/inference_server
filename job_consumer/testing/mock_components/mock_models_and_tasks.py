@@ -1,3 +1,4 @@
+import datetime
 import os
 import secrets
 import shutil
@@ -5,19 +6,18 @@ import tempfile
 import uuid
 import zipfile
 
-from database.models import Model, Task
+from interfaces.db_models import Model, Task
 
 
-class MockModelsAndTasks():
+class MockModelsAndTasks:
 
     def __init__(self):
         self.base_dir = tempfile.mkdtemp()
         self.dst = tempfile.mkdtemp()
+
         ## Folders for input and output
         self.input_base_folder = os.path.join(self.base_dir, "input")
         self.output_base_folder = os.path.join(self.base_dir, "output")
-
-        # model volume mount point
         self.model_base_folder = os.path.join(self.base_dir, "models")
 
         # Create all folders
@@ -34,18 +34,15 @@ class MockModelsAndTasks():
             with zipfile.ZipFile(zip, 'w') as myzip:
                 myzip.write(zip.replace(".zip", ".txt"))
 
-
         self.model = Model(container_tag="hello-world",
-                            id=1,
-                            human_readable_id="one",
-                            input_mountpoint="/input",
-                            output_mountpoint="/output",
-                            model_mountpoint="/model",
-                            description="This is a testing of a very important database",
-                            model_available=True,
-                            use_gpu=False,
-                            model_zip=self.model_zip,
-                            )
+                           id=1,
+                           uid=secrets.token_urlsafe(),
+                           human_readable_id="one",
+                           description="This is a testing of a very important database",
+                           model_available=True,
+                           use_gpu=False,
+                           model_zip=self.model_zip,
+                           )
 
         uid = secrets.token_urlsafe(32)
         task_input = os.path.join(self.input_base_folder, uid, "input.zip")
@@ -56,18 +53,28 @@ class MockModelsAndTasks():
         os.makedirs(os.path.dirname(task_output), exist_ok=True)
         shutil.copy2(self.output_zip, task_output)
 
-
         self.task = Task(
             id=1,
             uid=uid,
             model_human_readable_id=self.model.human_readable_id,
             input_zip=task_input,
             output_zip=task_output,
-            input_volume_uuid=str(uuid.uuid4()),
-            output_volume_uuid=str(uuid.uuid4()),
-            status=-1
+            input_volume_id=str(uuid.uuid4()),
+            output_volume_id=str(uuid.uuid4()),
+            status=-1,
+            datetime_created=datetime.datetime.now()
         )
 
-    def purge(self):
+        self.failing_model = Model(container_tag="hellors-world",
+                                   id=2,
+                                   uid=secrets.token_urlsafe(),
+                                   human_readable_id="two",
+                                   description="This is a testing of a very important database",
+                                   model_available=True,
+                                   use_gpu=False,
+                                   model_zip=self.model_zip,
+                                   )
+
+    def __del__(self):
         shutil.rmtree(self.base_dir)
         shutil.rmtree(self.dst)

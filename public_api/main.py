@@ -1,13 +1,11 @@
 import os
 
-import dotenv
 import uvicorn
 
 from database.db_impl import DBImpl
 from database_client.db_client_requests_impl import DBClientRequestsImpl
 from public_api.public_api_fast_api_impl import PublicFastAPI
 
-dotenv.load_dotenv()
 def main():
     db_client = DBClientRequestsImpl(os.environ.get("API_URL"))
     db = DBImpl(db_client=db_client)

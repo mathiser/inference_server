@@ -3,3 +3,4 @@ pika
 docker
 python-dotenv
 sqlalchemy
+pydantic

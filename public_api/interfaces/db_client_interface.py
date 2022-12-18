@@ -8,7 +8,7 @@ class DBClientInterface:
         pass
 
     @abstractmethod
-    def post(self, url, params, files):
+    def post(self, url, params, files=None):
         pass
 
     @abstractmethod

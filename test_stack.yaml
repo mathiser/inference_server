@@ -1,0 +1,93 @@
+version: '3'
+
+services:
+#  reverse-proxy:
+#    restart: always
+#    image: traefik:v2.6
+#    hostname: reverse_proxy
+#    command:
+#      - --providers.docker=true
+#      - --entrypoints.websecure.address=:443
+#      - --providers.file.directory=/configuration/
+#      - --providers.file.watch=true
+#    ports:
+#      - 443:443
+#    networks:
+#      - frontend
+#    labels:
+#      traefik.enable: true
+#    volumes:
+#      - ./traefik/certs:/tools/certs
+#      - ./traefik/configuration:/configuration/
+#      - //var/run/docker.sock://var/run/docker.sock
+
+  public_api:
+    restart: always
+    build:
+      context: ./public_api
+      dockerfile: Dockerfile
+    hostname: public_api
+    depends_on:
+      - rabbit
+      - private_api
+    networks:
+      - frontend
+    ports:
+      - 8000:8000
+    labels:
+      - "traefik.http.routers.inference_server_public_api.rule=Host(`localhost`)"
+      - "traefik.http.services.inference_server_public_api.loadbalancer.server.port=8000"
+      - "traefik.http.routers.inference_server_public_api.tls=false"
+
+  private_api:
+    hostname: private_api
+    restart: always
+    depends_on:
+      - rabbit
+    ports:
+      - 7000:7000
+    networks:
+      - frontend
+      - backend
+    build:
+      context: ./private_api
+      dockerfile: Dockerfile
+    #volumes:
+    # - ./mounts/data:/home/app/data:rw
+
+  rabbit:
+    restart: always
+    image: rabbitmq:3.9.17
+    ports:
+      - 5672:5672
+    hostname: rabbit
+    networks:
+      - backend
+    volumes:
+      - ./rabbit/timeout.conf:/etc/rabbitmq/conf.d/timeout.conf
+
+  consumer:
+    hostname: consumer
+    restart: always
+    ports:
+      - "80" #Dummy port to make traefik quiet
+    networks:
+      - backend
+    depends_on:
+      - rabbit
+      - private_api
+    build:
+      context: ./job_consumer/
+      dockerfile: Dockerfile
+    security_opt:
+      - label=disable
+    volumes:
+      # needed to dispatch docker containers from inside a docker container
+      - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  frontend:
+  backend:
+#    driver: overlay
+    #driver_opts:
+    #  encrypted: "true"

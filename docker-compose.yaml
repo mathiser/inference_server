@@ -4,7 +4,7 @@ services:
   reverse-proxy:
     restart: always
     image: traefik:v2.6
-    hostname: reverse-proxy
+    hostname: reverse_proxy
     command:
       - --providers.docker=true
       - --entrypoints.websecure.address=:443
@@ -13,85 +13,81 @@ services:
     ports:
       - 443:443
     networks:
-      - internal_network
+      - frontend
     labels:
       traefik.enable: true
     volumes:
       - ./traefik/certs:/tools/certs
       - ./traefik/configuration:/configuration/
-      - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
+      - //var/run/docker.sock://var/run/docker.sock
 
   public-api:
     restart: always
-    build:
-      context: ./public_api
-      dockerfile: Dockerfile
-    hostname: ${PUBLIC_API_HOSTNAME}
+    image: mathiser/inference_server:public_api_dev
+    hostname: public_api
     networks:
-      - internal_network
+      - frontend
     command: python main.py
-    env_file:
-      - .env
+    environment:
+      - LOG_LEVEL=20
+      - ALLOW_PUBLIC_POST_MODEL="true"
+      - PYTHONUNBUFFERED=1
     ports:
-      - ${PUBLIC_API_PORT}
+      - 8000
     labels:
-      - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.rule=Host(`${PROXY_URL}`)"
-      - "traefik.http.services.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.loadbalancer.server.port=${PUBLIC_API_PORT}"
-      - "traefik.http.routers.${PROJECT_NAME}_${PUBLIC_API_HOSTNAME}.tls=${HTTPS_ON}"
+      - "traefik.http.routers.inference_server_public_api.rule=Host(`omen.onerm.dk`)"
+      - "traefik.http.services.inference_server_public_api.loadbalancer.server.port=8000"
+      - "traefik.http.routers.inference_server_public_api.tls=true"
 
-  api:
-    hostname: ${API_HOSTNAME}
-    command: python main.py
+  private-api:
+    hostname: private_api
     restart: always
+    image: mathiser/inference_server:private_api_dev
     depends_on:
       - rabbit
     ports:
-      - ${API_PORT}
+      - 7000
     networks:
-      - internal_network
+      - frontend
+      - backend
     environment:
       - PYTHONUNBUFFERED=1
-    env_file:
-      - .env
-    build:
-      context: ./private_api
-      dockerfile: Dockerfile
+      - LOG_LEVEL=20
     volumes:
-     - ./mounts/data:/data
+      - ./mounts/data:/home/app/data
 
   rabbit:
     restart: always
-    image: ${RABBIT_DOCKER_TAG}
+    image: rabbitmq:3.9.17
     ports:
-      - ${RABBIT_PORT}
-    hostname: ${RABBIT_HOSTNAME}
+      - 5672
+    hostname: rabbit
     networks:
-      - internal_network
+      - backend
     volumes:
       - ./rabbit/timeout.conf:/etc/rabbitmq/conf.d/timeout.conf
 
   job-consumer:
-    hostname: consumer
+    hostname: consumer_0
+    image: mathiser/inference_server:job_consumer_dev
     restart: always
     ports:
       - "80" #Dummy port to make traefik quiet
-    command: /usr/bin/python3 main.py
     networks:
-      - internal_network
+      - backend
     depends_on:
       - rabbit
-      - api
-    env_file:
-      - .env
-    build:
-      context: ./job_consumer/
-      dockerfile: Dockerfile
+      - private-api
     environment:
       - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=20
     volumes:
       # needed to dispatch docker containers from inside a docker container
-      - ${DOCKER_SOCKET}:${DOCKER_SOCKET}
-
+      - //var/run/docker.sock://var/run/docker.sock
 
 networks:
-  internal_network:
+  frontend:
+  backend:
+#    driver: overlay
+    #driver_opts:
+    #  encrypted: "true"

@@ -6,5 +6,3 @@ pika
 requests
 pydantic
 httpx
-PyMySQL
-python-dotenv
