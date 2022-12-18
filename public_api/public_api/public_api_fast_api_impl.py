@@ -31,7 +31,7 @@ class PublicFastAPI(PublicFastAPIInterface):
         def public_hello_world():
             return {"message": "Hello world - Welcome to the public database API"}
 
-        @self.post(os.environ['API_TASKS'])
+        @self.post(os.environ['PUBLIC_API_TASKS'])
         def public_post_task(model_human_readable_id: str,
                              zip_file: UploadFile,
                              ) -> str:
@@ -61,7 +61,7 @@ class PublicFastAPI(PublicFastAPIInterface):
             self.threads.append(t)
             return uid
 
-        @self.get(urljoin(os.environ['API_OUTPUT_ZIPS'], "{uid}"))
+        @self.get(urljoin(os.environ['PUBLIC_API_TASKS'], "{uid}"))
         def public_get_output_zip_by_uid(uid: str) -> StreamingResponse:
             def iterfile(bytes_from_db: bytes):
                 with tempfile.TemporaryFile() as tmp_file:
@@ -79,7 +79,7 @@ class PublicFastAPI(PublicFastAPIInterface):
                 except requests.HTTPError:
                     raise HTTPException(status_code=res.status_code, detail=json.loads(res.content))
 
-        @self.delete(urljoin(os.environ['API_OUTPUT_ZIPS'], "{uid}"))
+        @self.delete(urljoin(os.environ['PUBLIC_API_TASKS'], "{uid}"))
         def public_delete_task_by_uid(uid: str):
             status = self.db.delete_task(uid)
 
@@ -89,7 +89,7 @@ class PublicFastAPI(PublicFastAPIInterface):
                 traceback.print_exc()
                 raise HTTPException(status_code=550, detail=str(e))
 
-        @self.get(os.environ["API_MODELS"])
+        @self.get(os.environ["PUBLIC_API_MODELS"])
         def public_get_models():
             try:
                 return self.db.get_models()
@@ -97,7 +97,7 @@ class PublicFastAPI(PublicFastAPIInterface):
                 raise HTTPException(status_code=550, detail=str(e))
 
         if bool(os.environ.get("ALLOW_PUBLIC_POST_MODEL")):
-            @self.post(os.environ.get("API_MODELS"))
+            @self.post(os.environ.get("PUBLIC_API_MODELS"))
             def public_post_model(container_tag: str,
                                   human_readable_id: str,
                                   description: Union[str, None] = None,

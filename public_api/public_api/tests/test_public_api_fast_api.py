@@ -12,12 +12,17 @@ os.environ["LOG_LEVEL"] = "20"
 
 os.environ["DATA_DIR"] = "/opt/app/data/"
 os.environ["API_TASKS"] = "/api/tasks/"
+os.environ["PUBLIC_API_TASKS"] = "/api/tasks/"
 
 os.environ["API_OUTPUT_ZIPS"] = "/api/tasks/outputs/"
 os.environ["API_INPUT_ZIPS"] = "/api/tasks/inputs/"
 os.environ["API_MODELS"] = "/api/models/"
 os.environ["API_MODELS_BY_HUMAN_READABLE_ID"] = "/api/models/human_readable_id/"
 os.environ["API_MODEL_ZIPS"] = "/api/models/zips/"
+
+os.environ["PUBLIC_API_MODELS"] = "/api/models/"
+os.environ["PUBLIC_API_TASKS"] = "/api/tasks/"
+
 
 from public_api.public_api_fast_api_impl import PublicFastAPI
 from database.tests.mock_fast_api_testclient import MockDBClient
@@ -53,7 +58,7 @@ class TestPublicAPIFastAPI(unittest.TestCase):
 
         model = self.test_public_post_model()
         with open(self.repo.input_zip, "rb") as r:
-            res = db_client.post(os.environ['API_TASKS'],
+            res = db_client.post(os.environ['PUBLIC_API_TASKS'],
                                  params={"model_human_readable_id": self.repo.model.human_readable_id},
                                  files={"zip_file": r})
         print(res.content)
@@ -66,7 +71,7 @@ class TestPublicAPIFastAPI(unittest.TestCase):
         db_client = MockDBClient(app)
 
         with open(self.repo.model_zip, "rb") as r:
-            res = db_client.post(os.environ['API_MODELS'],
+            res = db_client.post(os.environ['PUBLIC_API_MODELS'],
                                  params={
                                      "container_tag": self.repo.model.container_tag,
                                      "human_readable_id": self.repo.model.human_readable_id,
@@ -87,7 +92,7 @@ class TestPublicAPIFastAPI(unittest.TestCase):
         db_client = MockDBClient(app)
 
         with open(self.repo.model_zip, "rb") as r:
-            res = db_client.post(os.environ['API_MODELS'],
+            res = db_client.post(os.environ['PUBLIC_API_MODELS'],
                                  params={
                                      "container_tag": self.repo.model.container_tag,
                                      "human_readable_id": self.repo.model.human_readable_id,
