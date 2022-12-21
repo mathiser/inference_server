@@ -66,11 +66,11 @@ The public api can be inspected and tested at https://<domain>/docs
 Generally the following two methods are useful:
 
 #### Post model
-Use OpenAPI interface on ´https://domain.org/docs´ (can be done on either the public or the private API as well)
+Use OpenAPI interface on `https://domain.org/docs` (can be done on either the public or the private API as well)
 
 or  
 
-HTTP POST on https://<domain>/api/tasks/
+HTTP POST on `https://domain.org/api/tasks/`
 With python requests it can be reached like:
 ```
 with open("path/to/model.zip", "br") as r:
