@@ -23,16 +23,14 @@ with open("path/to/model.zip", "br") as r:
     res = requests.post(url=https://<domain>/api/tasks/,  
                         params = {  
                             "container_tag": mathiser/inference_server_models:some_inference_stuff,  
-                            "human_readable_id": "easy_to_write_must_be_unique",
-                            "input_mountpoint": "/input",  
-                            "output_mountpoint": "/output",  
-                            "model_mountpoint": "/model",  
+                            "human_readable_id": "easy_to_write_must_be_unique", 
                             "description": "This model is a test inference model",  
                             "model_available": True,  
                             "use_gpu": True  
                         },  
                         files = {"zip_file": r})  
 ```
+Note, that sending a `model.zip` is optional. If not send, you should set `model_available: False`.
 Then you probably want to submit a job. This can be done like:
 ```
 with open("input.zip", "br") as r:
@@ -42,7 +40,7 @@ with open("input.zip", "br") as r:
         task_uid = json.loads(res.content)
 ```
 
-When a task is submitted and you have successfully received the task_uid, you poll the server to check if the job is done.
+When a task is submitted, and you have successfully received the task_uid, you poll the server to check if the job is done.
 ```
 res = requests.get(url=https://<domain>/api/tasks/{uid})
 if res.ok:
