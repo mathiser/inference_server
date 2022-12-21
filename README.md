@@ -62,7 +62,7 @@ There is a script to generate certs in traefik/certs/generate_self_signed_certs.
 - Run `docker-compose up -d`
 
 ### How to use
-The public api can be inspected and tested at https://<domain>/docs
+The public api can be inspected and tested at `https://domain.org/docs`
 Generally the following two methods are useful:
 
 #### Post model
