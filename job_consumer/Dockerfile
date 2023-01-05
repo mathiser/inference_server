@@ -33,7 +33,7 @@ ENV API_MODELS_BY_HUMAN_READABLE_ID=/api/models/human_readable_id/
 ENV API_MODEL_ZIPS=/api/models/zips/
 ENV GPU_UUID="-1"
 ENV PREFETCH_VALUE=1
-ENV VOLUME_SENDER_DOCKER_TAG=mathiser/inference_server:volume_sender
+#ENV VOLUME_SENDER_DOCKER_TAG=mathiser/inference_server:volume_sender
 ENV BUSYBOX_DOCKER_TAG=busybox:1.35
-
+ENV PYTHONUNBUFFERED=1
 CMD python3 main.py

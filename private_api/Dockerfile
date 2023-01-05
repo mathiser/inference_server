@@ -31,6 +31,8 @@ ENV API_MODELS=/api/models/
 ENV API_MODELS_BY_HUMAN_READABLE_ID=/api/models/human_readable_id/
 ENV API_MODEL_ZIPS=/api/models/zips/
 
+ENV PYTHONUNBUFFERED=1
+
 EXPOSE $API_PORT
 
 CMD python3 main.py

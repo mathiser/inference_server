@@ -23,7 +23,7 @@ services:
 
   public-api:
     restart: always
-    image: mathiser/inference_server:public_api_dev
+    image: mathiser/inference_server:public_api_v1.2
     hostname: public_api
     networks:
       - frontend
@@ -31,7 +31,6 @@ services:
     environment:
       - LOG_LEVEL=20
       - ALLOW_PUBLIC_POST_MODEL="true"
-      - PYTHONUNBUFFERED=1
     ports:
       - 8000
     labels:
@@ -42,7 +41,7 @@ services:
   private-api:
     hostname: private_api
     restart: always
-    image: mathiser/inference_server:private_api_dev
+    image: mathiser/inference_server:private_api_v1.2
     depends_on:
       - rabbit
     ports:
@@ -69,7 +68,7 @@ services:
 
   job-consumer:
     hostname: consumer_0
-    image: mathiser/inference_server:job_consumer_dev
+    image: mathiser/inference_server:job_consumer_v1.2
     restart: always
     ports:
       - "80" #Dummy port to make traefik quiet
