@@ -65,7 +65,7 @@ class MockModelsAndTasks:
             datetime_created=datetime.datetime.now()
         )
 
-        self.failing_model = Model(container_tag="hellors-world",
+        self.failing_model = Model(container_tag="hellords-world",
                                    id=2,
                                    uid=secrets.token_urlsafe(),
                                    human_readable_id="two",

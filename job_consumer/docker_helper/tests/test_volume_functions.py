@@ -64,7 +64,7 @@ class TestVolumeFunctions(unittest.TestCase):
             volume_functions.delete_image(tag, force=True)
         self.assertFalse(volume_functions.image_exists(tag))
 
-        print(volume_functions.build_image(tag=tag, path=os.path.join(os.path.dirname(__file__), "../../volume_sender")))
+        print(volume_functions.build_image(tag=tag, path="volume_sender"))
         self.assertTrue(volume_functions.image_exists(tag))
         volume_functions.delete_image(tag)
         self.assertFalse(volume_functions.image_exists(tag))

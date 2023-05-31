@@ -65,7 +65,7 @@ def delete_volume(volume_id):
 def delete_image(tag, force=False):
     cli = docker.from_env()
     try:
-        return cli.images.get(tag).remove(force=force)
+        return cli.images.remove(image=tag, force=force)
     except Exception as e:
         logging.error(e)
     finally:

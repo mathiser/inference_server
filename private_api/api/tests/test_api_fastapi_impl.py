@@ -70,7 +70,7 @@ class TestFastAPIImpl(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         tasks = [Task(**t) for t in res.json()]
         self.assertEqual(len(tasks), 1)
-        self.assertEqual(task.to_dict(), tasks[0].to_dict())
+        self.assertEqual(task.dict(), tasks[0].dict())
         return tasks
 
     def test_get_task_by_uid(self):
@@ -78,7 +78,7 @@ class TestFastAPIImpl(unittest.TestCase):
         res = self.cli.get(os.environ['API_TASKS'] + str(task.uid))
         self.assertEqual(res.status_code, 200)
         echo = Task(**res.json())
-        self.assertEqual(task.to_dict(), echo.to_dict())
+        self.assertEqual(task.dict(), echo.dict())
         return echo
 
     def test_delete_task_by_uid_intended(self):
@@ -86,7 +86,7 @@ class TestFastAPIImpl(unittest.TestCase):
         res = self.cli.delete(os.environ['API_TASKS'] + str(task.uid))
         self.assertEqual(res.status_code, 200)
         echo = Task(**res.json())
-        self.assertNotEqual(task.to_dict(), echo.to_dict())
+        self.assertNotEqual(task.dict(), echo.dict())
         self.assertTrue(echo.is_deleted)
 
     def test_delete_task_by_uid_TaskNotFoundException(self):

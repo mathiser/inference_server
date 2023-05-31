@@ -24,7 +24,7 @@ class Model(Base):
     model_zip = Column(String, nullable=True, unique=True, default=None)
     model_volume_id = Column(String, unique=True, default=generate_uuid)
 
-    def to_dict(self):
+    def dict(self):
         return {
             "uid": self.id,
             "human_readable_id": self.human_readable_id,
@@ -51,7 +51,7 @@ class Task(Base):
     status = Column(Integer, nullable=False, default=-1)  # -1: pending, 0: failed, 1: finished, 2: running
     is_deleted = Column(Boolean, nullable=False, default=False)
 
-    def to_dict(self):
+    def dict(self):
         return {
             "uid": self.uid,
             "model_human_readable_id": self.model_human_readable_id,
@@ -89,7 +89,7 @@ if __name__ == "__main__":
         session.commit()
         session.refresh(model)
 
-    print(model.to_dict())
+    print(model.dict())
 
     human_readable_id = "some-model"
     container_tag = "hello-world"
@@ -105,4 +105,4 @@ if __name__ == "__main__":
             session.commit()
             session.refresh(task)
 
-        print(task.to_dict())
+        print(task.dict())

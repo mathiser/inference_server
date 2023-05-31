@@ -38,16 +38,16 @@ class PublicFastAPI(PublicFastAPIInterface):
             def post_task_thread(uid, model_human_readable_id, zip_file):
                 logging.info(f"[ ] Posting task: {uid} on {model_human_readable_id}")
                 try:
-                    res = self.db.post_task(model_human_readable_id=model_human_readable_id,
-                                        zip_file=zip_file,
-                                        uid=uid)
+                    self.db.post_task(model_human_readable_id=model_human_readable_id,
+                                            zip_file=zip_file,
+                                            uid=uid)
                 except Exception:
                     traceback.print_exc()
                 finally:
                     zip_file.close()
 
             models = self.db.get_models()
-            if not model_human_readable_id in [model.human_readable_id for model in models]:
+            if not model_human_readable_id in [model["human_readable_id"] for model in models]:
                 raise HTTPException(550, detail="ModelNotFound")
 
             uid = secrets.token_urlsafe()  # Give this request a unique identifie}
@@ -70,6 +70,8 @@ class PublicFastAPI(PublicFastAPIInterface):
                     yield from tmp_file
 
             res = self.db.get_output_zip(uid)
+            print("HEEEEERERERERERER")
+            logging.debug(res)
 
             if res.ok:
                 return StreamingResponse(iterfile(bytes_from_db=res.content))
@@ -84,9 +86,9 @@ class PublicFastAPI(PublicFastAPIInterface):
             deleted_task = self.db.delete_task(uid)
 
             try:
-                return deleted_task.json()
+                return deleted_task
             except Exception as e:
-                logging.error(deleted_task.json())
+                logging.error(deleted_task)
                 traceback.print_exc()
                 raise HTTPException(status_code=550, detail=str(e))
 

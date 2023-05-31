@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Optional, Any
+from typing import Optional, Any, Dict, List
 
 from fastapi import File, UploadFile, FastAPI
 from fastapi.responses import StreamingResponse
@@ -30,7 +30,7 @@ class PublicFastAPIInterface(FastAPI):
             pass
 
         @abstractmethod
-        def public_delete_task(uid: str):
+        def public_delete_task(uid: str) -> Dict:
             pass
 
         @abstractmethod
@@ -40,9 +40,9 @@ class PublicFastAPIInterface(FastAPI):
                               zip_file: Optional[UploadFile] = File(None),
                               model_available: Optional[bool] = True,
                               use_gpu: Optional[bool] = True,
-                              ):
+                              ) -> Dict:
             pass
 
         @abstractmethod
-        def public_get_models():
+        def public_get_models() -> List:
             pass

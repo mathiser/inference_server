@@ -1,7 +1,7 @@
 import logging
 import os
 import secrets
-from typing import Union, Optional
+from typing import Union, Optional, Dict, List
 from urllib.parse import urljoin
 
 import dotenv
@@ -10,7 +10,6 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import FileResponse
 from interfaces.api_interface import APIInterface
 from interfaces.db_interface import DBInterface
-from interfaces.db_models import Task, Model
 from interfaces.mq_interface import MQInterface
 
 LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
@@ -33,31 +32,31 @@ class APIFastAPIImpl(APIInterface):
             return {"message": "Hello world - Welcome to the private database API"}
 
         @self.app.get(os.environ["API_TASKS"])
-        def get_tasks():
-            return self.db.get_tasks()
+        def get_tasks() -> List:
+            return list(t.dict() for t in self.db.get_tasks())
 
         @self.app.get(urljoin(os.environ['API_TASKS'], "{uid}"))
-        def get_task(uid: str):
+        def get_task(uid: str) -> Dict:
             try:
-                return self.db.get_task(uid=uid)
+                return self.db.get_task(uid=uid).dict()
             except TaskNotFoundException as e:
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
         @self.app.put(os.environ['API_TASKS'])
-        def set_task_status(uid: str, status: int):
+        def set_task_status(uid: str, status: int) -> Dict:
             try:
-                return self.db.set_task_status(uid=uid, status=status)
+                return self.db.set_task_status(uid=uid, status=status).dict()
             except TaskNotFoundException as e:
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
 
         @self.app.delete(urljoin(os.environ['API_TASKS'], "{uid}"))
-        def delete_task(uid: str) -> Task:
+        def delete_task(uid: str) -> Dict:
             try:
                 t = self.db.delete_task(uid=uid)
-                return t
+                return t.dict()
             except TaskNotFoundException as e:
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
@@ -65,7 +64,7 @@ class APIFastAPIImpl(APIInterface):
         @self.app.post(os.environ['API_TASKS'])
         def post_task(model_human_readable_id: str,
                       zip_file: UploadFile = File(...),
-                      uid: Union[str, None] = None) -> str:
+                      uid: Union[str, None] = None) -> Dict:
             if not uid:
                 uid = secrets.token_urlsafe(32)
 
@@ -79,7 +78,7 @@ class APIFastAPIImpl(APIInterface):
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-            return task
+            return task.dict()
 
         @self.app.get(urljoin(os.environ['API_INPUT_ZIPS'], "{uid}"))
         def get_input_zip(uid: str) -> FileResponse:
@@ -96,7 +95,7 @@ class APIFastAPIImpl(APIInterface):
 
         @self.app.post(urljoin(os.environ['API_OUTPUT_ZIPS'], "{uid}"))
         def post_output_zip(uid: str,
-                            zip_file: UploadFile = File(...)) -> Task:
+                            zip_file: UploadFile = File(...)) -> Dict:
 
             try:
                 task = self.db.post_output_zip(uid=uid, zip_file=zip_file.file)
@@ -109,10 +108,10 @@ class APIFastAPIImpl(APIInterface):
 
             logging.info(task)
             self.mq.publish_finished_task(task)
-            return task
+            return task.dict()
 
         @self.app.get(urljoin(os.environ['API_OUTPUT_ZIPS'], "{uid}"))
-        def get_output_zip(uid: str):
+        def get_output_zip(uid: str) -> FileResponse:
             # Zip the output for return
             try:
                 task = self.db.get_task(uid=uid)
@@ -148,11 +147,10 @@ class APIFastAPIImpl(APIInterface):
                        zip_file: Optional[Union[UploadFile, None]] = None,
                        model_available: Union[bool, None] = None,
                        use_gpu: Union[bool, None] = None,
-                       ) -> Model:
+                       ) -> Dict:
             if zip_file:
                 zip_file = zip_file.file
-
-            return self.db.post_model(
+            model = self.db.post_model(
                 container_tag=container_tag,
                 human_readable_id=human_readable_id,
                 zip_file=zip_file,
@@ -160,26 +158,30 @@ class APIFastAPIImpl(APIInterface):
                 model_available=model_available,
                 use_gpu=use_gpu,
             )
+            return model.dict()
 
         @self.app.get(urljoin(os.environ['API_MODELS'], "{uid}"))
-        def get_model(uid: str):
+        def get_model(uid: str) -> Dict:
             try:
-                return self.db.get_model(uid=uid)
+                model = self.db.get_model(uid=uid)
+                return model.dict()
             except ModelNotFoundException as e:
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
         @self.app.get(urljoin(os.environ['API_MODELS_BY_HUMAN_READABLE_ID'], "{human_readable_id}"))
-        def get_model_by_human_readable_id(human_readable_id: str):
+        def get_model_by_human_readable_id(human_readable_id: str) -> Dict:
             try:
-                return self.db.get_model(human_readable_id=human_readable_id)
+                model = self.db.get_model(human_readable_id=human_readable_id)
+                return model.dict()
             except ModelNotFoundException as e:
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
         @self.app.get(os.environ['API_MODELS'])
-        def get_models():
-            return self.db.get_models()
+        def get_models() -> List:
+            models = self.db.get_models()
+            return list([m.dict for m in models])
 
         @self.app.get(urljoin(os.environ['API_MODEL_ZIPS'], "{id}"))
         def get_model_zip(uid: str) -> FileResponse:

@@ -57,7 +57,7 @@ class DBSQLiteImpl(DBInterface):
     def post_task(self,
                   zip_file: BinaryIO,
                   model_human_readable_id: str,
-                  uid: str = None):
+                  uid: str = None) -> Task:
 
         if not uid:
             uid = secrets.token_urlsafe()
@@ -153,7 +153,7 @@ class DBSQLiteImpl(DBInterface):
                    description: Union[str, None] = None,
                    zip_file: Optional[Union[BinaryIO, None]] = None,
                    model_available: Union[bool, None] = None,
-                   use_gpu: Union[bool, None] = None):
+                   use_gpu: Union[bool, None] = None) -> Model:
 
         model = Model(
             uid=secrets.token_hex(),

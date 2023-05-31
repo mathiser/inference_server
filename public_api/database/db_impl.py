@@ -1,14 +1,10 @@
-import json
 import logging
 import os
-
-import secrets
-from typing import BinaryIO, Union, Optional
+from typing import BinaryIO, Union, Optional, Dict, List
 from urllib.parse import urljoin
 
 from interfaces.db_client_interface import DBClientInterface
 from interfaces.db_interface import DBInterface
-from interfaces.db_models import Model
 
 
 class DBImpl(DBInterface):
@@ -18,7 +14,7 @@ class DBImpl(DBInterface):
     def post_task(self,
                   model_human_readable_id: str,
                   zip_file: BinaryIO,
-                  uid: str):
+                  uid: str) -> Dict:
 
         params = {
             "model_human_readable_id": model_human_readable_id,
@@ -29,27 +25,29 @@ class DBImpl(DBInterface):
 
         logging.info(f"[ ] Posting task: {params}")
         res = self.db_client.post(url=url, files=files, params=params)
-        res.raise_for_status()
-        logging.info(f"[X] Posting task: {params}")
-        return params
 
-    def get_output_zip(self, uid: str):
+        logging.info(f"[X] Posting task: {params}")
+        return res.json()
+
+    def get_output_zip(self, uid: str) -> Dict:
         # Zip the output for return
         logging.info(f"[ ]: Get output from task: {uid}")
         url = urljoin(os.environ['API_OUTPUT_ZIPS'], f"{uid}")
         res = self.db_client.get(url)
+        res.raise_for_status()
 
         logging.info(f"[X]: Get output from task: {uid}")
-        return res
+        return res.json()
 
-    def delete_task(self, uid: str):
+    def delete_task(self, uid: str) -> Dict:
         # Zip the output for return
         logging.info(f"[ ]: Delete task: {uid}")
         url = urljoin(os.environ['API_TASKS'], f"{uid}")
         res = self.db_client.delete(url)
+        res.raise_for_status()
         logging.info(f"[X]: Delete task: {uid}")
 
-        return res
+        return res.json()
 
     def post_model(self,
                    container_tag: str,
@@ -58,7 +56,7 @@ class DBImpl(DBInterface):
                    model_available: Union[bool, None] = None,
                    use_gpu: Union[bool, None] = None,
                    zip_file: Optional[Union[BinaryIO, None]] = None,
-                   ):
+                   ) -> Dict:
 
         params = {
             "container_tag": container_tag,
@@ -79,8 +77,9 @@ class DBImpl(DBInterface):
         logging.info(f"[X] Posting task: {params}")
         return res.json()
 
-    def get_models(self):
+    def get_models(self) -> List:
         url = os.environ["API_MODELS"]
         res = self.db_client.get(url)
-        logging.info(res)
-        return [Model(**m) for m in json.loads(res.content)]
+        res.raise_for_status()
+        return res.json()
+        #return [Model(**m) for m in json.loads(res.content)]

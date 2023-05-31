@@ -103,9 +103,11 @@ class TestPublicAPIFastAPI(unittest.TestCase):
                                  files={"zip_file": r})
         self.assertEqual(res.status_code, 405)
 
-    # def test_public_get_output_zip_by_uid(self):
-    #     model = self.test_public_post_model()
-    #     task = self.test_public_post_task()
+    def test_public_get_output_zip_by_uid(self):
+         model = self.test_public_post_model()
+         print(model)
+         task = self.test_public_post_task()
+
 
 
 if __name__ == '__main__':

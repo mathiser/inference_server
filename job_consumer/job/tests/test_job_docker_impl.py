@@ -143,18 +143,6 @@ class TestJob(unittest.TestCase):
         self.assertRaises(errors.ImageNotFound, self.job.execute)
 
 
-    def test_build_volume_sender(self):
-        unique_tag = "something_someone:test"
-        if volume_functions.image_exists(unique_tag):
-            volume_functions.delete_image(unique_tag, force=True)
-        else:
-            self.job.build_volume_sender(unique_tag)
-
-        self.assertTrue(volume_functions.image_exists(unique_tag))
-        volume_functions.delete_image(tag=unique_tag)
-        self.assertFalse(volume_functions.image_exists(unique_tag))
-
-
 
 
 

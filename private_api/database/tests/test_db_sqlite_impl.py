@@ -43,7 +43,7 @@ class TestSQLiteImpl(unittest.TestCase):
         ref_task = self.test_post_task_intended()
         db_task = self.db.get_task(ref_task.uid)
 
-        self.assertEqual(ref_task.to_dict(), db_task.to_dict())
+        self.assertEqual(ref_task.dict(), db_task.dict())
 
     def test_get_task_TaskNotFoundException(self):
         self.assertRaises(TaskNotFoundException, self.db.get_task, "HeltUniktUid")
@@ -52,7 +52,7 @@ class TestSQLiteImpl(unittest.TestCase):
         task = self.test_post_task_intended()
         tasks = self.db.get_tasks()
         self.assertEqual(len(tasks), 1)
-        self.assertEqual(tasks[0].to_dict(), task.to_dict())
+        self.assertEqual(tasks[0].dict(), task.dict())
 
     def test_delete_task_intended(self):
         task = self.test_post_task_intended()
@@ -77,7 +77,7 @@ class TestSQLiteImpl(unittest.TestCase):
                                             )
         model = self.db.get_model(human_readable_id=echo_model.human_readable_id)
 
-        self.assertEqual(echo_model.to_dict(), model.to_dict())
+        self.assertEqual(echo_model.dict(), model.dict())
 
         if echo_model.model_available:
             with open(self.repo.model_zip, "rb") as model_zip:
@@ -147,10 +147,10 @@ class TestSQLiteImpl(unittest.TestCase):
     def test_get_model_intended_uid(self):
         model = self.test_add_model_intended()
         echo_model = self.db.get_model(uid=model.uid)
-        self.assertEqual(model.to_dict(), echo_model.to_dict())
+        self.assertEqual(model.dict(), echo_model.dict())
 
         echo_model = self.db.get_model(human_readable_id=model.human_readable_id)
-        self.assertEqual(model.to_dict(), echo_model.to_dict())
+        self.assertEqual(model.dict(), echo_model.dict())
 
     def test_get_model_ModelNotFoundException(self):
         self.assertRaises(ModelNotFoundException, self.db.get_model, uid="-1")
@@ -160,7 +160,7 @@ class TestSQLiteImpl(unittest.TestCase):
         model = self.test_add_model_intended()
         models = self.db.get_models()
         self.assertEqual(len(models), 1)
-        self.assertEqual(models[0].to_dict(), model.to_dict())
+        self.assertEqual(models[0].dict(), model.dict())
 
     def test_post_output(self):
         task = self.test_post_task_intended()

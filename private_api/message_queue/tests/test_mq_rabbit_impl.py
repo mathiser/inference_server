@@ -1,11 +1,12 @@
 import logging
 import os
+import threading
+
 os.environ["RABBIT_DOCKER_TAG"] = "rabbitmq:3.9.17"
-os.environ["LOG_LEVEL"] = "80"
+os.environ["LOG_LEVEL"] = "20"
 os.environ["UNFINISHED_JOB_QUEUE"] = "unfinished_job_queue"
 os.environ["FINISHED_JOB_QUEUE"] = "finished_job_queue"
 
-import threading
 import unittest
 
 import docker
@@ -13,7 +14,9 @@ import docker
 from database.tests.test_db_sqlite_impl import TestSQLiteImpl
 from message_queue.rabbit_mq_impl import MQRabbitImpl
 
-PORT_NO = 5672
+PORT_NO = 5673
+lock = threading.Lock()
+
 
 class TestMessageQueueRabbitMQImpl(unittest.TestCase):
     """
@@ -21,8 +24,10 @@ class TestMessageQueueRabbitMQImpl(unittest.TestCase):
     """
 
     def get_port(self):
+        lock.acquire()
         global PORT_NO
         PORT_NO += 1
+        lock.release()
         return PORT_NO
 
     def make_mq_container(self):
@@ -57,7 +62,6 @@ class TestMessageQueueRabbitMQImpl(unittest.TestCase):
         finally:
             cli.close()
 
-
     def setUp(self) -> None:
         self.base_dir = ".tmp"
         self.mq_client = None
@@ -73,8 +77,8 @@ class TestMessageQueueRabbitMQImpl(unittest.TestCase):
         self.db_tests.tearDown()
         self.mq_client.close(*self.mq_client.get_connection_and_channel())
         self.take_down_mq_container(self.take_down_mq_container(str(self.RABBIT_PORT)))
-        #t = threading.Thread(target=self.take_down_mq_container, kwargs={"name": str(self.RABBIT_PORT)})
-        #t.start()
+        # t = threading.Thread(target=self.take_down_mq_container, kwargs={"name": str(self.RABBIT_PORT)})
+        # t.start()
 
     def test_get_connection_and_channel(self):
         self.conn, self.chan = self.mq_client.get_connection_and_channel()
@@ -101,6 +105,7 @@ class TestMessageQueueRabbitMQImpl(unittest.TestCase):
         self.assertEqual(body.decode(), task.uid)
         chan.basic_ack(method_frame.delivery_tag)
         self.mq_client.close(conn, chan)
+
 
 if __name__ == '__main__':
     unittest.main()

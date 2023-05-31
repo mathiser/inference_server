@@ -1,20 +1,20 @@
 from abc import abstractmethod
-from typing import Optional, BinaryIO
+from typing import Optional, BinaryIO, Dict, List
 
 
 class DBInterface:
     @abstractmethod
     def post_task(self, model_human_readable_id: str,
                   zip_file: BinaryIO,
-                  uid: str):
+                  uid: str) -> Dict:
         pass
 
     @abstractmethod
-    def get_output_zip(self, uid: str):
+    def get_output_zip(self, uid: str) -> Dict:
         pass
 
     @abstractmethod
-    def delete_task(self, uid: str):
+    def delete_task(self, uid: str) -> Dict:
         pass
 
     @abstractmethod
@@ -25,9 +25,9 @@ class DBInterface:
                    zip_file: Optional[BinaryIO] = None,
                    model_available: Optional[bool] = True,
                    use_gpu: Optional[bool] = True,
-                   ):
+                   ) -> Dict:
         pass
 
     @abstractmethod
-    def get_models(self):
+    def get_models(self) -> List:
         pass
