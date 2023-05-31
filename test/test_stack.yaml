@@ -1,0 +1,67 @@
+version: '3'
+
+services:
+  public_api:
+    restart: always
+    build:
+      context: ../public_api
+      dockerfile: ../public_api/Dockerfile
+    hostname: public_api
+    depends_on:
+      - rabbit
+      - private_api
+    networks:
+      - frontend
+    ports:
+      - 8000:8000
+
+  private_api:
+    hostname: private_api
+    restart: always
+    depends_on:
+      - rabbit
+    ports:
+      - 7000:7000
+    networks:
+      - frontend
+      - backend
+    build:
+      context: ../private_api
+      dockerfile: ../private_api/Dockerfile
+    volumes:
+     - private_api_test:/home/app/data:rw
+
+  rabbit:
+    restart: always
+    image: rabbitmq:3.9.17
+    ports:
+      - 5672:5672
+    hostname: rabbit
+    networks:
+      - backend
+    volumes:
+      - ./rabbit/timeout.conf:/etc/rabbitmq/conf.d/timeout.conf
+
+  consumer:
+    hostname: consumer
+    restart: always
+    ports:
+      - "80" #Dummy port to make traefik quiet
+    networks:
+      - backend
+    depends_on:
+      - rabbit
+      - private_api
+    build:
+      context: ../job_consumer
+      dockerfile: ../job_consumer/Dockerfile
+    security_opt:
+      - label=disable
+    volumes:
+      # needed to dispatch docker containers from inside a docker container
+      - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  frontend:
+  backend:
+

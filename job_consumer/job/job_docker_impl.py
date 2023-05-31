@@ -143,7 +143,7 @@ class JobDockerImpl(JobInterface):
         logging.info("URL to post on: {}".format(url))
         self.build_volume_sender(self.volume_sender)
         tmp_container = self.cli.containers.run(self.volume_sender,
-                                                volumes={self.task.output_volume_id: {"bind": '/data', 'mode': 'ro'}},
+                                                volumes={self.task.output_volume_id: {"bind": '/data', 'mode': 'rw'}},
                                                 environment={
                                                     "URL": url,
                                                     "VOLUME_MOUNTPOINT": "/data"

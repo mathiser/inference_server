@@ -81,11 +81,12 @@ class PublicFastAPI(PublicFastAPIInterface):
 
         @self.delete(urljoin(os.environ['PUBLIC_API_TASKS'], "{uid}"))
         def public_delete_task_by_uid(uid: str):
-            status = self.db.delete_task(uid)
+            deleted_task = self.db.delete_task(uid)
 
             try:
-                return status
+                return deleted_task.json()
             except Exception as e:
+                logging.error(deleted_task.json())
                 traceback.print_exc()
                 raise HTTPException(status_code=550, detail=str(e))
 

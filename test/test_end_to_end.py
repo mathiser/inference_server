@@ -22,9 +22,9 @@ def build_model(tag, dockerfile):
     finally:
         cli.close()
 
-os.system(f"docker-compose -f {'test_stack.yaml'} down")
-os.system(f"docker-compose -f test_stack.yaml build")
-os.system(f"docker-compose -f test_stack.yaml up -d")
+os.system(f"docker compose -f {'test_stack.yaml'} down")
+os.system(f"docker compose -f test_stack.yaml build")
+os.system(f"docker compose -f test_stack.yaml up -d")
 time.sleep(10)
 
 class TestEndToEnd(unittest.TestCase):
@@ -32,9 +32,9 @@ class TestEndToEnd(unittest.TestCase):
 
 
     def __del__(self) -> None:
-        os.system("docker-compose -f test_stack.yaml logs public_api > public_api_test_log")
-        os.system("docker-compose -f test_stack.yaml logs private_api > private_api_test_log")
-        os.system("docker-compose -f test_stack.yaml logs consumer > job_consumer_test_log")
+        os.system("docker compose -f test_stack.yaml logs public_api > public_api_test_log")
+        os.system("docker compose -f test_stack.yaml logs private_api > private_api_test_log")
+        os.system("docker compose -f test_stack.yaml logs consumer > job_consumer_test_log")
         pass
 
     def test_post_model_private_api(self):

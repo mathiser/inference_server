@@ -5,12 +5,12 @@ RUN apt-get update && apt-get install -y \
     docker.io \
     && rm -rf /var/lib/apt/lists/*
 
-ADD requirements.txt /requirements.txt
-RUN pip install -r /requirements.txt
-
 RUN mkdir -p /home/app/
 WORKDIR /home/app/
 COPY . /home/app/
+
+ADD requirements.txt requirements.txt
+RUN pip install -r requirements.txt
 
 ENV TZ=Europe/Copenhagen
 ENV NETWORK_NAME=inference_server_backend
@@ -33,7 +33,7 @@ ENV API_MODELS_BY_HUMAN_READABLE_ID=/api/models/human_readable_id/
 ENV API_MODEL_ZIPS=/api/models/zips/
 ENV GPU_UUID="-1"
 ENV PREFETCH_VALUE=1
-#ENV VOLUME_SENDER_DOCKER_TAG=mathiser/inference_server:volume_sender
+
 ENV BUSYBOX_DOCKER_TAG=busybox:1.35
 ENV PYTHONUNBUFFERED=1
 CMD python3 main.py

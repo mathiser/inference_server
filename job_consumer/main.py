@@ -6,7 +6,7 @@ from consumer.consumer_rabbitmq_impl import ConsumerRabbitImpl
 from database.database_rest_impl import DBRestImpl
 from database_client.db_client_requests_impl import DBClientRequestsImpl
 
-dotenv.load_dotenv()
+#dotenv.load_dotenv()
 
 
 def main():
