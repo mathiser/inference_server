@@ -106,6 +106,7 @@ else:
 
 Status codes on task polling:
 - 500: Internal server error
+- 550: Model not found (model_human_readable_id)
 - 551: Task pending
 - 552: Task failed
 - 553: Task finished, but output zip not found.
