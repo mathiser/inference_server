@@ -53,6 +53,8 @@ services:
       - "traefik.http.routers.inference_server_public_api.rule=Host(`omen.onerm.dk`)"
       - "traefik.http.services.inference_server_public_api.loadbalancer.server.port=8123"
       - "traefik.http.routers.inference_server_public_api.tls=true"
+    volumes:
+      - ./mounts:/home/app/data
   consumer:
     hostname: consumer
     restart: always
@@ -73,7 +75,6 @@ services:
     volumes:
       # needed to dispatch docker containers from inside a docker container
       - /var/run/docker.sock:/var/run/docker.sock
-      -
 networks:
   network:
 #    driver: overlay
