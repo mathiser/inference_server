@@ -19,7 +19,7 @@ class Controller:
                  DATA_DIR: Union[str, None] = "data",
                  RABBIT_HOSTNAME: Union[str, None] = "localhost",
                  RABBIT_PORT: Union[int, None] = 5672,
-                 API_PORT: Union[int, None] = 8123,
+                 CONTROLLER_PORT: Union[int, None] = 8123,
                  LOG_LEVEL: Union[int, None] = 10,
                  INFERENCE_SERVER_TOKEN: Union[str, None] = None):
 
@@ -29,7 +29,7 @@ class Controller:
         self.RABBIT_HOSTNAME = RABBIT_HOSTNAME
         self.RABBIT_PORT = RABBIT_PORT
 
-        self.API_PORT = API_PORT
+        self.CONTROLLER_PORT = CONTROLLER_PORT
         
         self.LOG_LEVEL = LOG_LEVEL
         self.INFERENCE_SERVER_TOKEN = INFERENCE_SERVER_TOKEN
@@ -59,7 +59,7 @@ class Controller:
 
         db = DBSQLiteImpl(base_dir=self.DATA_DIR, log_level=int(self.LOG_LEVEL))
         api = APIFastAPIImpl(db=db, mq=mq, x_token=self.INFERENCE_SERVER_TOKEN, log_level=int(self.LOG_LEVEL))
-        uvicorn.run(app=api, host="0.0.0.0", port=self.API_PORT)
+        uvicorn.run(app=api, host="0.0.0.0", port=self.CONTROLLER_PORT)
 
 if __name__ == "__main__":
     m = Controller()

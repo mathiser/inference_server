@@ -121,9 +121,10 @@ class ConsumerRabbitImpl(ConsumerInterface):
             self.db.post_output_tar(task.id, output_tar)
 
         except Exception as e:
-            self.logger.info(f"Exception {str(e)} while running: {task.dict()}")
             self.db.set_task_status(task_id=task_id, status=0)
             traceback.print_exc()
+            self.logger.info(f"Exception {str(e)} while running: {task.id}")
+
             raise e
 
         finally:

@@ -29,13 +29,14 @@ class Consumer:
             prot = "https"
         else:
             prot = "http"
-        self.CONTROLLER_URL = f"{prot}://{CONTROLLER_HOSTNAME}:{CONTROLLER_PORT}"
+        self.CONTROLLER_URL = f"{prot}://{CONTROLLER_HOSTNAME}:{CONTROLLER_PORT}/"
         self.LOG_LEVEL = LOG_LEVEL
         self.INFERENCE_SERVER_TOKEN = INFERENCE_SERVER_TOKEN
 
-        self.logger = self.get_logger()
         self.load_envvars()
 
+        self.logger = self.get_logger()
+        self.logger.info(f"Instantiated consumer with environment: {str(self.__dict__)}")
         if not self.INFERENCE_SERVER_TOKEN:
             raise Exception("INFERENCE_SERVER_TOKEN not in environment. Make sure to set this and try again")
 
@@ -47,7 +48,8 @@ class Consumer:
                                            unfinished_queue_name="UNFINISHED_JOB_QUEUE",
                                            finished_queue_name="FINISHED_JOB_QUEUE",
                                            prefetch_value=int(self.PREFETCH_VALUE),
-                                           gpu_uuid=self.GPU_UUID)
+                                           gpu_uuid=self.GPU_UUID,
+                                           log_level=int(self.LOG_LEVEL))
 
     def run(self):
         self.consumer.consume_unfinished()
@@ -56,7 +58,6 @@ class Consumer:
         # Override from os.environ
         for name in self.__dict__.keys():
             if name in os.environ.keys():
-                self.logger.info(f"Overwriting {name} to {os.environ[name]}")
                 self.__setattr__(name, os.environ[name])
 
     def get_logger(self):
