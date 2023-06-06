@@ -6,26 +6,25 @@ from pydantic import BaseModel
 
 
 class Model(BaseModel):
+    id: int
     human_readable_id: str
     description: Union[str, None]
     container_tag: str
     use_gpu: bool = True
     model_available: bool = True
     model_volume_id: Union[str, None]
-    model_zip: Union[str, None]
-    uid: str
-    id: int
+    model_tar: Union[str, None]
 
 
 class Task(BaseModel):
-    uid: str = secrets.token_urlsafe
+    id: int
+    uid: str
     model_id: int
     model: Model
     datetime_created: datetime = datetime.now
-    input_zip: Union[str, None] = None
-    output_zip: Union[str, None] = None
-    input_volume_id: str
-    output_volume_id: str
+    input_tar: Union[str, None] = None
+    output_tar: Union[str, None] = None
     datetime_dispatched: Union[datetime, None] = None
     datetime_finished: Union[datetime, None] = None
     status: Union[int, None] = None
+    is_deleted: Union[bool, None] = None

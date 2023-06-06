@@ -1,59 +1,65 @@
 import logging
 import os
 import secrets
+from io import BytesIO
 from typing import Union, Optional, Dict, List
-from urllib.parse import urljoin
 
-import dotenv
-from database.db_exceptions import TaskNotFoundException, ModelNotFoundException, InsertTaskException
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Header
 from fastapi.responses import FileResponse
-from interfaces.api_interface import APIInterface
-from interfaces.db_interface import DBInterface
-from interfaces.mq_interface import MQInterface
 
-LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
-dotenv.load_dotenv(".env")
-
-logging.basicConfig(level=10, format=LOG_FORMAT)
+from database.db_exceptions import TaskNotFoundException, ModelNotFoundException, InsertTaskException
+from database.db_interface import DBInterface
+from message_queue.mq_interface import MQInterface
 
 
-class APIFastAPIImpl(APIInterface):
-    def __init__(self, db: DBInterface, mq: MQInterface):
+class APIFastAPIImpl(FastAPI):
+    def __init__(self, db: DBInterface, mq: MQInterface, x_token: str = secrets.token_urlsafe(32), log_level=10):
         super().__init__()
+        LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
+        logging.basicConfig(level=log_level, format=LOG_FORMAT)
+        self.logger = logging.getLogger(__name__)
+
         self.db = db
         self.mq = mq
-        self.app = FastAPI()
+
+        self.x_token = x_token
 
         self.threads = []
 
-        @self.app.get("/")
+        self.task_endpoint = "/api/tasks/"
+        self.input_endpoint = "/api/tasks/inputs/"
+        self.output_endpoint = "/api/tasks/outputs/"
+        self.model_endpoint = "/api/models/"
+        self.model_tar_endpoint = "/api/models/tars/"
+
+        @self.get("/")
         def hello_world():
-            return {"message": "Hello world - Welcome to the private database API"}
+            return {"message": "Hello world - Welcome to the public API"}
 
-        @self.app.get(os.environ["API_TASKS"])
-        def get_tasks() -> List:
-            return list(t.dict() for t in self.db.get_tasks())
+        @self.get(self.task_endpoint)
+        def get_task(task_id: Union[int, None] = None, x_token: str = Header(default=None)) -> Union[List, Dict]:
+            self.eval_token(x_token)
 
-        @self.app.get(urljoin(os.environ['API_TASKS'], "{uid}"))
-        def get_task(uid: str) -> Dict:
+            if task_id:
+                self.logger.info(f"Serving task with id {task_id}")
+                return self.db.get_task(task_id=task_id).dict()
+            else:
+                self.logger.info(f"Serving all tasks")
+                return list([t.dict() for t in self.db.get_tasks()])
+
+        @self.put(self.task_endpoint)
+        def set_task_status(task_id: int, status: int, x_token: str = Header(default=None)) -> Dict:
+            self.logger.info(f"Updating task status to {status} of task_id {task_id}")
+            self.eval_token(x_token)
             try:
-                return self.db.get_task(uid=uid).dict()
+                return self.db.set_task_status(task_id=task_id, status=status).dict()
             except TaskNotFoundException as e:
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-        @self.app.put(os.environ['API_TASKS'])
-        def set_task_status(uid: str, status: int) -> Dict:
-            try:
-                return self.db.set_task_status(uid=uid, status=status).dict()
-            except TaskNotFoundException as e:
-                raise HTTPException(status_code=554,
-                                    detail=e.msg())
-
-
-        @self.app.delete(urljoin(os.environ['API_TASKS'], "{uid}"))
+        @self.delete(self.task_endpoint)
         def delete_task(uid: str) -> Dict:
+            self.eval_token(x_token)
             try:
                 t = self.db.delete_task(uid=uid)
                 return t.dict()
@@ -61,17 +67,13 @@ class APIFastAPIImpl(APIInterface):
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-        @self.app.post(os.environ['API_TASKS'])
-        def post_task(model_human_readable_id: str,
-                      zip_file: UploadFile = File(...),
-                      uid: Union[str, None] = None) -> Dict:
-            if not uid:
-                uid = secrets.token_urlsafe(32)
-
+        @self.post(self.task_endpoint)
+        def post_task(human_readable_id: str,
+                      tar_file: UploadFile = File(...)) -> Dict:
+            self.logger.info(f"Receiving task on human_readable_id: {human_readable_id}")
             try:
-                task = self.db.post_task(zip_file=zip_file.file,
-                                         model_human_readable_id=model_human_readable_id,
-                                         uid=uid)
+                task = self.db.post_task(tar_file=BytesIO(tar_file.file.read()),
+                                         human_readable_id=human_readable_id)
                 self.mq.publish_unfinished_task(task)
 
             except InsertTaskException as e:
@@ -80,52 +82,116 @@ class APIFastAPIImpl(APIInterface):
 
             return task.dict()
 
-        @self.app.get(urljoin(os.environ['API_INPUT_ZIPS'], "{uid}"))
-        def get_input_zip(uid: str) -> FileResponse:
+        @self.get(self.input_endpoint)
+        def get_input_tar(task_id: int, x_token: str = Header(default=None)) -> FileResponse:
+            self.eval_token(x_token)
+            self.logger.info(f"Serving input_tar for task_id {task_id}")
             try:
-                task = self.db.get_task(uid=uid)
+                task = self.db.get_task(task_id=task_id)
             except TaskNotFoundException as e:
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-            if os.path.exists(task.input_zip):
-                return FileResponse(task.input_zip)
+            if os.path.exists(task.input_tar):
+                return FileResponse(task.input_tar)
             else:
-                raise HTTPException(status_code=554, detail="Input zip not found - try posting task again")
+                raise HTTPException(status_code=554, detail="Input tar not found - try posting task again")
 
-        @self.app.post(urljoin(os.environ['API_OUTPUT_ZIPS'], "{uid}"))
-        def post_output_zip(uid: str,
-                            zip_file: UploadFile = File(...)) -> Dict:
+        @self.post(self.output_endpoint)
+        def post_output_tar(task_id: int,
+                            tar_file: UploadFile = File(...),
+                            x_token: str = Header(default=None)) -> Dict:
+            self.eval_token(x_token)
+            self.logger.info(f"Serving output_tar for task_id {task_id}")
 
             try:
-                task = self.db.post_output_zip(uid=uid, zip_file=zip_file.file)
+                task = self.db.post_output_tar(task_id=task_id, tar_file=BytesIO(tar_file.file.read()))
+                self.db.set_task_status(task_id=task_id, status=1)
             except TaskNotFoundException as e:
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
             except Exception as e:
-                logging.error(e)
+                self.logger.error(str(e))
                 raise e
 
-            logging.info(task)
+            self.logger.info(task)
             self.mq.publish_finished_task(task)
             return task.dict()
 
-        @self.app.get(urljoin(os.environ['API_OUTPUT_ZIPS'], "{uid}"))
-        def get_output_zip(uid: str) -> FileResponse:
-            # Zip the output for return
+        @self.post(self.model_endpoint)
+        def post_model(container_tag: str,
+                       human_readable_id: str,
+                       description: Union[str, None] = None,
+                       tar_file: Optional[Union[UploadFile, None]] = None,
+                       model_available: Union[bool, None] = None,
+                       use_gpu: Union[bool, None] = None,
+                       x_token: str = Header(default=None),
+                       ) -> Dict:
+            self.eval_token(x_token)
+
+            if tar_file:
+                tar_file = tar_file.file
+
+            model = self.db.post_model(
+                container_tag=container_tag,
+                human_readable_id=human_readable_id,
+                tar_file=tar_file,
+                description=description,
+                model_available=model_available,
+                use_gpu=use_gpu,
+            )
+            self.logger.info(f"Receiving model {model.dict()}")
+            return model.dict()
+
+        @self.get(self.model_endpoint)
+        def get_model(model_id: Union[int, None] = None,
+                      human_readable_id: Union[str, None] = None,
+                      x_token: str = Header(default=None)) -> Union[Dict, List]:
+            self.eval_token(x_token)
             try:
-                task = self.db.get_task(uid=uid)
-                logging.info(str(task))
+                if model_id:
+                    self.logger.info(f"Serving model with id {model_id}")
+                    return self.db.get_model(model_id=model_id).dict()
+                elif human_readable_id:
+                    return self.db.get_model(human_readable_id=human_readable_id).dict()
+                elif not model_id and not human_readable_id:
+                    return list([m.dict() for m in self.db.get_models()])
+            except Exception as e:
+                raise HTTPException(status_code=400,
+                                    detail=str(e))
+
+        @self.get(self.model_tar_endpoint)
+        def get_model_tar(model_id: int,
+                          x_token: str = Header(default=None)) -> FileResponse:
+            self.eval_token(x_token)
+            try:
+                model = self.db.get_model(model_id=model_id)
+            except ModelNotFoundException as e:
+                raise HTTPException(status_code=404,
+                                    detail=e.msg())
+
+            if model.model_available and os.path.exists(model.model_tar):
+                return FileResponse(model.model_tar)
+            else:
+                raise HTTPException(status_code=404, detail="Model tar not found")
+
+        @self.get(self.output_endpoint)
+        def get_output_tar(uid: str) -> FileResponse:
+            # tar the output for return
+            try:
+                task = self.db.get_task(task_uid=uid)
+                self.logger.info(str(task.dict()))
             except TaskNotFoundException as e:
                 raise HTTPException(status_code=554,
                                     detail=e.msg())
 
-            # Not doing this with os.path.exists(task.output.zip) to avoid that some of the file is sent before all written
-            if os.path.exists(task.output_zip) and task.status == 1:
-                return FileResponse(task.output_zip)
-            elif not os.path.exists(task.output_zip) and task.status == 1:
+            # Not doing this with os.path.exists(task.output.tar) to avoid that some of the file is sent before all written
+            if os.path.exists(task.output_tar) and task.status == 1:
+                return FileResponse(task.output_tar)
+
+            elif not os.path.exists(task.output_tar) and task.status == 1:
                 raise HTTPException(status_code=553,
-                                    detail="Job status is 'finished', but output zip does not exist")
+                                    detail="Job status is 'finished', but output tar does not exist")
             elif task.is_deleted == 1:
                 raise HTTPException(status_code=552,
                                     detail="Job files are 'deleted'")
@@ -136,66 +202,10 @@ class APIFastAPIImpl(APIInterface):
                 raise HTTPException(status_code=551,
                                     detail="Job status is 'pending' or 'running'")
             else:
-                logging.error(str(task))
+                self.logger.error(str(task))
                 raise HTTPException(status_code=500,
                                     detail="Internal Server Error - should not be possible")
 
-        @self.app.post(os.environ['API_MODELS'])
-        def post_model(container_tag: str,
-                       human_readable_id: str,
-                       description: Union[str, None] = None,
-                       zip_file: Optional[Union[UploadFile, None]] = None,
-                       model_available: Union[bool, None] = None,
-                       use_gpu: Union[bool, None] = None,
-                       ) -> Dict:
-            if zip_file:
-                zip_file = zip_file.file
-            model = self.db.post_model(
-                container_tag=container_tag,
-                human_readable_id=human_readable_id,
-                zip_file=zip_file,
-                description=description,
-                model_available=model_available,
-                use_gpu=use_gpu,
-            )
-            return model.dict()
-
-        @self.app.get(urljoin(os.environ['API_MODELS'], "{uid}"))
-        def get_model(uid: str) -> Dict:
-            try:
-                model = self.db.get_model(uid=uid)
-                return model.dict()
-            except ModelNotFoundException as e:
-                raise HTTPException(status_code=554,
-                                    detail=e.msg())
-
-        @self.app.get(urljoin(os.environ['API_MODELS_BY_HUMAN_READABLE_ID'], "{human_readable_id}"))
-        def get_model_by_human_readable_id(human_readable_id: str) -> Dict:
-            try:
-                model = self.db.get_model(human_readable_id=human_readable_id)
-                return model.dict()
-            except ModelNotFoundException as e:
-                raise HTTPException(status_code=554,
-                                    detail=e.msg())
-
-        @self.app.get(os.environ['API_MODELS'])
-        def get_models() -> List:
-            models = self.db.get_models()
-            return list([m.dict for m in models])
-
-        @self.app.get(urljoin(os.environ['API_MODEL_ZIPS'], "{id}"))
-        def get_model_zip(uid: str) -> FileResponse:
-            try:
-                model = self.db.get_model(uid=uid)
-            except ModelNotFoundException as e:
-                raise HTTPException(status_code=554,
-                                    detail=e.msg())
-
-            if os.path.exists(model.model_zip):
-                return FileResponse(model.model_zip)
-            else:
-                raise HTTPException(status_code=554, detail="Model zip not found - try posting task again")
-
-    def __del__(self):
-        for t in self.threads:
-            t.join()
+    def eval_token(self, x_token):
+        if x_token != self.x_token:
+            raise HTTPException(status_code=400, detail="Authentication error")

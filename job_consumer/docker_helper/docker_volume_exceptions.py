@@ -1,2 +1,0 @@
-class VolumeNotFoundException(Exception):
-    pass

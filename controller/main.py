@@ -1,27 +1,66 @@
 import logging
 import os
+import secrets
+import tempfile
 
-import dotenv
 import uvicorn
-dotenv.load_dotenv()
 
+from api.api_fastapi_impl import APIFastAPIImpl
 from database.db_sql_impl import DBSQLiteImpl
-from database.api_fastapi_impl import APIFastAPIImpl
 from message_queue.rabbit_mq_impl import MQRabbitImpl
+from typing import Union
 
-LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
+def generate_token(bits=128):
+    return secrets.token_urlsafe(bits)
 
-logging.basicConfig(level=int(os.environ.get("LOG_LEVEL")), format=LOG_FORMAT)
+class Controller:
+    def __init__(self,
+                 TZ: Union[str, None] = "Europe/Copenhagen",
+                 DATA_DIR: Union[str, None] = "data",
+                 RABBIT_HOSTNAME: Union[str, None] = "localhost",
+                 RABBIT_PORT: Union[int, None] = 5672,
+                 API_PORT: Union[int, None] = 8123,
+                 LOG_LEVEL: Union[int, None] = 10,
+                 INFERENCE_SERVER_TOKEN: Union[str, None] = None):
 
-def main():
-    mq = MQRabbitImpl(host=os.environ.get("RABBIT_HOSTNAME"),
-                      port=int(os.environ.get("RABBIT_PORT")),
-                      unfinished_queue_name=os.environ.get("UNFINISHED_JOB_QUEUE"),
-                      finished_queue_name=os.environ.get("FINISHED_JOB_QUEUE"))
+        self.TZ = TZ
+        self.DATA_DIR = DATA_DIR
+        
+        self.RABBIT_HOSTNAME = RABBIT_HOSTNAME
+        self.RABBIT_PORT = RABBIT_PORT
 
-    db = DBSQLiteImpl(base_dir=os.environ.get("DATA_DIR"))
-    api = APIFastAPIImpl(db=db, mq=mq)
-    uvicorn.run(app=api.app, host="0.0.0.0", port=int(os.environ.get("API_PORT")), )
+        self.API_PORT = API_PORT
+        
+        self.LOG_LEVEL = LOG_LEVEL
+        self.INFERENCE_SERVER_TOKEN = INFERENCE_SERVER_TOKEN
+        
+        # Override from os.environ
+        for name in self.__dict__.keys():
+            if name in os.environ.keys():
+                self.__setattr__(name, os.environ[name])
+        
+        if not self.INFERENCE_SERVER_TOKEN:
+            self.INFERENCE_SERVER_TOKEN = generate_token()
+
+        # Set logger
+        LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
+        logging.basicConfig(level=int(self.LOG_LEVEL), format=LOG_FORMAT)
+        self.logger = logging.getLogger(__name__)
+                
+        self.logger.info(f"INFERENCE_SERVER_TOKEN: {self.INFERENCE_SERVER_TOKEN}")
+        self.logger.info("Make sure to sync this to all consumers")
+
+    def run(self):
+        mq = MQRabbitImpl(host=self.RABBIT_HOSTNAME,
+                          port=int(self.RABBIT_PORT),
+                          unfinished_queue_name="UNFINISHED_JOB_QUEUE",
+                          finished_queue_name="FINISHED_JOB_QUEUE",
+                          log_level=int(self.LOG_LEVEL))
+
+        db = DBSQLiteImpl(base_dir=self.DATA_DIR, log_level=int(self.LOG_LEVEL))
+        api = APIFastAPIImpl(db=db, mq=mq, x_token=self.INFERENCE_SERVER_TOKEN, log_level=int(self.LOG_LEVEL))
+        uvicorn.run(app=api, host="0.0.0.0", port=self.API_PORT)
 
 if __name__ == "__main__":
-    main()
+    m = Controller()
+    m.run()

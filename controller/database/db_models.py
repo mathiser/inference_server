@@ -5,61 +5,65 @@ import uuid
 from datetime import datetime
 
 import sqlalchemy
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import Integer, String, ForeignKey
+from sqlalchemy.orm import sessionmaker, Mapped, mapped_column, relationship, DeclarativeBase
 
-Base = declarative_base()
+
 def generate_uuid():
     return str(uuid.uuid4())
 
+
+class Base(DeclarativeBase):
+    pass
+
+
 class Model(Base):
     __tablename__ = "models"
-    id = Column(Integer, unique=True, primary_key=True, autoincrement=True)
-    uid = Column(String, unique=True, default=secrets.token_urlsafe, index=True)
-    human_readable_id = Column(String, unique=True, nullable=False)
-    description = Column(String, nullable=True, default=None)
-    container_tag = Column(String, nullable=False)
-    use_gpu = Column(Boolean, default=True)
-    model_available = Column(Boolean, default=False)
-    model_zip = Column(String, nullable=True, unique=True, default=None)
-    model_volume_id = Column(String, unique=True, default=generate_uuid)
+    id: Mapped[int] = mapped_column(unique=True, primary_key=True, autoincrement=True)
+    human_readable_id: Mapped[str] = mapped_column(unique=True, nullable=False)
+    description: Mapped[str] = mapped_column(nullable=True, default=None)
+    container_tag: Mapped[str]
+    use_gpu: Mapped[bool] = mapped_column(default=True)
+    model_available: Mapped[bool] = mapped_column(default=False)
+    model_tar: Mapped[str] = mapped_column(nullable=True, unique=True, default=None)
+    model_volume_id: Mapped[str] = mapped_column(unique=True, default=generate_uuid)
 
     def dict(self):
         return {
-            "uid": self.id,
+            "id": self.id,
             "human_readable_id": self.human_readable_id,
             "description": self.description,
             "container_tag": self.container_tag,
             "use_gpu": self.use_gpu,
             "model_available": self.model_available,
-            "model_zip": self.model_zip,
+            "model_tar": self.model_tar,
             "model_volume_id": self.model_volume_id,
         }
 
+
 class Task(Base):
     __tablename__ = "tasks"
-    id = Column(Integer, unique=True, primary_key=True, autoincrement=True)
-    uid = Column(String, unique=True, default=secrets.token_urlsafe, index=True)
-    model_human_readable_id = Column(String, ForeignKey("models.human_readable_id"))
-    datetime_created = Column(DateTime, default=datetime.now)
-    input_zip = Column(String, nullable=True, unique=True)
-    output_zip = Column(String, nullable=True, unique=True)
-    input_volume_id = Column(String, nullable=False, unique=True, default=generate_uuid)
-    output_volume_id = Column(String, nullable=False, unique=True, default=generate_uuid)
-    datetime_dispatched = Column(DateTime, nullable=True)
-    datetime_finished = Column(DateTime, nullable=True)
-    status = Column(Integer, nullable=False, default=-1)  # -1: pending, 0: failed, 1: finished, 2: running
-    is_deleted = Column(Boolean, nullable=False, default=False)
+    id: Mapped[str] = mapped_column(Integer, unique=True, primary_key=True, autoincrement=True)
+    uid: Mapped[str] = mapped_column(String, unique=True, default=secrets.token_urlsafe, index=True)
+    model_id: Mapped[str] = mapped_column(ForeignKey("models.id"))
+    model: Mapped["Model"] = relationship(lazy="joined")
+    datetime_created: Mapped[datetime] = mapped_column(default=datetime.now)
+    input_tar: Mapped[str] = mapped_column(nullable=True, unique=True)
+    output_tar: Mapped[str] = mapped_column(nullable=True, unique=True)
+    datetime_dispatched: Mapped[datetime] = mapped_column(nullable=True)
+    datetime_finished: Mapped[datetime] = mapped_column(nullable=True)
+    status: Mapped[int] = mapped_column(nullable=False, default=-1)  # -1: pending, 0: failed, 1: finished, 2: running
+    is_deleted: Mapped[bool] = mapped_column(nullable=False, default=False)
 
     def dict(self):
         return {
+            "id": self.id,
             "uid": self.uid,
-            "model_human_readable_id": self.model_human_readable_id,
+            "model_id": self.model_id,
+            "model": self.model.dict(),
             "datetime_created": self.datetime_created,
-            "input_zip": self.input_zip,
-            "output_zip": self.output_zip,
-            "input_volume_id": self.output_volume_id,
-            "output_volume_id": self.output_volume_id,
+            "input_tar": self.input_tar,
+            "output_tar": self.output_tar,
             "datetime_dispatched": self.datetime_dispatched,
             "datetime_finished": self.datetime_finished,
             "status": self.status,
@@ -74,7 +78,7 @@ if __name__ == "__main__":
     Base.metadata.create_all(engine)
 
     Session = sessionmaker(bind=engine)
-    
+
     human_readable_id = "some-model"
     description = "Some-niiiice-model"
     container_tag = "hello-world"
@@ -95,10 +99,9 @@ if __name__ == "__main__":
     container_tag = "hello-world"
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-
-        task = Task(model_human_readable_id=human_readable_id,
-                    input_zip=os.path.abspath(os.path.join(tmp_dir, "uid", "input.zip")),
-                    output_zip=os.path.abspath(os.path.join(tmp_dir, "uid", "output.zip")),
+        task = Task(model_id=model.id,
+                    input_tar=os.path.abspath(os.path.join(tmp_dir, "uid", "input.tar.gz")),
+                    output_tar=os.path.abspath(os.path.join(tmp_dir, "uid", "output.tar.gz")),
                     )
         with Session() as session:
             session.add(task)

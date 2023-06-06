@@ -3,7 +3,7 @@ class TaskNotFoundException(Exception):
     def msg():
         return "Task not found"
 
-class TaskOutputZipNotFoundException(Exception):
+class TaskOutputTarNotFoundException(Exception):
     pass
 
 class ModelNotFoundException(Exception):
@@ -11,7 +11,7 @@ class ModelNotFoundException(Exception):
     def msg():
         return "Model not found"
 
-class TaskZipPathExistsException(Exception):
+class TaskTarPathExistsException(Exception):
     pass
 
 class InsertTaskException(Exception):
@@ -19,10 +19,10 @@ class InsertTaskException(Exception):
     def msg():
         return "Exception when inserting task to database"
 
-class ZipFileMissingException(Exception):
+class TarFileMissingException(Exception):
     pass
 
-class ContradictingZipFileException(Exception):
+class ContradictingTarFileException(Exception):
     pass
 
 class ModelInitializationException(Exception):

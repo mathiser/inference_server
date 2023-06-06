@@ -37,7 +37,7 @@ class TestMessageQueueRabbitMQImpl(unittest.TestCase):
 
         self.RABBIT_HOSTNAME = "localhost"
 
-        cli.images.pull(os.environ.get("RABBIT_DOCKER_TAG"))
+#        cli.images.pull(os.environ.get("RABBIT_DOCKER_TAG"))
         print(f"Spinning up RabbitMQ with name {str(self.RABBIT_PORT)}")
 
         cli.containers.run(os.environ.get("RABBIT_DOCKER_TAG"),

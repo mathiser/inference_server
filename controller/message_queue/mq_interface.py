@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from interfaces.db_models import Task
+from database.db_models import Task
 
 
 class MQInterface(ABC):

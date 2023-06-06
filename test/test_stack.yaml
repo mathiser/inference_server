@@ -1,33 +1,23 @@
 version: '3'
 
 services:
-  public_api:
-    restart: always
-    build:
-      context: ../public_api
-      dockerfile: ../public_api/Dockerfile
-    hostname: public_api
-    depends_on:
-      - rabbit
-      - private_api
-    networks:
-      - frontend
-    ports:
-      - 8000:8000
-
-  private_api:
-    hostname: private_api
+  controller:
+    hostname: controller
     restart: always
     depends_on:
       - rabbit
     ports:
-      - 7000:7000
+      - "8123:8123"
     networks:
       - frontend
       - backend
     build:
-      context: ../private_api
-      dockerfile: ../private_api/Dockerfile
+      context: ../controller
+      dockerfile: ../controller/Dockerfile
+    environment:
+      - INFERENCE_SERVER_TOKEN=7z4xneTgVz85BVoTrLLh9jQsS9lMC4V8A-NjptrC2I0iOvESnxAQmBWZJNyBrhOW2unWe3u4DufrZz4muA2rZIt2NshF2UCcyrw-5cjtOGFE38-JohaG9dvfC4TYD54-kHd4L-1do7tpfwmZvnsysigWVOJ0pHBRvf8j5jYpBx4
+      - RABBIT_HOSTNAME=rabbit
+      -
     volumes:
      - private_api_test:/home/app/data:rw
 
@@ -51,12 +41,17 @@ services:
       - backend
     depends_on:
       - rabbit
-      - private_api
+      - controller
     build:
       context: ../job_consumer
       dockerfile: ../job_consumer/Dockerfile
     security_opt:
       - label=disable
+    environment:
+      - INFERENCE_SERVER_TOKEN=7z4xneTgVz85BVoTrLLh9jQsS9lMC4V8A-NjptrC2I0iOvESnxAQmBWZJNyBrhOW2unWe3u4DufrZz4muA2rZIt2NshF2UCcyrw-5cjtOGFE38-JohaG9dvfC4TYD54-kHd4L-1do7tpfwmZvnsysigWVOJ0pHBRvf8j5jYpBx4
+      - RABBIT_HOSTNAME=rabbit
+      - CONTROLLER_HOSTNAME=controller
+      -
     volumes:
       # needed to dispatch docker containers from inside a docker container
       - /var/run/docker.sock:/var/run/docker.sock

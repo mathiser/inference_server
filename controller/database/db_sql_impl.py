@@ -4,21 +4,23 @@ import secrets
 import shutil
 import traceback
 from datetime import datetime
-from typing import List, BinaryIO, Union, Optional
+from io import BytesIO
+from typing import List, Union, Optional
 
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker, scoped_session
 
-from interfaces.db_interface import DBInterface
-from interfaces.db_models import Model, Task, Base
+from database.db_interface import DBInterface
+from database.db_models import Model, Task, Base
 from .db_exceptions import TaskNotFoundException, ModelNotFoundException, \
-    TaskZipPathExistsException, ZipFileMissingException, ContradictingZipFileException
+    TaskTarPathExistsException, TarFileMissingException, ContradictingTarFileException
 
-LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
-logging.basicConfig(level=int(os.environ.get("LOG_LEVEL")), format=LOG_FORMAT)
 
 class DBSQLiteImpl(DBInterface):
-    def __init__(self, base_dir, declarative_base=Base):
+    def __init__(self, base_dir, declarative_base=Base, log_level=10):
+        LOG_FORMAT = '%(levelname)s:%(asctime)s:%(message)s'
+        logging.basicConfig(level=log_level, format=LOG_FORMAT)
+        self.logger = logging.getLogger(__name__)
         self.declarative_base = declarative_base
 
         # data volume mount point
@@ -48,27 +50,31 @@ class DBSQLiteImpl(DBInterface):
         if not os.path.exists(self.database_path):
             self.declarative_base.metadata.create_all(self.engine)
 
-        self.session_maker = sessionmaker(bind=self.engine)
+        self.session_maker = sessionmaker(bind=self.engine, expire_on_commit=False)
         self.Session = scoped_session(self.session_maker)
 
     def purge(self):
         shutil.rmtree(self.base_dir)
 
     def post_task(self,
-                  zip_file: BinaryIO,
-                  model_human_readable_id: str,
-                  uid: str = None) -> Task:
-
+                  tar_file: BytesIO,
+                  human_readable_id: str,
+                  uid: Union[str, None] = None) -> Task:
         if not uid:
             uid = secrets.token_urlsafe()
+
+        # Find the relevant model
+        model = self.get_model(human_readable_id=human_readable_id)
+        if model is None:
+            raise ModelNotFoundException
 
         with self.Session() as session:
             # Define task
             try:
                 task = Task(uid=uid,
-                            model_human_readable_id=model_human_readable_id,
-                            input_zip=os.path.abspath(os.path.join(self.input_base_folder, uid, "input.zip")),
-                            output_zip=os.path.abspath(os.path.join(self.output_base_folder, uid, "output.zip")),
+                            model_id=model.id,
+                            input_tar=os.path.abspath(os.path.join(self.input_base_folder, uid, "input.tar.gz")),
+                            output_tar=os.path.abspath(os.path.join(self.output_base_folder, uid, "output.tar.gz")),
                             )
 
                 # Commit task and refresh
@@ -82,29 +88,29 @@ class DBSQLiteImpl(DBInterface):
 
             # Make input and output dirs
             try:
-                os.makedirs(os.path.dirname(task.input_zip))
-                os.makedirs(os.path.dirname(task.output_zip))
-            except FileExistsError:
-                raise TaskZipPathExistsException
+                os.makedirs(os.path.dirname(task.input_tar))
+                os.makedirs(os.path.dirname(task.output_tar))
+            except FileExistsError as e:
+                raise TaskTarPathExistsException
 
-            # Extract uploaded zipfile to input_folder
-            with open(task.input_zip, 'wb') as out_file:
-                out_file.write(zip_file.read())
+            # Extract uploaded tarfile to input_folder
+            with open(task.input_tar, 'wb') as out_file:
+                out_file.write(tar_file.read())
 
             return task
 
-
-    def get_task(self, uid: str) -> Task:
+    def get_task(self,
+                 task_id: Union[int, None] = None,
+                 task_uid: Union[str, None] = None) -> Union[Task, None]:
         with self.Session() as session:
-            t = session.query(Task).filter_by(uid=uid, is_deleted=False).first()
-            if t:
-                return t
-            else:
-                raise TaskNotFoundException
+            if task_id:
+                return session.query(Task).filter_by(id=task_id, is_deleted=False).first()
+            if task_uid:
+                return session.query(Task).filter_by(uid=task_uid, is_deleted=False).first()
 
-    def set_task_status(self, uid: str, status: int) -> Task:
+    def set_task_status(self, task_id: int, status: int) -> Task:
         with self.Session() as session:
-            t = session.query(Task).filter_by(uid=uid).first()
+            t = session.query(Task).filter_by(id=task_id).first()
             if t:
                 t.status = status
                 if status in [0, 1]:
@@ -117,7 +123,7 @@ class DBSQLiteImpl(DBInterface):
             else:
                 raise TaskNotFoundException
 
-    def get_tasks(self) -> List[Task]:
+    def get_tasks(self) -> List:
         with self.Session() as session:
             tasks = session.query(Task)
             return list(tasks)
@@ -130,11 +136,11 @@ class DBSQLiteImpl(DBInterface):
                 if t.status == 2:
                     raise Exception("Cannot delete a running task")
                 if t.status in [-1, 0, 1]:
-                    in_dir = os.path.dirname(t.input_zip)
+                    in_dir = os.path.dirname(t.input_tar)
                     if os.path.exists(in_dir):
                         shutil.rmtree(in_dir)
 
-                    out_dir = os.path.dirname(t.output_zip)
+                    out_dir = os.path.dirname(t.output_tar)
                     if os.path.exists(out_dir):
                         shutil.rmtree(out_dir)
 
@@ -151,50 +157,47 @@ class DBSQLiteImpl(DBInterface):
                    container_tag: str,
                    human_readable_id: str,
                    description: Union[str, None] = None,
-                   zip_file: Optional[Union[BinaryIO, None]] = None,
+                   tar_file: Optional[Union[BytesIO, None]] = None,
                    model_available: Union[bool, None] = None,
                    use_gpu: Union[bool, None] = None) -> Model:
-
+        
         model = Model(
-            uid=secrets.token_hex(),
             description=description,
             human_readable_id=human_readable_id,
             container_tag=container_tag,
             model_available=model_available,
             use_gpu=use_gpu
         )
-        if model.model_available and not zip_file:
-            raise ZipFileMissingException
+        if model.model_available and not tar_file:
+            raise TarFileMissingException
 
-        if not model.model_available and zip_file:
-            raise ContradictingZipFileException
+        if not model.model_available and tar_file:
+            raise ContradictingTarFileException
 
-        if model.model_available and zip_file:
-            model.model_volume_id = model.uid
-            model.model_zip = os.path.join(self.model_base_folder, model.uid, "model.zip")
-            os.makedirs(os.path.dirname(model.model_zip))
-            # write model_zip to model_zip
-            with open(model.model_zip, 'wb') as f:
-                f.write(zip_file.read())
-        try:
-            ## Add model to DB
-            with self.Session() as session:
-                session.add(model)
-                session.commit()
-                session.refresh(model)
-        except Exception as e:
-            raise e
+        with self.Session() as session:
+            session.add(model)
+            session.commit()
 
+            if model.model_available and tar_file:
+                model.model_tar = os.path.join(self.model_base_folder, str(model.id), "model.tar.gz")
+                os.makedirs(os.path.dirname(model.model_tar))
+                # write model_tar to model_tar
+                with open(model.model_tar, 'wb') as f:
+                    f.write(tar_file.read())
+
+            session.commit()
+            session.refresh(model)
+        
         return model
 
     def get_model(self,
-                  uid: Union[str, None] = None,
+                  model_id: Union[int, None] = None,
                   human_readable_id: Union[str, None] = None) -> Model:
 
         with self.Session() as session:
-            # Prioritize uid over human_readable_id
-            if uid:
-                model = session.query(Model).filter_by(uid=uid).first()
+            # Prioritize model_id over human_readable_id
+            if model_id:
+                model = session.query(Model).filter_by(id=model_id).first()
             elif human_readable_id:
                 model = session.query(Model).filter_by(human_readable_id=human_readable_id).first()
 
@@ -204,21 +207,21 @@ class DBSQLiteImpl(DBInterface):
             else:
                 raise ModelNotFoundException
 
-    def get_models(self) -> List[Model]:
+    def get_models(self) -> List:
         with self.Session() as session:
             return list(session.query(Model))
 
-    def post_output_zip(self, uid: str, zip_file: BinaryIO) -> Task:
+    def post_output_tar(self, task_id: int, tar_file: BytesIO) -> Task:
         with self.Session() as session:
             # Get the task
-            task = session.query(Task).filter_by(uid=uid).first()
+            task = session.query(Task).filter_by(id=task_id).first()
             if not task:
                 raise TaskNotFoundException
 
             try:
-                # Write zip_file to task.output_zip
-                with open(task.output_zip, 'wb') as out_file:
-                    out_file.write(zip_file.read())
+                # Write tar_file to task.output_tar
+                with open(task.output_tar, 'wb') as out_file:
+                    out_file.write(tar_file.read())
             except Exception as e:
                 logging.error(e)
                 raise e
@@ -227,5 +230,6 @@ class DBSQLiteImpl(DBInterface):
             # Save changes
             session.commit()
             session.refresh(task)
-        self.set_task_status(task.uid, 1)
+
+        self.set_task_status(task.id, 1)
         return task

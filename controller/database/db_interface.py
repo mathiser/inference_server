@@ -1,19 +1,21 @@
 from abc import ABC, abstractmethod
-from typing import List, BinaryIO, Union
+from io import BytesIO
+from typing import List, Union
 
-from interfaces.db_models import Task, Model
+from database.db_models import Task, Model
 
 
 class DBInterface(ABC):
     @abstractmethod
     def post_task(self,
-                 zip_file: BinaryIO,
-                 model_human_readable_id: str,
-                 uid: str) -> Task:
+                 tar_file: BytesIO,
+                 human_readable_id: str) -> Task:
         pass
 
     @abstractmethod
-    def get_task(self, uid: str) -> Task:
+    def get_task(self,
+                 task_id: Union[int, None] = None,
+                 task_uid: Union[str, None] = None) -> Task:
         pass
 
     @abstractmethod
@@ -21,11 +23,11 @@ class DBInterface(ABC):
         pass
 
     @abstractmethod
-    def set_task_status(self, uid: str, status: int) -> Task:
+    def set_task_status(self, task_id: int, status: int) -> Task:
         pass
 
     @abstractmethod
-    def get_tasks(self) -> List[Task]:
+    def get_tasks(self) -> List:
         pass
 
     @abstractmethod
@@ -33,7 +35,7 @@ class DBInterface(ABC):
                    container_tag: str,
                    human_readable_id: str,
                    description: Union[str, None] = None,
-                   zip_file: Union[BinaryIO, None] = None,
+                   tar_file: Union[BytesIO, None] = None,
                    model_available: Union[bool, None] = None,
                    use_gpu: Union[bool, None] = None
                    ) -> Model:
@@ -41,15 +43,15 @@ class DBInterface(ABC):
 
     @abstractmethod
     def get_model(self,
-                  uid: Union[str, None] = None,
+                  model_id: Union[int, None] = None,
                   human_readable_id: Union[str, None] = None) -> Model:
         pass
 
     @abstractmethod
-    def get_models(self) -> List[Model]:
+    def get_models(self) -> List:
         pass
 
     @abstractmethod
-    def post_output_zip(self, uid: str, zip_file: BinaryIO) -> Task:
+    def post_output_tar(self, task_id: int, tar_file: BytesIO) -> Task:
         pass
 
