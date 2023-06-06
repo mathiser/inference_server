@@ -53,6 +53,7 @@ class DBSQLiteImpl(DBInterface):
         self.session_maker = sessionmaker(bind=self.engine, expire_on_commit=False)
         self.Session = scoped_session(self.session_maker)
 
+
     def purge(self):
         shutil.rmtree(self.base_dir)
 

@@ -1,0 +1,45 @@
+version: '3'
+
+services:
+  rabbit:
+    restart: always
+    image: rabbitmq:3.9.17
+    network_mode: host
+    hostname: rabbit
+    volumes:
+      - ./rabbit/timeout.conf:/etc/rabbitmq/conf.d/timeout.conf
+
+  controller:
+    hostname: controller
+    restart: always
+    depends_on:
+      - rabbit
+    network_mode: host
+    build:
+      context: ../controller
+      dockerfile: ../controller/Dockerfile
+    environment:
+      - INFERENCE_SERVER_TOKEN=test-hest
+      - RABBIT_HOSTNAME=localhost
+      - LOG_LEVEL=20
+      - PYTHONUNBUFFERED=1
+
+  consumer:
+    hostname: consumer
+    restart: always
+    network_mode: host
+    depends_on:
+      - rabbit
+      - controller
+    build:
+      context: ../consumer
+      dockerfile: ../consumer/Dockerfile
+    environment:
+      - INFERENCE_SERVER_TOKEN=test-hest
+      - RABBIT_HOSTNAME=localhost
+      - CONTROLLER_HOSTNAME=localhost
+      - LOG_LEVEL=20
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # needed to dispatch docker containers from inside a docker container
+      - /var/run/docker.sock:/var/run/docker.sock
