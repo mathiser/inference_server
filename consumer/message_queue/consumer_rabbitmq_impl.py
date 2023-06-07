@@ -116,15 +116,16 @@ class ConsumerRabbitImpl(ConsumerInterface):
             output_tar = exec_job(task=task,
                                   input_tar=task_input_tar,
                                   model_tar=model_tar,
-                                  gpu_uuid=self.gpu_uuid)
+                                  gpu_uuid=self.gpu_uuid,
+                                  pull_on_every_run=task.model.pull_on_every_run,
+                                  dump_logs=task.model.dump_logs)
 
             self.db.post_output_tar(task.id, output_tar)
 
         except Exception as e:
             self.db.set_task_status(task_id=task_id, status=0)
-            traceback.print_exc()
-            self.logger.info(f"Exception {str(e)} while running: {task.id}")
-
+            self.logger.error(f"Exception {str(e)} while running: {task.id}")
+            self.logger.error(traceback.format_exc())
             raise e
 
         finally:

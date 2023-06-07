@@ -14,6 +14,8 @@ class Model(BaseModel):
     model_available: bool = True
     model_volume_id: Union[str, None]
     model_tar: Union[str, None]
+    pull_on_every_run: bool = True
+    dump_logs: bool = True
 
 
 class Task(BaseModel):

@@ -29,12 +29,13 @@ class Consumer:
             prot = "https"
         else:
             prot = "http"
-        self.CONTROLLER_URL = f"{prot}://{CONTROLLER_HOSTNAME}:{CONTROLLER_PORT}/"
+        self.CONTROLLER_HOSTNAME = CONTROLLER_HOSTNAME
+        self.CONTROLLER_PORT = CONTROLLER_PORT
         self.LOG_LEVEL = LOG_LEVEL
         self.INFERENCE_SERVER_TOKEN = INFERENCE_SERVER_TOKEN
 
         self.load_envvars()
-
+        self.CONTROLLER_URL = f"{prot}://{self.CONTROLLER_HOSTNAME}:{self.CONTROLLER_PORT}/"
         self.logger = self.get_logger()
         self.logger.info(f"Instantiated consumer with environment: {str(self.__dict__)}")
         if not self.INFERENCE_SERVER_TOKEN:

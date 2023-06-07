@@ -125,6 +125,8 @@ class APIFastAPIImpl(FastAPI):
                        tar_file: Optional[Union[UploadFile, None]] = None,
                        model_available: Union[bool, None] = None,
                        use_gpu: Union[bool, None] = None,
+                       dump_logs: Union[bool, None] = None,
+                       pull_on_every_run: Union[bool, None] = None,
                        x_token: str = Header(default=None),
                        ) -> Dict:
             self.eval_token(x_token)
@@ -139,6 +141,8 @@ class APIFastAPIImpl(FastAPI):
                 description=description,
                 model_available=model_available,
                 use_gpu=use_gpu,
+                pull_on_every_run=pull_on_every_run,
+                dump_logs=dump_logs
             )
             self.logger.info(f"Receiving model {model.dict()}")
             return model.dict()

@@ -37,8 +37,9 @@ class DBInterface(ABC):
                    description: Union[str, None] = None,
                    tar_file: Union[BytesIO, None] = None,
                    model_available: Union[bool, None] = None,
-                   use_gpu: Union[bool, None] = None
-                   ) -> Model:
+                   use_gpu: Union[bool, None] = None,
+                   dump_logs: Union[bool, None] = None,
+                   pull_on_every_run: Union[bool, None] = None) -> Model:
         pass
 
     @abstractmethod

@@ -27,6 +27,8 @@ class Model(Base):
     model_available: Mapped[bool] = mapped_column(default=False)
     model_tar: Mapped[str] = mapped_column(nullable=True, unique=True, default=None)
     model_volume_id: Mapped[str] = mapped_column(unique=True, default=generate_uuid)
+    dump_logs: Mapped[bool] = mapped_column(default=True)
+    pull_on_every_run: Mapped[bool] = mapped_column(default=True)
 
     def dict(self):
         return {
@@ -38,6 +40,8 @@ class Model(Base):
             "model_available": self.model_available,
             "model_tar": self.model_tar,
             "model_volume_id": self.model_volume_id,
+            "dump_logs": self.dump_logs,
+            "pull_on_every_run": self.pull_on_every_run
         }
 
 

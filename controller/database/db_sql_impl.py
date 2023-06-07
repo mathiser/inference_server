@@ -160,14 +160,18 @@ class DBSQLiteImpl(DBInterface):
                    description: Union[str, None] = None,
                    tar_file: Optional[Union[BytesIO, None]] = None,
                    model_available: Union[bool, None] = None,
-                   use_gpu: Union[bool, None] = None) -> Model:
+                   use_gpu: Union[bool, None] = None,
+                   dump_logs: Union[bool, None] = None,
+                   pull_on_every_run: Union[bool, None] = None) -> Model:
         
         model = Model(
             description=description,
             human_readable_id=human_readable_id,
             container_tag=container_tag,
             model_available=model_available,
-            use_gpu=use_gpu
+            use_gpu=use_gpu,
+            pull_on_every_run=pull_on_every_run,
+            dump_logs=dump_logs
         )
         if model.model_available and not tar_file:
             raise TarFileMissingException

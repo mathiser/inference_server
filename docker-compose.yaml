@@ -13,7 +13,7 @@ services:
     ports:
       - 443:443
     networks:
-      - frontend
+      - network
     labels:
       traefik.enable: true
     volumes:
@@ -39,9 +39,7 @@ services:
       - rabbit
     networks:
       - network
-    build:
-      context: controller
-      dockerfile: controller/Dockerfile
+    image: mathiser/inference_server:controller_dev
     ports:
       - 8123
     environment:
@@ -55,17 +53,16 @@ services:
       - "traefik.http.routers.inference_server_public_api.tls=true"
     volumes:
       - ./mounts:/home/app/data
+  
   consumer:
     hostname: consumer
     restart: always
+    image: mathiser/inference_server:consumer_dev
     networks:
       - network
     depends_on:
       - rabbit
       - controller
-    build:
-      context: consumer
-      dockerfile: consumer/Dockerfile
     environment:
       - INFERENCE_SERVER_TOKEN=5vDY76c8IcjKhEUs7Qit2vWEEo8E7Ej18mtbOHdffdMBKBYw36VKGPn0JCJIsrGcuQPl0KQEZ2n7DfnwchhjDA
       - RABBIT_HOSTNAME=rabbit
