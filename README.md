@@ -1,3 +1,6 @@
+# README is not updated for version 2.0
+
+
 # InferenceServer
 ## Purpose
 InferenceServer provides an HTTP API for running computational tasks on a GPU-accelerated multi-node cluster.
