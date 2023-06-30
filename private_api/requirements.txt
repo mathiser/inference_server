@@ -1,8 +1,0 @@
-python-multipart
-fastapi
-uvicorn[standard]
-sqlalchemy
-pika
-pydantic
-docker
-httpx

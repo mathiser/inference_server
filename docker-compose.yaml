@@ -13,7 +13,7 @@ services:
     ports:
       - 443:443
     networks:
-      - frontend
+      - network
     labels:
       traefik.enable: true
     volumes:
@@ -21,72 +21,59 @@ services:
       - ./traefik/configuration:/configuration/
       - //var/run/docker.sock://var/run/docker.sock
 
-  public-api:
-    restart: always
-    image: mathiser/inference_server:public_api_v1.2
-    hostname: public_api
-    networks:
-      - frontend
-    command: python main.py
-    environment:
-      - LOG_LEVEL=20
-      - ALLOW_PUBLIC_POST_MODEL="true"
-    ports:
-      - 8000
-    labels:
-      - "traefik.http.routers.inference_server_public_api.rule=Host(`omen.onerm.dk`)"
-      - "traefik.http.services.inference_server_public_api.loadbalancer.server.port=8000"
-      - "traefik.http.routers.inference_server_public_api.tls=true"
-
-  private-api:
-    hostname: private_api
-    restart: always
-    image: mathiser/inference_server:private_api_v1.2
-    depends_on:
-      - rabbit
-    ports:
-      - 7000
-    networks:
-      - frontend
-      - backend
-    environment:
-      - PYTHONUNBUFFERED=1
-      - LOG_LEVEL=20
-    volumes:
-      - ./mounts/data:/home/app/data
-
   rabbit:
     restart: always
     image: rabbitmq:3.9.17
+    networks:
+      - network
     ports:
       - 5672
     hostname: rabbit
-    networks:
-      - backend
     volumes:
       - ./rabbit/timeout.conf:/etc/rabbitmq/conf.d/timeout.conf
 
-  job-consumer:
-    hostname: consumer_0
-    image: mathiser/inference_server:job_consumer_v1.2
+  controller:
+    hostname: controller
     restart: always
-    ports:
-      - "80" #Dummy port to make traefik quiet
-    networks:
-      - backend
     depends_on:
       - rabbit
-      - private-api
+    networks:
+      - network
+    image: mathiser/inference_server:controller_dev
+    ports:
+      - 8123
     environment:
-      - PYTHONUNBUFFERED=1
+      - INFERENCE_SERVER_TOKEN=5vDY76c8IcjKhEUs7Qit2vWEEo8E7Ej18mtbOHdffdMBKBYw36VKGPn0JCJIsrGcuQPl0KQEZ2n7DfnwchhjDA
+      - RABBIT_HOSTNAME=rabbit
       - LOG_LEVEL=20
+      - PYTHONUNBUFFERED=1
+    labels:
+      - "traefik.http.routers.inference_server_public_api.rule=Host(`omen.onerm.dk`)"
+      - "traefik.http.services.inference_server_public_api.loadbalancer.server.port=8123"
+      - "traefik.http.routers.inference_server_public_api.tls=true"
+    volumes:
+      - ./mounts:/home/app/data
+  
+  consumer:
+    hostname: consumer
+    restart: always
+    image: mathiser/inference_server:consumer_dev
+    networks:
+      - network
+    depends_on:
+      - rabbit
+      - controller
+    environment:
+      - INFERENCE_SERVER_TOKEN=5vDY76c8IcjKhEUs7Qit2vWEEo8E7Ej18mtbOHdffdMBKBYw36VKGPn0JCJIsrGcuQPl0KQEZ2n7DfnwchhjDA
+      - RABBIT_HOSTNAME=rabbit
+      - CONTROLLER_HOSTNAME=controller
+      - LOG_LEVEL=20
+      - PYTHONUNBUFFERED=1
     volumes:
       # needed to dispatch docker containers from inside a docker container
-      - //var/run/docker.sock://var/run/docker.sock
-
+      - /var/run/docker.sock:/var/run/docker.sock
 networks:
-  frontend:
-  backend:
+  network:
 #    driver: overlay
     #driver_opts:
     #  encrypted: "true"
