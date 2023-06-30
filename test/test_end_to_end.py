@@ -87,7 +87,7 @@ class TestEndToEnd(unittest.TestCase):
             res = requests.get(f"http://localhost:8123/api/tasks/outputs/",
                                params={"uid": uid})
             if res.ok:
-                with tarfile.TarFile.open(fileobj=BytesIO(res.content), mode="w|gz") as zf_res:
+                with tarfile.TarFile.open(fileobj=BytesIO(res.content), mode="w") as zf_res:
                     ref_res = [member.path for member in zf_res.getmembers()]
                     if compare:
                         self.assertListEqual(ref_list, ref_res)
@@ -134,7 +134,7 @@ class TestEndToEnd(unittest.TestCase):
                 f.write("another veri secure and important file to me tarped.")
 
             temp_file = tempfile.TemporaryFile()
-            with tarfile.TarFile.open(fileobj=temp_file, mode="w|gz") as zf:
+            with tarfile.TarFile.open(fileobj=temp_file, mode="w") as zf:
                 for fol, subs, files in os.walk(tmp_dir):
                     for file in files:
                         zf.add(os.path.join(fol, file), arcname=file)

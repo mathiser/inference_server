@@ -70,7 +70,7 @@ def postprocess_output_tar(tarf: BytesIO, logs: str, dump_logs: bool):
 
         # Make a new temp tar.gz
         new_tar_file = BytesIO()
-        new_tar_obj = tarfile.TarFile.open(fileobj=new_tar_file, mode="w|gz")
+        new_tar_obj = tarfile.TarFile.open(fileobj=new_tar_file, mode="w")
 
         # Walk directory from output to strip it away
         for fol, subs, files in os.walk(os.path.join(tmpd, "output")):

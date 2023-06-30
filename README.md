@@ -13,7 +13,7 @@ unsuited for being put publicly on docker hub.
 
 ### Task
 A `Task` is essentially a zip-file containing the input for a model. It is sent to InferenceServer with the parameter 
-`model_human_readable_id`, which directs the input data to the correct model.
+`human_readable_id`, which directs the input data to the correct model.
 
 ## Overview of InferenceServer services
 InferenceServer consists of five distinct services, namely:
@@ -89,7 +89,7 @@ Then you probably want to submit a job. This can be done like:
 ```
 with open("input.zip", "br") as r:
     res = requests.post(url=https://<domain>/api/tasks/,
-                        params={"model_human_readable_id": "easy_to_write_must_be_unique"})
+                        params={"human_readable_id": "easy_to_write_must_be_unique"})
     if res.ok:
         task_uid = json.loads(res.content)
 ```
@@ -106,7 +106,7 @@ else:
 
 Status codes on task polling:
 - 500: Internal server error
-- 550: Model not found (model_human_readable_id)
+- 550: Model not found (human_readable_id)
 - 551: Task pending
 - 552: Task failed
 - 553: Task finished, but output zip not found.
