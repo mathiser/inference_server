@@ -14,7 +14,7 @@ from io import BytesIO
 
 def generate_tar():
     tar_file = tempfile.TemporaryFile()
-    with tarfile.TarFile.open(fileobj=tar_file, mode='w:gz') as tar_obj:
+    with tarfile.TarFile.open(fileobj=tar_file, mode='w') as tar_obj:
         tar_obj.add(__file__)
     tar_file.seek(0)
     return tar_file
